@@ -58,6 +58,11 @@ jobs:
     if: needs.find-work.outputs.has_work == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
     strategy:
       matrix:
         issue: ${{ fromJson(needs.find-work.outputs.issues) }}
