@@ -112,3 +112,21 @@ func NewRateLimitedError() *ErrorEnvelope {
 		Message: "Rate limit exceeded. Please try again later.",
 	}
 }
+
+// NewInvalidTransitionError returns an INVALID_TRANSITION error.
+func NewInvalidTransitionError(msg string) *ErrorEnvelope {
+	return &ErrorEnvelope{Code: ErrInvalidTransition, Message: msg}
+}
+
+// NewWorkflowNotActiveError returns a WORKFLOW_NOT_ACTIVE error.
+func NewWorkflowNotActiveError(msg string) *ErrorEnvelope {
+	return &ErrorEnvelope{Code: ErrWorkflowNotActive, Message: msg}
+}
+
+// NewWorkflowChainLimitError returns a WORKFLOW_CHAIN_LIMIT error.
+func NewWorkflowChainLimitError() *ErrorEnvelope {
+	return &ErrorEnvelope{
+		Code:    ErrWorkflowChainLimit,
+		Message: "Too many consecutive system steps",
+	}
+}

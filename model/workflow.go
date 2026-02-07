@@ -38,6 +38,19 @@ type WorkflowInstance struct {
 	Version        int            `json:"version"`
 }
 
+// WorkflowSummary is a lightweight representation of a workflow instance
+// used in list views.
+type WorkflowSummary struct {
+	ID          string    `json:"id"`
+	WorkflowID  string    `json:"workflow_id"`
+	Name        string    `json:"name"`
+	CurrentStep string    `json:"current_step"`
+	Status      string    `json:"status"`
+	SubjectID   string    `json:"subject_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // WorkflowEvent records an event in a workflow's audit trail.
 type WorkflowEvent struct {
 	ID                 string    `json:"id"`
