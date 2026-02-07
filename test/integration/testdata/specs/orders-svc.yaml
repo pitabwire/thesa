@@ -95,6 +95,36 @@ paths:
                   total_count:
                     type: integer
 
+  /api/customers/search:
+    get:
+      operationId: searchCustomers
+      summary: Search customers by query string.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer search results.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        email:
+                          type: string
+
   /api/orders/statuses:
     get:
       operationId: getOrderStatuses

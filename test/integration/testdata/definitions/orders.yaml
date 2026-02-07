@@ -450,6 +450,23 @@ searches:
     weight: 1.0
     max_results: 10
 
+  - id: customers.search
+    domain: customers
+    capabilities:
+      - "orders:manage"
+    operation:
+      type: openapi
+      operation_id: searchCustomers
+      service_id: orders-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: email
+      id_field: id
+      route: "/customers/{id}"
+    weight: 2.0
+    max_results: 10
+
 lookups:
   - id: orders.statuses
     operation:

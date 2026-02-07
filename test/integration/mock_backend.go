@@ -328,6 +328,7 @@ func DefaultOrdersRoutes() map[string]operationRoute {
 	return map[string]operationRoute{
 		"listOrders":       {method: "GET", pathPattern: "/api/orders"},
 		"searchOrders":     {method: "GET", pathPattern: "/api/orders/search"},
+		"searchCustomers":  {method: "GET", pathPattern: "/api/customers/search"},
 		"getOrderStatuses": {method: "GET", pathPattern: "/api/orders/statuses"},
 		"getOrderCounts":   {method: "GET", pathPattern: "/api/orders/counts"},
 		"getOrder":         {method: "GET", pathPattern: "/api/orders/{id}"},
