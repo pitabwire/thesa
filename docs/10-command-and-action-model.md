@@ -51,6 +51,10 @@ POST /ui/commands/orders.update
 
 ### Step 1: Parse Request Body
 
+> **Note:** This step occurs in the **transport layer** (HTTP handler), not in the
+> CommandExecutor itself. The executor receives a pre-parsed `CommandInput` struct
+> and a pre-resolved `CapabilitySet`.
+
 Extract the command input from the HTTP request:
 
 ```json
@@ -139,10 +143,21 @@ query_params:
   format: "input.format"      # from user input
 ```
 
-**Body mapping — "passthrough":**
+**Header parameters:**
+```yaml
+header_params:
+  X-Correlation-ID: "context.correlation_id"
+  X-Tenant-ID: "context.tenant_id"
+```
+
+Headers are resolved with the same expression syntax as path and query parameters.
+
+**Body mapping — "passthrough" (default):**
 ```
 backend_body = input    # send user input as-is
 ```
+
+> If `body_mapping` is empty or unspecified, it defaults to "passthrough".
 
 **Body mapping — "template":**
 ```yaml
@@ -150,13 +165,14 @@ body_template:
   customerId: "input.customer_id"      # → "cust-002"
   shippingAddress: "input.shipping_address"  # → "456 Oak Ave"
   updatedBy: "context.subject_id"      # → "user-123"
-  metadata:
-    source: "'bff'"                    # literal
-    correlationId: "context.correlation_id"
+  source: "'bff'"                      # literal → "bff"
+  correlationId: "context.correlation_id"  # → from RequestContext
 ```
 
-The template is walked recursively. Leaf string values that match an expression pattern
-are resolved. Non-matching strings are passed as literals.
+Each key-value pair in the template is resolved against the expression resolver.
+Values that match a source expression pattern (e.g., `input.field`, `context.tenant_id`,
+`'literal'`) are resolved. The template is a flat `map[string]string` — nested structures
+are not supported.
 
 **Body mapping — "projection":**
 ```yaml
@@ -168,6 +184,22 @@ field_projection:
 
 Only the projected fields are included in the body. Other input fields are dropped.
 This prevents the frontend from injecting unexpected fields.
+
+### Source Expression Reference
+
+The expression resolver supports these prefixes:
+
+| Prefix | Source | Example |
+|--------|--------|---------|
+| `input.` | User-provided input fields | `input.customer_id`, `input.address.city` (nested) |
+| `route.` | Route parameters from the URL | `route.id` |
+| `context.` | RequestContext (from JWT) | `context.subject_id`, `context.tenant_id`, `context.partition_id`, `context.email` |
+| `workflow.` | Workflow state (when invoked from a workflow step) | `workflow.order_id` |
+| `'literal'` | Single-quoted literal string | `'bff'`, `'items,customer'` |
+| Numeric | Numeric literal (int64 or float64) | `123`, `99.99` |
+
+The `input.` prefix supports nested field access via dot notation (e.g., `input.address.city`
+navigates into a nested `address` object to find the `city` field).
 
 ### Step 7: Validate Against OpenAPI Schema
 
@@ -220,12 +252,15 @@ The invocation includes:
 ```
 1. Parse JSON response body.
 2. Apply OutputMapping:
-   a. type "passthrough": return backend response as-is (after field renaming).
-   b. type "project": extract only the fields listed in output.fields.
-   c. type "envelope": wrap in standard envelope with success_message.
-3. Store idempotency key → response (if configured).
-4. Return CommandResponse { success: true, message: output.success_message, result: {...} }
+   a. If output.fields is empty: return the full backend response body as the result.
+   b. If output.fields is present: extract and rename only the listed fields (projection).
+3. Build CommandResponse { success: true, message: output.success_message, result: {...} }.
+4. Store idempotency key → response (if configured, and only on success).
+5. Return CommandResponse.
 ```
+
+> **Note:** The `output.type` field is defined in the schema but the executor does not
+> branch on it. The actual behavior is determined by whether `output.fields` is populated.
 
 **On client error (4xx):**
 
@@ -263,14 +298,16 @@ Metrics emitted:
 
 ```
 CommandExecutor
-  ├── Execute(ctx context.Context, rctx RequestContext, commandId string, input CommandInput) → (CommandResponse, error)
-  │     Full pipeline execution. Returns a CommandResponse on success.
+  ├── Execute(ctx, rctx, caps CapabilitySet, commandId string, input CommandInput) → (CommandResponse, error)
+  │     Full pipeline execution. Capabilities are pre-resolved by the transport layer.
+  │     Returns a CommandResponse on success.
   │     Returns an error only for infrastructure failures (not business errors).
   │     Business errors (validation, authorization) are encoded in CommandResponse.
   │
-  └── Validate(commandId string, input CommandInput) → []FieldError
+  └── Validate(rctx RequestContext, caps CapabilitySet, commandId string, input CommandInput) → []FieldError
         Validates input against the command's schema without executing.
         Used for dry-run / pre-flight validation.
+        Requires rctx for expression resolution and caps for capability checks.
 ```
 
 ---
@@ -315,13 +352,17 @@ Request 3: POST /ui/commands/orders.create  (different input, same key)
 
 ```yaml
 idempotency:
-  key_source: "header:Idempotency-Key"   # Read from HTTP header
+  key_source: "header"                    # Read from Idempotency-Key HTTP header
   # OR
-  key_source: "input:idempotency_key"     # Read from input payload
+  key_source: "input"                     # Read from idempotency_key in request body
   # OR
   key_source: "auto"                      # BFF generates from hash of input + route_params
-  ttl: "24h"                              # How long to remember keys
+  ttl: "24h"                              # How long to remember keys (Go duration format)
 ```
+
+> **Note:** The transport layer is responsible for extracting the idempotency key
+> based on `key_source` and placing it into `CommandInput.IdempotencyKey` before
+> calling the executor. The executor receives the key already extracted.
 
 ### Store Requirements
 
@@ -382,11 +423,13 @@ output:
 
 ### Backend Error Detection
 
-The BFF attempts to extract error codes from backend responses using these strategies:
+The BFF extracts error codes and messages from backend responses by looking for
+well-known field paths in the response body:
 
-1. **Standard error field:** Look for `error.code`, `error_code`, or `code` in response body.
-2. **HTTP status code mapping:** Map common status codes to generic error codes.
-3. **Backend-specific patterns:** Configurable per service.
+1. **Error code:** First tries `error.code`, then falls back to `code`.
+2. **Error message:** First tries `error.message`, then falls back to `message`.
+3. **Field errors:** Looks for `error.details` or `details` as an array of
+   `{ field, code, message }` objects.
 
 ### Field Error Translation
 
@@ -439,10 +482,12 @@ Actions can be conditionally visible based on resource data:
 {
   "id": "orders.cancel_action",
   "conditions": [
-    { "field": "status", "operator": "in", "value": ["pending", "confirmed"], "effect": "show" }
+    { "field": "status", "operator": "in", "value": "pending,confirmed", "effect": "show" }
   ]
 }
 ```
+
+> For `in`/`not_in` operators, the value is a comma-separated string of allowed values.
 
 The frontend evaluates these conditions against the current resource data and
 shows/hides/enables/disables the action accordingly. This is client-side logic
@@ -458,11 +503,11 @@ based on BFF-provided rules.
 func TestCommandExecutor_Execute(t *testing.T) {
     // Setup mock registry with a test command definition
     // Setup mock invoker that returns a canned response
-    // Setup mock capability resolver that grants required capabilities
+    // Setup mock capability set that grants required capabilities
 
-    executor := command.NewExecutor(registry, invokerRegistry, capResolver, openAPIIndex)
+    executor := command.NewCommandExecutor(registry, invokerRegistry, openAPIIndex)
 
-    resp, err := executor.Execute(ctx, rctx, "orders.update", input)
+    resp, err := executor.Execute(ctx, rctx, caps, "orders.update", input)
 
     assert.NoError(t, err)
     assert.True(t, resp.Success)

@@ -453,7 +453,7 @@ commands:
       success_message: "Order updated" # Optional.
     idempotency:                     # Optional.
       key_source: "header"           # Source for idempotency key. "header" reads Idempotency-Key header.
-      ttl: 3600                      # Time-to-live in seconds for idempotency records.
+      ttl: "24h"                     # Time-to-live for idempotency records (Go duration format: "1h", "30m", "24h").
     rate_limit:                      # Optional.
       max_requests: 10
       window: "1m"
@@ -612,6 +612,6 @@ lookups:
     value_field: "id"                # REQUIRED. Field to use as option value.
     search_field: "query"            # Optional. Query parameter name for search-as-you-type.
     cache:                           # Optional.
-      ttl: 300                       # Cache time-to-live in seconds.
+      ttl: "5m"                      # Cache time-to-live (Go duration format: "5m", "1h", "30s").
       scope: "global"                # "tenant" or "global".
 ```
