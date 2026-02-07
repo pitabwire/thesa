@@ -401,7 +401,7 @@ workflows:
             approval_notes: workflow.approval_notes
       - id: notify
         name: Send Notification
-        type: system
+        type: notification
         operation:
           type: sdk
           handler: notifications.send
@@ -426,10 +426,10 @@ workflows:
         event: timeout
       - from: process
         to: notify
-        event: complete
+        event: completed
       - from: notify
         to: approved
-        event: complete
+        event: completed
 
 searches:
   - id: orders.search
