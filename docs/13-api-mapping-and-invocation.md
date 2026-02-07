@@ -25,9 +25,6 @@ OpenAPIIndex
   ├── ValidateRequest(serviceId, operationId string, body any) → []ValidationError
   │     Validates a request body against the operation's schema.
   │
-  ├── ValidateResponse(serviceId, operationId string, statusCode int, body any) → []ValidationError
-  │     Validates a response body (for testing/debugging).
-  │
   └── AllOperationIDs(serviceId string) → []string
         Lists all operation IDs for a service (for diagnostics).
 ```
@@ -48,25 +45,12 @@ SpecSource
 IndexedOperation
   ├── ServiceID       string
   ├── OperationID     string
-  ├── Method          string              // GET, POST, PUT, PATCH, DELETE
-  ├── PathTemplate    string              // e.g., "/api/v1/orders/{orderId}"
-  ├── Parameters      []ParameterDef      // Path, query, header parameters
-  ├── RequestBody     *SchemaRef          // JSON Schema for request body
-  ├── Responses       map[int]*SchemaRef  // Status code → response schema
-  ├── Security        []SecurityReq       // Security requirements
-  ├── BaseURL         string              // From SpecSource
-  └── Timeout         duration            // From SpecSource
-```
-
-### ParameterDef
-
-```
-ParameterDef
-  ├── Name        string    // e.g., "orderId"
-  ├── In          string    // "path", "query", "header"
-  ├── Required    bool
-  ├── Schema      *SchemaRef
-  └── Description string
+  ├── Method          string                    // GET, POST, PUT, PATCH, DELETE
+  ├── PathTemplate    string                    // e.g., "/api/v1/orders/{orderId}"
+  ├── Parameters      []*openapi3.Parameter     // Path, query, header parameters (kin-openapi type)
+  ├── RequestBody     *openapi3.RequestBody     // Request body schema (kin-openapi type)
+  ├── Responses       *openapi3.Responses       // Response schemas (kin-openapi type)
+  └── BaseURL         string                    // From SpecSource
 ```
 
 ### Loading Process
@@ -80,7 +64,7 @@ For each SpecSource:
      For each path (e.g., "/api/v1/orders/{orderId}"):
        For each method (e.g., GET, PUT):
          Extract operationId.
-         → FATAL if operationId is missing (specs MUST have operationId).
+         → Silently skipped if operationId is missing (operation cannot be referenced without an ID).
          Build IndexedOperation.
          Store in map[(serviceId, operationId)] → IndexedOperation.
   5. Log: "Loaded N operations from service 'orders-svc'"
@@ -167,14 +151,14 @@ buildRequest(operation, input, requestContext):
      Example: url += "?expand=items,customer"
 
   3. Headers:
-     headers["Content-Type"] = "application/json"
      headers["Accept"] = "application/json"
-     headers["Authorization"] = "Bearer " + requestContext.OriginalToken
+     If method is POST, PUT, or PATCH:
+       headers["Content-Type"] = "application/json"
+     headers["Authorization"] = "Bearer " + requestContext.Token
      headers["X-Tenant-Id"] = requestContext.TenantID
      headers["X-Partition-Id"] = requestContext.PartitionID
      headers["X-Correlation-Id"] = requestContext.CorrelationID
      headers["X-Request-Subject"] = requestContext.SubjectID
-     headers["traceparent"] = currentSpan.TraceContext()
 
      For each entry in input.Headers:
        headers[key] = value
@@ -255,7 +239,7 @@ SDKHandler
 
 ```go
 // In main.go or a setup function:
-sdkRegistry := invoker.NewSDKRegistry()
+sdkRegistry := invoker.NewSDKHandlerRegistry()
 
 // Register Connect RPC handler
 ledgerClient := ledgerv1connect.NewLedgerServiceClient(httpClient, ledgerBaseURL)
@@ -320,6 +304,11 @@ Different backend services use different pagination conventions:
 | Ledger | Offset/limit | `?skip=25&take=25` |
 
 ### The Solution
+
+> **Implementation status:** The `PaginationConfig` struct exists in the configuration
+> model, but pagination style translation is not yet applied at runtime. Currently,
+> `page` and `page_size` are passed directly to backends as query parameters. The
+> translation logic and cursor caching described below are planned.
 
 The BFF standardizes to page-based pagination on the frontend:
 
@@ -396,6 +385,11 @@ For cursor-based backends, the BFF maintains a short-lived cursor cache:
 
 ### Backend Translation
 
+> **Implementation status:** Currently, filter field names and sort parameters are
+> passed through to backends without translation. The `field_map` is applied only
+> to **response** field names (renaming backend fields to UI fields). Request-side
+> filter and sort field translation is planned.
+
 The BFF translates filter parameters using the filter definitions:
 
 ```yaml
@@ -438,6 +432,10 @@ Backend: ?sort_by=createdAt&order=desc
 ---
 
 ## Update Masks
+
+> **Implementation status:** The `_changed_fields` mechanism and `X-Update-Mask`
+> header generation described below are not yet implemented. Currently, all mapped
+> fields are sent in PATCH requests regardless of which fields changed.
 
 For PATCH operations where only changed fields should be sent:
 
@@ -485,9 +483,12 @@ ignore null/missing fields by convention).
 
 ```
 1. At startup: definitions validated against OpenAPI schemas (structural check).
-2. At runtime: request bodies validated before sending to backend (optional but recommended).
-3. At runtime: response bodies can be validated in development mode (for debugging).
+2. At runtime: request bodies validated before sending to backend.
 ```
+
+> **Note:** Runtime request validation currently checks required fields only. Full
+> constraint validation (max length, enum, pattern, etc.) is not yet implemented.
+> Response body validation is not currently available.
 
 ### Validation Error Format
 
