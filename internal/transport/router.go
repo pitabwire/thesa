@@ -25,6 +25,9 @@ type Dependencies struct {
 	WorkflowEngine     *workflow.Engine
 	SearchProvider     *search.SearchProvider
 	LookupProvider     *search.LookupProvider
+	HealthHandler      http.HandlerFunc
+	ReadyHandler       http.HandlerFunc
+	MetricsHandler     http.Handler
 }
 
 // NewRouter creates a chi.Router with the full middleware pipeline and all
@@ -40,9 +43,15 @@ func NewRouter(deps Dependencies) chi.Router {
 	r.Use(SecurityHeaders)
 
 	// Public routes — bypass authentication.
-	r.Get("/ui/health", handleHealth)
-	r.Get("/ui/ready", handleReady)
-	r.Get("/metrics", handleMetrics)
+	if deps.HealthHandler != nil {
+		r.Get("/ui/health", deps.HealthHandler)
+	}
+	if deps.ReadyHandler != nil {
+		r.Get("/ui/ready", deps.ReadyHandler)
+	}
+	if deps.MetricsHandler != nil {
+		r.Method(http.MethodGet, "/metrics", deps.MetricsHandler)
+	}
 
 	// Authenticated routes — full middleware chain (layers 5-10).
 	auth := deps.Authenticate
@@ -76,16 +85,3 @@ func NewRouter(deps Dependencies) chi.Router {
 	return r
 }
 
-func handleHealth(w http.ResponseWriter, _ *http.Request) {
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-}
-
-func handleReady(w http.ResponseWriter, _ *http.Request) {
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
-}
-
-func handleMetrics(w http.ResponseWriter, _ *http.Request) {
-	// Placeholder — will be replaced by Prometheus handler.
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-}

@@ -17,7 +17,18 @@ func testDeps() Dependencies {
 	cfg := config.Defaults()
 	cfg.Server.CORS.AllowedOrigins = []string{"https://app.example.com"}
 	cfg.Server.HandlerTimeout = 5 * time.Second
-	return Dependencies{Config: cfg}
+	return Dependencies{
+		Config: cfg,
+		HealthHandler: func(w http.ResponseWriter, _ *http.Request) {
+			WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		},
+		ReadyHandler: func(w http.ResponseWriter, _ *http.Request) {
+			WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+		},
+		MetricsHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
 }
 
 // --- Router tests ---
