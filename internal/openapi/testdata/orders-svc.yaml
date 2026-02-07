@@ -1,0 +1,87 @@
+openapi: "3.0.3"
+info:
+  title: Orders Service
+  version: "1.0.0"
+servers:
+  - url: https://orders.internal
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    post:
+      operationId: createOrder
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_id
+                - items
+              properties:
+                customer_id:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                notes:
+                  type: string
+      responses:
+        "201":
+          description: Created
+  /orders/{orderId}:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getOrder
+      summary: Get an order
+      responses:
+        "200":
+          description: OK
+    put:
+      operationId: updateOrder
+      summary: Update an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: OK
+  /orders/search:
+    get:
+      operationId: searchOrders
+      summary: Search orders
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
