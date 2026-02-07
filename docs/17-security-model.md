@@ -99,6 +99,64 @@ Test: Descriptor filtering
   - Service mesh policies (Istio, Linkerd)
 - Even if a user obtains a backend URL, they cannot reach it.
 
+#### Backend Authentication Strategy Security
+
+Each backend service is configured with one of four authentication strategies
+(`forward_token`, `service_token`, `token_exchange`, `mtls`). See
+[doc 04](04-request-context-and-identity.md) for the full specification of each
+strategy. This section covers the security properties and threat mitigations
+specific to each strategy.
+
+**Forward Token security considerations:**
+
+| Threat | Mitigation |
+|--------|-----------|
+| Stolen user token used against backend | Backend validates token independently (signature, expiry, audience) |
+| Token audience mismatch | Backend rejects tokens not scoped to its audience |
+| Token near expiry | BFF does not extend token lifetime; backend enforces its own clock skew tolerance |
+| Backend receives revoked token | Backend checks token against revocation list or introspection endpoint |
+
+**Service Token security considerations:**
+
+| Threat | Mitigation |
+|--------|-----------|
+| BFF service credentials compromised | Client secret stored in secrets manager; rotated quarterly |
+| Header spoofing (fake X-Tenant-Id) | Backend only trusts identity headers from verified sources (mTLS, API gateway, service mesh) |
+| Service token over-scoped | Service token should use the minimum required scopes per backend service |
+| Token endpoint unavailable | BFF caches token with proactive refresh 60s before expiry; degrades gracefully |
+| Concurrent token refresh race | `sync.RWMutex` protects the token cache; only one goroutine refreshes at a time |
+
+**Token Exchange security considerations:**
+
+| Threat | Mitigation |
+|--------|-----------|
+| Exchanged token cached too long | Short TTL (max 5 minutes); cache eviction on user session end |
+| Identity provider restricts exchange | BFF handles 403/400 from token endpoint gracefully (returns 502 to frontend) |
+| Scope escalation via exchange | Identity provider enforces scope constraints; BFF cannot request scopes the user doesn't have |
+| Cache poisoning | Cache key includes subject_id; one user cannot receive another user's exchanged token |
+
+**mTLS security considerations:**
+
+| Threat | Mitigation |
+|--------|-----------|
+| Client certificate compromised | Certificate rotation without restart; short certificate lifetime (90 days recommended) |
+| Certificate files missing at startup | Fatal error — BFF refuses to start with misconfigured mTLS |
+| Certificate files disappear at runtime | Continue with last valid certificate; alert via structured logging |
+| Man-in-the-middle between BFF and backend | Mutual verification: BFF verifies backend cert, backend verifies BFF cert |
+| Weak cipher suites | TLS config restricts to TLS 1.2+ with strong cipher suites only |
+
+**Header trust model across strategies:**
+
+Backends that receive identity via headers (`X-Tenant-Id`, `X-Request-Subject`)
+rather than within the JWT payload must establish trust through one of:
+
+1. **mTLS:** Backend verifies BFF's client certificate before trusting headers.
+2. **API gateway rules:** Only traffic from the BFF's IP range reaches the backend.
+3. **Service mesh:** Istio/Linkerd mTLS ensures the caller is the BFF's service identity.
+
+Without at least one of these controls, identity headers can be spoofed by any
+service on the internal network.
+
 ### 4. Command Replay Prevention
 
 **Threat:** Attacker captures a command request and replays it.
@@ -348,13 +406,15 @@ Retention policies should be configured at the log routing layer, not in the BFF
 
 ### Secret Management
 
-| Secret | Storage | Rotation |
-|--------|---------|----------|
-| Identity provider JWKS URL | Configuration file | N/A (public endpoint) |
-| Service token client secret | Environment variable or secrets manager | Quarterly |
-| Database connection string | Environment variable or secrets manager | Quarterly |
-| Redis connection string | Environment variable or secrets manager | Quarterly |
-| mTLS client certificates | Mounted from secrets manager | Annually |
+| Secret | Environment Variable | Rotation |
+|--------|---------------------|----------|
+| Identity provider JWKS URL | Configuration file (public endpoint) | N/A |
+| Service token client secret | `THESA_SERVICE_TOKEN_SECRET` | Quarterly |
+| mTLS client certificate | `THESA_MTLS_CERT_FILE` (path) | 90 days recommended |
+| mTLS client private key | `THESA_MTLS_KEY_FILE` (path) | With certificate |
+| mTLS CA certificate | `THESA_MTLS_CA_FILE` (path) | Annually |
+| Database connection string | `THESA_WORKFLOW_DSN` | Quarterly |
+| Redis connection string | `THESA_REDIS_ADDR` | Quarterly |
 
 **Never in definition files:** Secrets are never stored in definition YAML files.
 Definitions are configuration, not credentials.
