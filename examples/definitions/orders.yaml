@@ -1,0 +1,500 @@
+domain: orders
+version: "1.0.0"
+
+navigation:
+  label: Orders
+  icon: shopping_cart
+  order: 1
+  capabilities:
+    - "orders:view"
+  children:
+    - label: All Orders
+      icon: list
+      route: /orders
+      page_id: orders.list
+      capabilities:
+        - "orders:view"
+      order: 1
+      badge:
+        operation_id: getOrderCounts
+        field: pending_count
+        style: warning
+    - label: Create Order
+      icon: add_circle
+      route: /orders/new
+      page_id: orders.edit_form
+      capabilities:
+        - "orders:create"
+      order: 2
+
+pages:
+  - id: orders.list
+    title: All Orders
+    route: /orders
+    layout: table
+    capabilities:
+      - "orders:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Orders
+        route: /orders
+    table:
+      data_source:
+        operation_id: listOrders
+        service_id: orders-svc
+        mapping:
+          items_path: data
+          total_path: total_count
+      columns:
+        - field: order_number
+          label: Order #
+          type: text
+          sortable: true
+          link:
+            route: /orders/{id}
+            params:
+              id: id
+        - field: customer_name
+          label: Customer
+          type: text
+          sortable: true
+          filterable: true
+        - field: total_amount
+          label: Amount
+          type: currency
+          sortable: true
+          format: "USD"
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            pending: warning
+            processing: info
+            shipped: success
+            cancelled: error
+        - field: created_at
+          label: Created
+          type: datetime
+          sortable: true
+      filters:
+        - field: status
+          label: Status
+          type: select
+          options:
+            lookup_id: orders.statuses
+        - field: priority
+          label: Priority
+          type: select
+          options:
+            static:
+              - label: Normal
+                value: normal
+              - label: High
+                value: high
+              - label: Urgent
+                value: urgent
+        - field: created_at
+          label: Created Date
+          type: date_range
+      row_actions:
+        - id: view_order
+          label: View
+          icon: visibility
+          style: default
+          type: navigate
+          navigate_to: /orders/{id}
+          params:
+            id: id
+        - id: cancel_order
+          label: Cancel
+          icon: cancel
+          style: danger
+          type: command
+          command_id: orders.cancel
+          capabilities:
+            - "orders:cancel"
+          confirmation:
+            title: Cancel Order
+            message: "Are you sure you want to cancel order {order_number}?"
+            confirm: "Yes, Cancel"
+            cancel: "No, Keep"
+            style: danger
+          conditions:
+            - field: status
+              operator: in
+              value: "pending,processing"
+              effect: show
+        - id: approve_order
+          label: Start Approval
+          icon: approval
+          style: primary
+          type: workflow
+          workflow_id: orders.approval
+          capabilities:
+            - "orders:approve"
+          conditions:
+            - field: status
+              operator: eq
+              value: pending
+              effect: show
+      bulk_actions:
+        - id: bulk_cancel
+          label: Cancel Selected
+          icon: cancel
+          style: danger
+          type: command
+          command_id: orders.cancel
+          capabilities:
+            - "orders:cancel"
+          confirmation:
+            title: Cancel Orders
+            message: "Cancel {count} selected orders?"
+            confirm: Confirm
+            cancel: Cancel
+            style: danger
+      default_sort: created_at
+      sort_dir: desc
+      page_size: 25
+      selectable: true
+    actions:
+      - id: create_order
+        label: Create Order
+        icon: add
+        style: primary
+        type: navigate
+        navigate_to: /orders/new
+        capabilities:
+          - "orders:create"
+
+  - id: orders.detail
+    title: "Order #{order_number}"
+    route: "/orders/{id}"
+    layout: detail
+    capabilities:
+      - "orders:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Orders
+        route: /orders
+      - label: "Order #{order_number}"
+        route: "/orders/{id}"
+    sections:
+      - id: order_info
+        title: Order Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: order_number
+            label: Order Number
+            type: text
+            read_only: true
+          - field: status
+            label: Status
+            type: badge
+            read_only: true
+          - field: customer_name
+            label: Customer
+            type: text
+            read_only: true
+          - field: total_amount
+            label: Total Amount
+            type: currency
+            read_only: true
+            format: "USD"
+          - field: priority
+            label: Priority
+            type: select
+            read_only: true
+          - field: created_at
+            label: Created
+            type: datetime
+            read_only: true
+      - id: line_items
+        title: Line Items
+        layout: grid
+        columns: 1
+        fields:
+          - field: items
+            label: Items
+            type: text
+            read_only: true
+      - id: notes
+        title: Notes
+        layout: grid
+        columns: 1
+        collapsible: true
+        collapsed: true
+        fields:
+          - field: notes
+            label: Notes
+            type: textarea
+            read_only: true
+    actions:
+      - id: edit_order
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: orders.edit_form
+        capabilities:
+          - "orders:edit"
+        conditions:
+          - field: status
+            operator: in
+            value: "pending,processing"
+            effect: show
+      - id: cancel_order
+        label: Cancel Order
+        icon: cancel
+        style: danger
+        type: command
+        command_id: orders.cancel
+        capabilities:
+          - "orders:cancel"
+        confirmation:
+          title: Cancel Order
+          message: "Are you sure you want to cancel this order?"
+          confirm: "Yes, Cancel"
+          cancel: "No, Keep"
+          style: danger
+        conditions:
+          - field: status
+            operator: in
+            value: "pending,processing"
+            effect: show
+
+forms:
+  - id: orders.edit_form
+    title: Edit Order
+    capabilities:
+      - "orders:edit"
+    submit_command: orders.update
+    load_source:
+      operation_id: getOrder
+      service_id: orders-svc
+    success_route: "/orders/{id}"
+    success_message: Order updated successfully.
+    sections:
+      - id: order_details
+        title: Order Details
+        layout: grid
+        columns: 2
+        fields:
+          - field: shipping_address
+            label: Shipping Address
+            type: textarea
+            required: true
+            validation:
+              max_length: 500
+              message: Address must be under 500 characters.
+            span: 2
+          - field: priority
+            label: Priority
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Normal
+                  value: normal
+                - label: High
+                  value: high
+                - label: Urgent
+                  value: urgent
+          - field: notes
+            label: Notes
+            type: textarea
+            placeholder: "Add any notes about this order..."
+          - field: internal_code
+            label: Internal Code
+            type: text
+            help_text: "For internal tracking only."
+            visibility: "orders:manage"
+
+  - id: orders.approval_form
+    title: Order Approval
+    capabilities:
+      - "orders:approve"
+    submit_command: orders.confirm
+    success_route: "/orders/{id}"
+    success_message: Approval submitted.
+    sections:
+      - id: approval
+        title: Approval Decision
+        layout: grid
+        columns: 1
+        fields:
+          - field: approval_notes
+            label: Approval Notes
+            type: textarea
+            required: true
+            placeholder: "Provide reasoning for your decision..."
+            validation:
+              min_length: 10
+              message: Please provide at least 10 characters.
+
+commands:
+  - id: orders.update
+    capabilities:
+      - "orders:edit"
+    operation:
+      type: openapi
+      operation_id: updateOrder
+      service_id: orders-svc
+    input:
+      path_params:
+        id: id
+      body_mapping: projection
+      field_projection:
+        shipping_address: shipping_address
+        priority: priority
+        notes: notes
+        internal_code: internal_code
+    output:
+      type: full
+      error_map:
+        ORDER_LOCKED: "This order is locked and cannot be edited."
+        INVALID_PRIORITY: "The selected priority is not valid."
+    idempotency:
+      key_source: header
+      ttl: 3600
+
+  - id: orders.cancel
+    capabilities:
+      - "orders:cancel"
+    operation:
+      type: openapi
+      operation_id: cancelOrder
+      service_id: orders-svc
+    input:
+      path_params:
+        id: id
+      body_mapping: projection
+      field_projection:
+        reason: reason
+    output:
+      type: full
+      error_map:
+        ORDER_ALREADY_CANCELLED: "This order has already been cancelled."
+        ORDER_SHIPPED: "Cannot cancel a shipped order."
+
+  - id: orders.confirm
+    capabilities:
+      - "orders:approve"
+    operation:
+      type: openapi
+      operation_id: confirmOrder
+      service_id: orders-svc
+    input:
+      path_params:
+        id: id
+      body_mapping: projection
+      field_projection:
+        approval_notes: approval_notes
+    output:
+      type: full
+
+workflows:
+  - id: orders.approval
+    name: Order Approval
+    capabilities:
+      - "orders:approve"
+    initial_step: review
+    timeout: 86400
+    on_timeout: expired
+    steps:
+      - id: review
+        name: Review Order
+        type: human
+        form_id: orders.approval_form
+        capabilities:
+          - "orders:approve"
+        timeout: 43200
+        on_timeout: expired
+        assignee:
+          type: role
+          value: order_approver
+      - id: process
+        name: Process Approval
+        type: system
+        operation:
+          type: openapi
+          operation_id: confirmOrder
+          service_id: orders-svc
+        input:
+          path_params:
+            id: id
+          body_mapping: projection
+          field_projection:
+            approval_notes: approval_notes
+      - id: notify
+        name: Send Notification
+        type: system
+        operation:
+          type: sdk
+          handler: notifications.send
+      - id: approved
+        name: Approved
+        type: terminal
+      - id: rejected
+        name: Rejected
+        type: terminal
+      - id: expired
+        name: Expired
+        type: terminal
+    transitions:
+      - from: review
+        to: process
+        event: approve
+      - from: review
+        to: rejected
+        event: reject
+      - from: review
+        to: expired
+        event: timeout
+      - from: process
+        to: notify
+        event: complete
+      - from: notify
+        to: approved
+        event: complete
+
+searches:
+  - id: orders.search
+    domain: orders
+    capabilities:
+      - "orders:view"
+    operation:
+      type: openapi
+      operation_id: searchOrders
+      service_id: orders-svc
+    result_mapping:
+      items_path: data
+      title_field: order_number
+      subtitle_field: customer_name
+      category_field: status
+      id_field: id
+      route: "/orders/{id}"
+    weight: 1.0
+    max_results: 10
+
+lookups:
+  - id: orders.statuses
+    operation:
+      type: openapi
+      operation_id: getOrderStatuses
+      service_id: orders-svc
+    label_field: label
+    value_field: value
+    cache:
+      ttl: 300
+      scope: tenant
+
+  - id: orders.priorities
+    label_field: label
+    value_field: value
+    cache:
+      ttl: 0
+      scope: global

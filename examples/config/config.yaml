@@ -1,0 +1,103 @@
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+  handler_timeout: 25s
+  shutdown_timeout: 30s
+  cors:
+    allowed_origins:
+      - "http://localhost:3000"
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - Authorization
+      - Content-Type
+      - X-Partition-Id
+      - X-Correlation-Id
+      - X-Idempotency-Key
+    max_age: 86400
+
+identity:
+  issuer: "https://auth.example.com"
+  audience: "thesa-bff"
+  jwks_url: "https://auth.example.com/.well-known/jwks.json"
+  jwks_cache_ttl: 1h
+  algorithms:
+    - RS256
+  claim_paths:
+    subject_id: sub
+    tenant_id: tenant_id
+    email: email
+    roles: roles
+
+definitions:
+  directories:
+    - ../definitions
+  hot_reload: false
+  strict_checksums: true
+
+specs:
+  directory: ../specs
+  sources:
+    - service_id: orders-svc
+      spec_file: orders-svc.yaml
+
+services:
+  orders-svc:
+    base_url: "https://orders.internal"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+      sort_param: sort
+      sort_dir_param: sort_dir
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+      error_rate_threshold: 0.5
+      error_rate_window: 60s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      backoff_max: 5s
+      idempotent_only: true
+
+capability:
+  evaluator: static
+  static_policy_file: policies.yaml
+  cache:
+    ttl: 5m
+    max_entries: 10000
+
+workflow:
+  enabled: false
+
+idempotency:
+  enabled: false
+
+search:
+  timeout_per_provider: 3s
+  max_results_per_provider: 50
+
+lookup:
+  cache:
+    ttl: 5m
+    max_entries: 1000
+
+observability:
+  log_level: info
+  tracing:
+    enabled: true
+    exporter: stdout
+    sampling_rate: 1.0
+  metrics:
+    enabled: true
+    path: /metrics
