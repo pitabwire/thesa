@@ -60,6 +60,8 @@ func NewOpenAPIOperationInvoker(idx *openapi.Index, services map[string]config.S
 				cbCfg.FailureThreshold,
 				cbCfg.SuccessThreshold,
 				cbCfg.Timeout,
+				cbCfg.ErrorRateThreshold,
+				cbCfg.ErrorRateWindow,
 			),
 		}
 	}

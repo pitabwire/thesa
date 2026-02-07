@@ -102,9 +102,11 @@ type PaginationConfig struct {
 
 // CircuitBreakerConfig describes circuit breaker settings per service.
 type CircuitBreakerConfig struct {
-	FailureThreshold int           `yaml:"failure_threshold"`
-	SuccessThreshold int           `yaml:"success_threshold"`
-	Timeout          time.Duration `yaml:"timeout"`
+	FailureThreshold   int           `yaml:"failure_threshold"`
+	SuccessThreshold   int           `yaml:"success_threshold"`
+	Timeout            time.Duration `yaml:"timeout"`
+	ErrorRateThreshold float64       `yaml:"error_rate_threshold"`
+	ErrorRateWindow    time.Duration `yaml:"error_rate_window"`
 }
 
 // RetryConfig describes retry settings per service.
