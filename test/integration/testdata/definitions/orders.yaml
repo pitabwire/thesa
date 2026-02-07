@@ -46,9 +46,13 @@ pages:
         mapping:
           items_path: data
           total_path: total_count
+          field_map:
+            orderNumber: order_number
+            customerName: customer_name
+            totalAmount: total_amount
       columns:
         - field: order_number
-          label: Order #
+          label: "Order #"
           type: text
           sortable: true
           link:
