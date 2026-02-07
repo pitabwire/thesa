@@ -1,0 +1,42 @@
+server:
+  port: 9090
+  read_timeout: 15s
+  write_timeout: 15s
+
+identity:
+  issuer: "https://auth.example.com"
+  audience: "thesa-bff"
+  jwks_url: "https://auth.example.com/.well-known/jwks.json"
+  algorithms: ["RS256", "ES256"]
+  claim_paths:
+    subject_id: "sub"
+    tenant_id: "custom:tenant_id"
+    roles: "custom:roles"
+
+definitions:
+  directories:
+    - "/definitions"
+  hot_reload: true
+
+specs:
+  directory: "/specs"
+  sources:
+    - service_id: "orders-svc"
+      spec_file: "orders-svc.yaml"
+
+services:
+  orders-svc:
+    base_url: "https://orders.internal"
+    timeout: 10s
+    auth:
+      strategy: "forward_token"
+    circuit_breaker:
+      failure_threshold: 5
+      timeout: 30s
+
+capability:
+  evaluator: "static"
+  static_policy_file: "/config/policies.yaml"
+
+observability:
+  log_level: "debug"
