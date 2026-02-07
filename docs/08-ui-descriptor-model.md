@@ -498,17 +498,17 @@ Returned by `POST /ui/commands/{commandId}`.
 **Success:**
 ```json
 {
-  "data": {
-    "success": true,
-    "message": "Order updated successfully",
-    "result": {
-      "id": "ord-001",
-      "order_number": "ORD-2024-001"
-    }
-  },
-  "meta": { "trace_id": "abc123" }
+  "success": true,
+  "message": "Order updated successfully",
+  "result": {
+    "id": "ord-001",
+    "order_number": "ORD-2024-001"
+  }
 }
 ```
+
+> **Note:** Unlike DataResponse and SearchResponse, CommandResponse is NOT wrapped in a
+> `data`/`meta` envelope. The response is the CommandResponse object itself.
 
 **Validation Error:**
 ```json
@@ -557,9 +557,20 @@ Returned by `GET /ui/search?q=...`.
     "total_count": 2,
     "query": "acme"
   },
-  "meta": { "trace_id": "abc123" }
+  "meta": {
+    "providers": {
+      "orders.search": "ok",
+      "customers.search": "ok"
+    },
+    "query_time_ms": 145
+  }
 }
 ```
+
+**Meta fields:**
+- `providers` — Map of provider ID → status (`"ok"`, `"timeout"`, `"error"`).
+  Lets the frontend show which search sources succeeded.
+- `query_time_ms` — Total search time in milliseconds.
 
 ---
 
