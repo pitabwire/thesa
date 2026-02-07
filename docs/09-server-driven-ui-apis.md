@@ -41,30 +41,28 @@ No query parameters.
 
 ```json
 {
-  "data": {
-    "items": [
-      {
-        "id": "orders",
-        "label": "Orders",
-        "icon": "shopping_cart",
-        "route": null,
-        "children": [
-          {
-            "id": "orders.list",
-            "label": "All Orders",
-            "icon": "list",
-            "route": "/orders",
-            "children": [],
-            "badge": { "count": 12, "style": "warning" }
-          }
-        ],
-        "badge": null
-      }
-    ]
-  },
-  "meta": { "trace_id": "..." }
+  "items": [
+    {
+      "id": "orders",
+      "label": "Orders",
+      "icon": "shopping_cart",
+      "children": [
+        {
+          "id": "orders.list",
+          "label": "All Orders",
+          "icon": "list",
+          "route": "/orders",
+          "children": [],
+          "badge": { "count": 12, "style": "warning" }
+        }
+      ]
+    }
+  ]
 }
 ```
+
+> **Note:** The navigation response is a bare `NavigationTree` object, not wrapped in
+> a `data`/`meta` envelope. Parent nodes without a route omit the `route` field.
 
 ### Resolution Process
 
@@ -258,18 +256,16 @@ X-Partition-Id: {partition}
 
 ```json
 {
-  "data": {
-    "fields": {
-      "customer_id": "cust-001",
-      "customer_name": "Acme Corp",
-      "shipping_address": "123 Main St, Springfield",
-      "notes": "Handle with care",
-      "priority": "normal"
-    }
-  },
-  "meta": { "trace_id": "..." }
+  "customer_id": "cust-001",
+  "customer_name": "Acme Corp",
+  "shipping_address": "123 Main St, Springfield",
+  "notes": "Handle with care",
+  "priority": "normal"
 }
 ```
+
+> **Note:** The form data response is a flat field-value map, not wrapped in an envelope.
+> Field names use UI-facing names (after field_map renaming).
 
 ### Resolution Process
 
@@ -324,14 +320,14 @@ Idempotency-Key: abc-123          (optional)
 
 ```json
 {
-  "data": {
-    "success": true,
-    "message": "Order updated successfully",
-    "result": { "id": "ord-123", "order_number": "ORD-2024-001" }
-  },
-  "meta": { "trace_id": "..." }
+  "success": true,
+  "message": "Order updated successfully",
+  "result": { "id": "ord-123", "order_number": "ORD-2024-001" }
 }
 ```
+
+> **Note:** The command response is a bare `CommandResponse` object, not wrapped in a
+> `data`/`meta` envelope. See [08](08-ui-descriptor-model.md#commandresponse).
 
 ### Error Responses
 
@@ -582,7 +578,11 @@ The frontend may also cache lookup responses locally for performance.
 Health check (no authentication required).
 
 ```json
-{ "status": "ok" }
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "commit": "abc1234"
+}
 ```
 
 ## GET /ui/ready
@@ -593,10 +593,10 @@ Readiness check (no authentication required).
 {
   "status": "ready",
   "checks": {
-    "definitions": "ok",
-    "openapi_index": "ok",
-    "workflow_store": "ok",
-    "policy_engine": "ok"
+    "definitions": { "status": "ok", "latency_ms": 2 },
+    "openapi_index": { "status": "ok", "latency_ms": 1 },
+    "workflow_store": { "status": "ok", "latency_ms": 5 },
+    "policy_engine": { "status": "ok", "latency_ms": 1 }
   }
 }
 ```
@@ -606,10 +606,10 @@ If any check fails:
 {
   "status": "not_ready",
   "checks": {
-    "definitions": "ok",
-    "openapi_index": "ok",
-    "workflow_store": "error: connection refused",
-    "policy_engine": "ok"
+    "definitions": { "status": "ok", "latency_ms": 2 },
+    "openapi_index": { "status": "ok", "latency_ms": 1 },
+    "workflow_store": { "status": "error", "latency_ms": 0, "error": "connection refused" },
+    "policy_engine": { "status": "ok", "latency_ms": 1 }
   }
 }
 ```
