@@ -23,6 +23,7 @@ RequestContext
     Claims          map[string]any
     SessionID       string
     DeviceID        string
+    Token           string
     CorrelationID   string
     TraceID         string
     SpanID          string
@@ -83,8 +84,8 @@ DefinitionRegistry
   ├── GetLookup(lookupId string) → (LookupDefinition, bool)
   ├── AllDomains() → []DomainDefinition
   ├── AllSearches() → []SearchDefinition
-  ├── Replace(definitions []DomainDefinition)
-  └── Checksum() → string
+  ├── Replace(definitions []DomainDefinition)    // Atomic replacement
+  └── Checksum() → string                        // SHA-256 of all definitions
 ```
 
 **Dependencies:** None (pure data structure).
@@ -190,7 +191,7 @@ Resolves action descriptors from definitions filtered by capabilities.
 
 ```
 ActionProvider
-  └── ResolveActions(ctx, rctx, caps, actions []ActionDefinition, resourceData map[string]any) → []ActionDescriptor
+  └── ResolveActions(caps CapabilitySet, actions []ActionDefinition, resourceData map[string]any) → []ActionDescriptor
         For each action:
           1. Check capabilities → omit if unauthorized.
           2. Evaluate static conditions (not data-dependent) → set enabled/visible.
@@ -198,6 +199,9 @@ ActionProvider
           4. Strip internal fields.
           5. Return ActionDescriptor.
 ```
+
+> **Note:** ActionProvider does not require `ctx` or `rctx` — it only needs the
+> pre-resolved `CapabilitySet` for capability filtering.
 
 **Dependencies:** CapabilityResolver.
 
@@ -276,6 +280,29 @@ SearchProvider
 
 ---
 
+### LookupProvider
+
+Resolves reference data options for select fields and autocomplete.
+
+```
+LookupProvider
+  ├── GetLookup(ctx, rctx, lookupId string, query string) → (LookupResponse, error)
+  │     Fetches options from backend or cache.
+  │     Applies search filtering on query parameter.
+  │
+  ├── Invalidate(lookupId string, tenantId string)
+  │     Clears cached options for a specific lookup and tenant.
+  │
+  └── CacheLen() → int
+        Returns the current number of cached entries (for diagnostics).
+```
+
+**Dependencies:** DefinitionRegistry, InvokerRegistry.
+**Concurrency:** Thread-safe with `sync.RWMutex` protecting the internal cache.
+**Caching:** Supports per-definition TTL (from `CacheConfig.TTL`) and configurable max entries.
+
+---
+
 ### OperationInvoker
 
 Unified interface for backend invocation.
@@ -319,6 +346,79 @@ OpenAPIIndex
 
 ---
 
+### SDKHandler
+
+Interface for typed backend invocations registered at startup.
+
+```
+SDKHandler
+  ├── Name() → string
+  │     Returns the handler name (e.g., "ledger.PostEntry").
+  │
+  └── Invoke(ctx, rctx, input InvocationInput) → (InvocationResult, error)
+        Executes the operation using a typed Go client.
+```
+
+---
+
+### SDKHandlerRegistry
+
+Holds registered SDK handlers and dispatches by name.
+
+```
+SDKHandlerRegistry
+  ├── Register(name string, handler SDKHandler)
+  ├── Get(name string) → (SDKHandler, bool)
+  └── Names() → []string
+```
+
+**Concurrency:** Thread-safe with `sync.RWMutex`.
+
+---
+
+### IdempotencyStore
+
+Stores and checks idempotency keys for command replay prevention.
+
+```
+IdempotencyStore
+  ├── Check(ctx, key string, inputHash string) → (result *CommandResponse, found bool, err error)
+  │     Checks if a key exists. If found and hash matches, returns cached response.
+  │     If found and hash mismatches, returns a conflict error.
+  │
+  └── Store(ctx, key string, inputHash string, result CommandResponse, ttl time.Duration) → error
+        Stores a successful result for replay.
+```
+
+**Implementations:** MemoryIdempotencyStore (testing), RedisIdempotencyStore (production).
+
+---
+
+### RateLimiter
+
+Checks whether a command invocation is within rate limits.
+
+```
+RateLimiter
+  └── Allow(ctx, commandId string, scope string, rctx RequestContext) → bool
+        Returns true if the request should proceed, false if rate-limited.
+        Scope determines the rate limit key: "user", "tenant", or "global".
+```
+
+---
+
+### CommandObserver
+
+Receives lifecycle events from command execution for metrics and auditing.
+
+```
+CommandObserver
+  └── OnCommandExecuted(ctx, event CommandEvent)
+        Called after every command execution (success or failure).
+```
+
+---
+
 ## Dependency Graph
 
 ```
@@ -346,9 +446,11 @@ OpenAPIIndex
                                   └──────────────┘   │Registry     │
                                                      └─────────────┘
 
-        CommandExecutor ──→ DefinitionRegistry + CapabilityResolver + InvokerRegistry + OpenAPIIndex
+        CommandExecutor ──→ DefinitionRegistry + InvokerRegistry + OpenAPIIndex
+                            Optional: IdempotencyStore, RateLimiter, CommandObserver
         WorkflowEngine  ──→ DefinitionRegistry + CapabilityResolver + InvokerRegistry + WorkflowStore
         SearchProvider  ──→ DefinitionRegistry + CapabilityResolver + InvokerRegistry
+        LookupProvider  ──→ DefinitionRegistry + InvokerRegistry
 ```
 
 **Key guarantee: No circular dependencies.** All arrows point downward in the
