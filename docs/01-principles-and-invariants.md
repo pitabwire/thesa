@@ -69,9 +69,18 @@ actions are fulfilled.
   descriptor and data responses use `order_number`. The backend field name
   `orderNumber` never reaches the frontend.
 
-**Testing:** Every descriptor response should be validated against a schema that
+**Anti-Patterns:**
+- Do NOT add `operation_id`, `service_id`, or `capabilities` fields to descriptor structs —
+  even "for debugging". Debug information belongs in server-side logs, not client responses.
+- Do NOT expose backend error details (stack traces, internal error codes) in descriptor
+  error responses. Use generic error envelopes with translated messages.
+- Do NOT pass backend field names through to the frontend. Always use the definition's
+  `field_map` to translate field names at the BFF layer.
+
+**Verification:** Every descriptor response should be validated against a schema that
 explicitly rejects fields like `operation_id`, `handler`, `capabilities`,
-`service_id`, or any URL pointing to a backend service.
+`service_id`, or any URL pointing to a backend service. Integration tests should
+assert that no descriptor type contains these fields in its JSON serialization.
 
 ---
 
@@ -140,6 +149,18 @@ single pipeline, these concerns are implemented once and applied universally.
 lookup data, search) do NOT go through the command pipeline. They have their own
 read-oriented pipeline with capability checks but without idempotency or rate limiting.
 
+**Anti-Patterns:**
+- Do NOT add `PUT`, `PATCH`, or `DELETE` endpoints under `/ui/`. All mutations
+  go through `POST /ui/commands/{commandId}`.
+- Do NOT invoke backend APIs directly from handlers — always go through the
+  `OperationInvoker` so that authorization, mapping, and observability are applied.
+- Do NOT create "shortcut" mutation endpoints for convenience. The uniform command
+  pipeline is the feature, not a limitation.
+
+**Verification:** Enumerate all registered HTTP routes at startup and confirm that no
+route under `/ui/` accepts `PUT`, `PATCH`, or `DELETE` methods. Integration tests
+should verify that mutations only succeed through the command endpoint.
+
 ---
 
 ## P5: Capabilities Gate Everything
@@ -173,6 +194,19 @@ frontend has a bug that shows a forbidden button, the BFF rejects the command).
 
 This defense-in-depth ensures that even a compromised or buggy frontend cannot execute
 unauthorized operations.
+
+**Anti-Patterns:**
+- Do NOT check capabilities only at descriptor generation time. A descriptor-only check
+  can be bypassed by crafting direct API calls.
+- Do NOT check capabilities only at execution time. This leads to confusing UIs where
+  users see buttons they cannot click.
+- Do NOT hardcode role-to-capability mappings in handler code. Use the policy-based
+  capability resolver so that capability rules are centrally managed.
+
+**Verification:** For every protected resource, write paired integration tests: one
+confirming that a user WITH the capability can access it, and one confirming that a user
+WITHOUT the capability receives 403 (for execution) or sees the element omitted (for
+descriptors).
 
 ---
 
@@ -211,6 +245,19 @@ they reach deployment.
 
 These are logged as warnings but do not prevent startup.
 
+**Anti-Patterns:**
+- Do NOT catch validation errors and continue serving. If a fatal validation error is
+  found, the process must exit. "Partial availability" with broken definitions is worse
+  than downtime.
+- Do NOT skip validation during development or testing. The same validation runs in all
+  environments to ensure parity.
+- Do NOT validate lazily on first request. All validation happens at startup so that
+  errors are detected immediately, not when a user triggers the affected code path.
+
+**Verification:** Write test cases with intentionally broken definitions (typos in
+`operation_id`, dangling `command_id` references, invalid workflow transitions) and
+confirm that the validator rejects them with specific error codes and paths.
+
 ---
 
 ## P7: Backend Evolution Does Not Break the Frontend
@@ -238,6 +285,19 @@ structure changes. The BFF's mapping layer provides a stable frontier.
 reorganization. It does NOT handle semantic changes (e.g., a field that changes from
 containing a price in cents to a price in dollars). Semantic changes require coordinated
 updates to the definition mapping and possibly the frontend.
+
+**Anti-Patterns:**
+- Do NOT forward backend responses directly to the frontend without mapping. Even if
+  the backend field names happen to match today, they could change tomorrow.
+- Do NOT let frontend developers depend on backend response shapes. The descriptor and
+  data response contracts are the only stable interfaces.
+- Do NOT treat the mapping layer as optional. Every data path from backend to frontend
+  must go through `field_map` or `items_path`/`total_path` resolution.
+
+**Verification:** Write integration tests that simulate a backend field rename (e.g.,
+return `orderNumber` in one test and `order_num` in another) and confirm that the
+frontend-facing response uses the same field name in both cases, controlled by the
+definition's `field_map`.
 
 ---
 
@@ -269,6 +329,18 @@ be different people). The workflow state must survive:
 - PostgreSQL (recommended for production) — durable, shared across instances.
 - In-memory (for testing only) — fast but lost on restart.
 
+**Anti-Patterns:**
+- Do NOT store workflow state only in the HTTP session or in-memory cache in production.
+  Process restarts would lose all active workflows.
+- Do NOT advance workflow state without persisting first. The store write must complete
+  before the response is sent to ensure crash consistency.
+- Do NOT assume a single BFF instance handles a workflow's entire lifecycle. Any instance
+  must be able to resume any workflow from the persisted state.
+
+**Verification:** Write integration tests that start a workflow, simulate a "restart"
+(re-initialize the engine from the same store), and verify that the workflow can be
+retrieved and advanced from its last persisted state.
+
 ---
 
 ## P9: Definition Files Are Integrity-Checked
@@ -285,8 +357,9 @@ filesystem or a verified artifact store.
 
 **What This Means in Practice:**
 
-- At startup, the BFF computes SHA-256 of each definition file.
-- The checksums are stored in memory and included in the health check response.
+- At startup, the BFF computes SHA-256 of each definition file and a combined checksum
+  of all definitions. These checksums are stored in memory and accessible via the
+  `Registry.Checksum()` method.
 - In production, definitions can be verified against a manifest file signed by CI/CD.
 - If hot-reload is enabled, checksum changes are logged as audit events.
 - In strict mode, hot-reload rejects changes that don't match a signed manifest.
@@ -295,6 +368,18 @@ filesystem or a verified artifact store.
 - Mount definitions from a read-only volume.
 - Use immutable container images that bundle definitions.
 - Or load definitions from a versioned artifact store (e.g., S3 with versioning).
+
+**Anti-Patterns:**
+- Do NOT load definitions from user-writable directories. Definitions control authorization
+  and API exposure — they must come from trusted, version-controlled sources.
+- Do NOT skip checksum computation in development. Parity between environments ensures
+  that integrity-related bugs are caught early.
+- Do NOT ignore checksum changes during hot-reload without audit logging. Every definition
+  change must be traceable.
+
+**Verification:** Write a test that loads definitions, records their checksums, modifies a
+file, reloads, and confirms the checksum changes. Verify that the combined checksum is
+deterministic (same inputs produce the same hash regardless of load order).
 
 ---
 
@@ -321,6 +406,19 @@ every change. This defeats the purpose of a platform.
 orchestration use cases) DOES require recompilation. SDK handlers are compiled Go code.
 This is intentional — these are high-integrity paths where compile-time guarantees are
 valued over deployment flexibility.
+
+**Anti-Patterns:**
+- Do NOT add new HTTP route registrations for new APIs. All routing is derived from
+  definitions — new pages, commands, and searches are exposed through YAML, not code.
+- Do NOT hardcode operation mappings or service URLs in Go code. These belong in
+  definition files and service configuration.
+- Do NOT require BFF binary changes for adding new backend services. If a change requires
+  recompilation, it should be an SDK handler (the explicit exception), not a workaround
+  for the definition system.
+
+**Verification:** Demonstrate the onboarding workflow end-to-end: add a new OpenAPI spec
+and definition YAML for a hypothetical service, and confirm the BFF serves the new pages,
+commands, and searches without any code changes or recompilation.
 
 ---
 
