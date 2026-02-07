@@ -146,6 +146,9 @@ After "process" step (system call returns confirmation):
 Step input mappings use `workflow.{field}` to read from this state, and step output
 mappings merge their results back into it.
 
+If a system step fails, the error is stored in `state["_last_error"]` for inspection
+by subsequent error-handling steps or operators.
+
 ### WorkflowEvent (Audit Trail)
 
 ```
@@ -180,6 +183,8 @@ WorkflowEngine
   │
   ├── Get(ctx, rctx, instanceId string) → (WorkflowDescriptor, error)
   │     Returns the workflow descriptor for the frontend (filtered by capabilities).
+  │     Steps are filtered using HasAny (visible if user has at least one capability).
+  │     The Advance method uses HasAll (requires all step capabilities to act).
   │
   ├── Cancel(ctx, rctx, instanceId string, reason string) → error
   │     Cancels an active workflow.
@@ -209,6 +214,10 @@ Engine.Start(ctx, rctx, "orders.approval", input):
 
   3. Check idempotency (if idempotency_key provided):
      → If duplicate: return existing instance.
+     > **Note:** Idempotency key checking is defined in the model
+     > (`WorkflowInstance.IdempotencyKey`) but is not yet enforced by the
+     > engine. The uniqueness constraint in the PostgreSQL schema prevents
+     > duplicate creation at the database level.
 
   4. Create WorkflowInstance:
      {
@@ -289,7 +298,9 @@ Engine.Advance(ctx, rctx, "wf-abc", "approved", input):
       → Continue chain until a human step or terminal state is reached.
 
   12. Persist updated instance (with optimistic locking on Version).
-      → If version conflict: reload instance, retry from step 1 (another instance advanced it).
+      → If version conflict: return error to caller (no automatic retry).
+      → If next step is auto-executable: reload instance after update (version
+        was incremented by store) and execute the step chain.
 
   13. Return updated WorkflowInstance.
 ```
@@ -375,19 +386,22 @@ When a workflow's `ExpiresAt` is in the past:
 
 ### Step-Level Timeouts
 
-Individual steps can have their own timeouts:
+Individual steps can define an `on_timeout` transition target:
 
 ```yaml
 steps:
   - id: "review"
-    timeout: "24h"
     on_timeout: "escalated"
 ```
 
-When a step times out:
-1. The timeout processor checks step entry time against step timeout.
-2. If expired: advance with event "timeout" and transition to `on_timeout` step.
-3. If no `on_timeout` for the step: fall back to workflow-level timeout handling.
+When the workflow-level timeout fires, the timeout processor checks:
+1. If the current step has `on_timeout` defined: transition to that step.
+2. If not: fall back to workflow-level `on_timeout`.
+3. If neither exists: set workflow status to "failed".
+
+> **Note:** Step-level `on_timeout` controls _where_ to transition when a timeout
+> occurs, but timeout expiry is driven by the workflow-level `ExpiresAt` timestamp.
+> Per-step timeout durations (independent of workflow timeout) are not yet tracked.
 
 ---
 
@@ -435,9 +449,9 @@ WorkflowStore
   ├── GetEvents(ctx, tenantId string, instanceId string) → ([]WorkflowEvent, error)
   │     Returns all events for an instance, ordered by timestamp.
   │
-  ├── FindActive(ctx, tenantId string, filters map[string]string) → ([]WorkflowInstance, error)
+  ├── FindActive(ctx, tenantId string, filters WorkflowFilters) → ([]WorkflowInstance, error)
   │     Finds active instances matching filters.
-  │     Filters: workflow_id, subject_id, status.
+  │     WorkflowFilters: { WorkflowID, Status, Limit, Offset }.
   │
   ├── FindExpired(ctx, cutoff time.Time) → ([]WorkflowInstance, error)
   │     Finds active instances where ExpiresAt < cutoff.
@@ -484,11 +498,11 @@ CREATE TABLE workflow_events (
     actor_id              TEXT NOT NULL,
     data                  JSONB DEFAULT '{}',
     comment               TEXT DEFAULT '',
-    timestamp             TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_workflow_events_instance
-    ON workflow_events (workflow_instance_id, timestamp);
+    ON workflow_events (workflow_instance_id, created_at);
 ```
 
 ### Optimistic Locking

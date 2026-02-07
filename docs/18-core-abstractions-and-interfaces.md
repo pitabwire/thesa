@@ -251,7 +251,7 @@ WorkflowStore
   ├── Update(ctx, instance WorkflowInstance) → error
   ├── AppendEvent(ctx, event WorkflowEvent) → error
   ├── GetEvents(ctx, tenantId string, instanceId string) → ([]WorkflowEvent, error)
-  ├── FindActive(ctx, tenantId string, filters map[string]string) → ([]WorkflowInstance, error)
+  ├── FindActive(ctx, tenantId string, filters WorkflowFilters) → ([]WorkflowInstance, error)
   ├── FindExpired(ctx, cutoff time.Time) → ([]WorkflowInstance, error)
   └── Delete(ctx, tenantId string, instanceId string) → error
 ```
