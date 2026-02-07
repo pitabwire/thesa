@@ -1,0 +1,25 @@
+.git
+.github
+docs/
+*.md
+LICENSE
+.gitignore
+.dockerignore
+Dockerfile
+Makefile
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test fixtures
+testdata/
+*_test.go
+
+# Build artifacts
+bin/
+dist/
+*.exe
