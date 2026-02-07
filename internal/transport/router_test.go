@@ -57,8 +57,18 @@ func TestNewRouter_metrics(t *testing.T) {
 	}
 }
 
-func TestNewRouter_authenticatedRoutes_return501(t *testing.T) {
-	r := NewRouter(testDeps())
+func TestNewRouter_authenticatedRoutes_areRegistered(t *testing.T) {
+	// With auth rejecting all requests, all authenticated routes should
+	// return 401, confirming they are registered and not 404/405.
+	rejectAuth := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			WriteError(w, model.NewUnauthorizedError("rejected"))
+		})
+	}
+
+	deps := testDeps()
+	deps.Authenticate = rejectAuth
+	r := NewRouter(deps)
 
 	routes := []struct {
 		method string
@@ -83,8 +93,8 @@ func TestNewRouter_authenticatedRoutes_return501(t *testing.T) {
 		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
-			if w.Code != 501 {
-				t.Errorf("status = %d, want 501", w.Code)
+			if w.Code != 401 {
+				t.Errorf("status = %d, want 401 (auth should reject)", w.Code)
 			}
 		})
 	}
