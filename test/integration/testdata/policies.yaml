@@ -1,0 +1,19 @@
+roles:
+  order_viewer:
+    - "orders:view"
+
+  order_clerk:
+    - "orders:view"
+    - "orders:create"
+    - "orders:edit"
+
+  order_manager:
+    - "orders:view"
+    - "orders:create"
+    - "orders:edit"
+    - "orders:cancel"
+    - "orders:manage"
+
+  order_approver:
+    - "orders:view"
+    - "orders:approve"

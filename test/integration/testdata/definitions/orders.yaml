@@ -59,7 +59,6 @@ pages:
           label: Customer
           type: text
           sortable: true
-          filterable: true
         - field: total_amount
           label: Amount
           type: currency
@@ -125,19 +124,6 @@ pages:
             - field: status
               operator: in
               value: "pending,processing"
-              effect: show
-        - id: approve_order
-          label: Start Approval
-          icon: approval
-          style: primary
-          type: workflow
-          workflow_id: orders.approval
-          capabilities:
-            - "orders:approve"
-          conditions:
-            - field: status
-              operator: eq
-              value: pending
               effect: show
       bulk_actions:
         - id: bulk_cancel
@@ -211,26 +197,6 @@ pages:
           - field: created_at
             label: Created
             type: datetime
-            read_only: true
-      - id: line_items
-        title: Line Items
-        layout: grid
-        columns: 1
-        fields:
-          - field: items
-            label: Items
-            type: text
-            read_only: true
-      - id: notes
-        title: Notes
-        layout: grid
-        columns: 1
-        collapsible: true
-        collapsed: true
-        fields:
-          - field: notes
-            label: Notes
-            type: textarea
             read_only: true
     actions:
       - id: edit_order
