@@ -220,53 +220,378 @@ standard HTTP headers. This allows backend services to:
 
 ### Authentication Strategies for Backend Calls
 
-#### Strategy 1: Forward Token (Default)
+Each backend service is configured with one of four authentication strategies.
+The strategy determines how the BFF authenticates to the backend and how the
+user's identity is conveyed.
 
-The user's JWT is forwarded as-is to backend services. The backend re-validates
-the token and extracts its own authorization context.
+**Strategy selection:**
+
+| Strategy | Config value | When to use |
+|----------|-------------|-------------|
+| Forward Token | `forward_token` | Backend accepts the same user JWT (shared audience/issuer) |
+| Service Token | `service_token` | Backend uses its own auth model; BFF needs its own credentials |
+| Token Exchange | `token_exchange` | Backend needs a user-scoped token with a different audience |
+| mTLS | `mtls` | Backend authenticates via client certificates (no Bearer token needed) |
+
+#### Strategy 1: Forward Token (`forward_token`)
+
+The user's JWT is forwarded as-is to backend services. This is the default
+strategy when no `auth` block is configured for a service.
+
+**Header behavior:**
+
+```
+Authorization: Bearer {user's original JWT}
+X-Tenant-Id: {from RequestContext}
+X-Partition-Id: {from RequestContext}
+X-Correlation-Id: {from RequestContext}
+X-Request-Subject: {from RequestContext}
+```
+
+**Token near expiry:** When the user's token has less than 30 seconds remaining
+before expiry (`exp` claim), the BFF still forwards it — the backend is
+responsible for rejecting expired tokens. The BFF does not refresh user tokens;
+that is the frontend's responsibility. If the backend returns 401, the BFF
+propagates it to the frontend, which triggers a token refresh and retry.
+
+**Token refresh flow:**
+
+```
+1. Frontend sends request with JWT (exp: T+25s)
+2. BFF forwards JWT to backend
+3. Backend validates token → succeeds (within clock skew)
+4. If backend returns 401:
+   a. BFF returns 401 to frontend
+   b. Frontend refreshes token with identity provider
+   c. Frontend retries with new token
+```
 
 **Pros:** Simple, backend has full identity context, no additional tokens needed.
 **Cons:** Token must be valid for all backend services (same audience or audience
 array), token lifetime must cover the BFF's processing time.
 
-#### Strategy 2: Service Token (Machine-to-Machine)
+**Implementation note:** The current `buildRequestHeaders` function in
+`internal/invoker/openapi.go` always forwards `rctx.Token` regardless of the
+configured strategy. Strategy-based dispatch is defined but not yet enforced
+at runtime — all services currently receive the forwarded user token.
 
-The BFF obtains its own service token using OAuth2 client credentials flow.
-The user's identity is conveyed via `X-Request-Subject` and `X-Tenant-Id` headers.
+#### Strategy 2: Service Token (`service_token`)
+
+The BFF obtains its own service token using the OAuth2 client credentials flow
+(RFC 6749 §4.4). The user's identity is conveyed via `X-Request-Subject` and
+`X-Tenant-Id` headers instead of the Authorization header.
 
 **When to use:**
 - Backend services don't accept user tokens (different audience/issuer).
 - Backend services use a separate authorization model.
 - The BFF needs elevated permissions that the user doesn't have.
 
-**Flow:**
-```
-1. BFF calls token endpoint: POST https://auth.internal/oauth/token
-   Body: grant_type=client_credentials&client_id=thesa-bff&client_secret=***&scope=orders.read orders.write
-2. Receives access token scoped to BFF's permissions.
-3. Caches token until expiry.
-4. Uses cached token for backend calls.
-5. Backend trusts X-Tenant-Id / X-Request-Subject headers when they come from the BFF
-   (verified via mTLS or API gateway rules).
+**Configuration:**
+
+```yaml
+services:
+  customers:
+    base_url: "https://customers.internal"
+    auth:
+      strategy: "service_token"
+      client_id: "thesa-bff"
+      token_endpoint: "https://auth.internal/oauth/token"
+      # client_secret is read from THESA_SERVICE_TOKEN_SECRET env var
+      # scopes: ["customers.read", "customers.write"]  # optional
 ```
 
-#### Strategy 3: Token Exchange (RFC 8693)
+**OAuth2 client credentials flow:**
+
+```
+1. BFF calls token endpoint:
+   POST https://auth.internal/oauth/token
+   Content-Type: application/x-www-form-urlencoded
+
+   grant_type=client_credentials
+   &client_id=thesa-bff
+   &client_secret={from THESA_SERVICE_TOKEN_SECRET}
+   &scope=customers.read customers.write
+
+2. Response:
+   {
+     "access_token": "eyJ...",
+     "token_type": "bearer",
+     "expires_in": 3600
+   }
+
+3. BFF caches the token.
+4. All requests to this service use the cached service token.
+```
+
+**Token caching and refresh:**
+
+The service token is cached in memory. The BFF proactively refreshes the token
+before it expires to avoid request failures:
+
+```
+Token lifecycle:
+  ├── T+0:    Token obtained, cached
+  ├── T+0 to T+expiry-60s: Token used as-is
+  ├── T+expiry-60s:        Refresh triggered in background
+  │   └── New token obtained → replaces cached token
+  └── T+expiry:            Old token expires (already replaced)
+
+If refresh fails:
+  ├── Continue using old token until actual expiry
+  ├── Retry refresh every 10s
+  └── If token expires with no replacement → requests fail with 503
+```
+
+**Thread-safe token management:**
+
+Multiple concurrent requests may need the service token simultaneously. The
+token cache uses `sync.RWMutex` to ensure thread safety:
+
+```
+Read path (hot path — concurrent):
+  1. RLock
+  2. Read cached token
+  3. Check expiry
+  4. If valid: return token, RUnlock
+  5. If expiring soon: trigger background refresh, return current token, RUnlock
+
+Write path (refresh — exclusive):
+  1. Lock
+  2. Double-check: another goroutine may have refreshed already
+  3. Call token endpoint
+  4. Store new token
+  5. Unlock
+```
+
+**Header behavior with service token:**
+
+```
+Authorization: Bearer {BFF's service token}
+X-Tenant-Id: {from RequestContext — user's tenant}
+X-Partition-Id: {from RequestContext}
+X-Correlation-Id: {from RequestContext}
+X-Request-Subject: {from RequestContext — user's subject ID}
+```
+
+The backend trusts `X-Tenant-Id` and `X-Request-Subject` headers because the
+request comes from the authenticated BFF (verified via mTLS, API gateway rules,
+or service mesh policies).
+
+#### Strategy 3: Token Exchange (`token_exchange`)
 
 The BFF exchanges the user's token for a new token scoped to a specific backend
-service. This provides the benefits of both approaches: the backend gets a valid
-user token with the correct audience.
+service using the OAuth2 Token Exchange grant (RFC 8693). This provides the
+benefits of both approaches: the backend gets a valid user-identity token with
+the correct audience.
 
-**Flow:**
+**When to use:**
+- Backend requires a user-identity token (not a service token).
+- Backend has a different audience than the BFF.
+- Fine-grained per-service authorization based on the user's identity.
+- The identity provider supports RFC 8693.
+
+**Configuration:**
+
+```yaml
+services:
+  orders:
+    base_url: "https://orders.internal"
+    auth:
+      strategy: "token_exchange"
+      client_id: "thesa-bff"
+      token_endpoint: "https://auth.internal/oauth/token"
+      # audience is derived from the service ID or configured explicitly
+      # exchange_audience: "orders-service"
 ```
-1. BFF calls token endpoint: POST https://auth.internal/oauth/token
-   Body: grant_type=urn:ietf:params:oauth:grant-type:token-exchange
-         &subject_token={user_jwt}
-         &subject_token_type=urn:ietf:params:oauth:token-type:jwt
-         &audience=orders-service
-2. Receives a new JWT for the user, scoped to the orders service.
-3. Caches per (user, service) with short TTL.
-4. Uses for backend call.
+
+**Exchange flow:**
+
 ```
+1. BFF calls token endpoint:
+   POST https://auth.internal/oauth/token
+   Content-Type: application/x-www-form-urlencoded
+
+   grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+   &client_id=thesa-bff
+   &client_secret={from THESA_SERVICE_TOKEN_SECRET}
+   &subject_token={user's JWT}
+   &subject_token_type=urn:ietf:params:oauth:token-type:jwt
+   &audience=orders-service
+   &scope=orders.read orders.write
+
+2. Response:
+   {
+     "access_token": "eyJ...",
+     "issued_token_type": "urn:ietf:params:oauth:token-type:jwt",
+     "token_type": "bearer",
+     "expires_in": 300
+   }
+
+3. BFF caches per (subject_id, service_id) with short TTL.
+4. Uses exchanged token for backend call.
+```
+
+**Exchanged token caching:**
+
+Exchanged tokens are cached per `(subject_id, service_id)` tuple:
+
+| Cache Key | TTL | Eviction |
+|-----------|-----|----------|
+| `{subject_id}:{service_id}` | min(token.expires_in - 30s, 5 minutes) | LRU with configurable max entries |
+
+The short TTL ensures that if the user's permissions change, the exchanged token
+is refreshed quickly. The cache prevents excessive calls to the token endpoint
+for users making multiple requests.
+
+**Scope of exchanged token:**
+
+The exchanged token carries the user's identity (`sub`, `tenant_id`, `roles`)
+but is scoped to the target service's audience. The identity provider may
+restrict the exchanged token's claims based on the target audience — for example,
+only including roles relevant to the orders service.
+
+#### Strategy 4: mTLS (`mtls`)
+
+The BFF authenticates to the backend using a client certificate (mutual TLS).
+No Bearer token is sent in the Authorization header. The user's identity is
+conveyed via `X-Request-Subject` and `X-Tenant-Id` headers.
+
+**When to use:**
+- Backend services use certificate-based authentication.
+- Service mesh is not available or not trusted for authentication.
+- Strongest machine-to-machine authentication is required.
+
+**Configuration:**
+
+```yaml
+services:
+  ledger:
+    base_url: "https://ledger.internal"
+    auth:
+      strategy: "mtls"
+      # cert_file: "/certs/client.crt"    # or from THESA_MTLS_CERT_FILE
+      # key_file: "/certs/client.key"     # or from THESA_MTLS_KEY_FILE
+      # ca_file: "/certs/ca.crt"          # optional: CA to verify backend cert
+```
+
+**TLS client configuration:**
+
+```
+1. At startup:
+   a. Load client certificate and private key from configured paths.
+   b. Optionally load CA certificate for backend verification.
+   c. Create TLS config with client certificate.
+   d. Create HTTP transport with custom TLS config.
+
+2. Per request:
+   a. TLS handshake presents client certificate to backend.
+   b. Backend verifies certificate against its CA.
+   c. No Authorization header is set.
+   d. User identity is in X-Request-Subject and X-Tenant-Id headers.
+```
+
+**Header behavior with mTLS:**
+
+```
+(No Authorization header)
+X-Tenant-Id: {from RequestContext}
+X-Partition-Id: {from RequestContext}
+X-Correlation-Id: {from RequestContext}
+X-Request-Subject: {from RequestContext}
+```
+
+**Certificate rotation without restart:**
+
+Certificate rotation is handled by watching the certificate files for changes:
+
+```
+Certificate rotation flow:
+  1. Operations team deploys new cert/key files to the mounted path.
+  2. File watcher detects the change (fsnotify, polling every 60s as fallback).
+  3. New certificate is loaded and validated.
+  4. TLS config is atomically swapped (sync/atomic pointer swap).
+  5. New connections use the new certificate.
+  6. Existing connections continue with the old certificate until they close.
+  7. No request failures during rotation.
+
+Fallback when cert files are missing at startup:
+  - If strategy is "mtls" and cert files are missing → fatal startup error.
+  - If cert files disappear after startup → log error, continue with last valid cert.
+  - If new cert files are invalid (expired, wrong format) → log error, keep old cert.
+```
+
+### Per-Service Configuration Example
+
+The following shows all four strategies configured for different backend services
+in the same deployment:
+
+```yaml
+services:
+  # Forward token: backend shares the same identity provider
+  orders:
+    base_url: "https://orders.internal"
+    timeout: 10s
+    auth:
+      strategy: "forward_token"
+    circuit_breaker:
+      failure_threshold: 5
+      timeout: 30s
+
+  # Service token: backend has its own auth model
+  customers:
+    base_url: "https://customers.internal"
+    timeout: 10s
+    auth:
+      strategy: "service_token"
+      client_id: "thesa-bff"
+      token_endpoint: "https://auth.internal/oauth/token"
+    circuit_breaker:
+      failure_threshold: 5
+      timeout: 30s
+
+  # Token exchange: backend needs user identity with different audience
+  payments:
+    base_url: "https://payments.internal"
+    timeout: 15s
+    auth:
+      strategy: "token_exchange"
+      client_id: "thesa-bff"
+      token_endpoint: "https://auth.internal/oauth/token"
+    circuit_breaker:
+      failure_threshold: 3
+      timeout: 60s
+
+  # mTLS: backend requires certificate authentication
+  ledger:
+    base_url: "https://ledger.internal"
+    timeout: 10s
+    auth:
+      strategy: "mtls"
+    circuit_breaker:
+      failure_threshold: 5
+      timeout: 30s
+```
+
+**Environment variables for secrets:**
+
+```
+THESA_SERVICE_TOKEN_SECRET=<client secret for OAuth2 client credentials>
+THESA_MTLS_CERT_FILE=/certs/client.crt
+THESA_MTLS_KEY_FILE=/certs/client.key
+THESA_MTLS_CA_FILE=/certs/ca.crt
+```
+
+### Strategy Decision Matrix
+
+| Criterion | Forward Token | Service Token | Token Exchange | mTLS |
+|-----------|:---:|:---:|:---:|:---:|
+| Backend validates user identity directly | Yes | No | Yes | No |
+| Backend has different audience | No | Yes | Yes | Yes |
+| BFF needs elevated permissions | No | Yes | No | No |
+| User context preserved in token | Yes | No (headers only) | Yes | No (headers only) |
+| Requires IdP support for grant type | No | client_credentials | token-exchange (RFC 8693) | No |
+| Token caching complexity | None | Per-service | Per-user-per-service | None |
+| Works if IdP is temporarily unreachable | Yes | Until cached token expires | Until cached token expires | Yes |
 
 ---
 
@@ -370,12 +695,16 @@ and by partition (different partitions may have different feature sets).
 
 ```
 OpenAPIInvoker.Invoke(ctx, rctx, binding, input):
-  Set header "Authorization": "Bearer " + rctx.OriginalToken
+  Set header "Authorization": "Bearer " + rctx.Token
   Set header "X-Tenant-Id": rctx.TenantID
   Set header "X-Partition-Id": rctx.PartitionID
   Set header "X-Correlation-Id": rctx.CorrelationID
   Set header "X-Request-Subject": rctx.SubjectID
 ```
+
+> **Note:** This shows the forward_token strategy (default). For other strategies,
+> the Authorization header is set differently — see "Authentication Strategies
+> for Backend Calls" above.
 
 ### Pattern 3: Using Context in Input Mapping
 
