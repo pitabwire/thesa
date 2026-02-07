@@ -4,7 +4,9 @@ This document provides the complete YAML schema for every definition type. Each 
 is documented with all fields, their types, whether they are required, and examples.
 
 For context on how definitions are authored, loaded, and validated, see
-[05 — UI Exposure Definitions](05-ui-exposure-definitions.md).
+[05 — UI Exposure Definitions](05-ui-exposure-definitions.md). For the formal
+JSON Schema representation and glossary, see
+[23 — Glossary and Appendices](23-glossary-and-appendices.md).
 
 ---
 
@@ -53,7 +55,7 @@ Describes a page visible in the UI.
 id: "orders.list"                    # REQUIRED. Globally unique page ID.
 title: "Orders"                      # REQUIRED. Page title shown in header/breadcrumb.
 route: "/orders"                     # REQUIRED. Frontend route path.
-layout: "list"                       # REQUIRED. One of: list, detail, dashboard, custom.
+layout: "list"                       # REQUIRED. One of: "list", "detail", "dashboard", "custom".
 capabilities:                        # REQUIRED. Caps needed to access this page.
   - "orders:list:view"
 refresh_interval: 30                 # Optional. Auto-refresh in seconds. 0 = disabled.
@@ -125,7 +127,7 @@ table:
     - field: "status"                # REQUIRED. Query parameter name.
       label: "Status"               # REQUIRED. Filter label.
       type: "select"                 # REQUIRED. See Filter Types below.
-      operator: "eq"                 # REQUIRED. See Filter Operators below.
+      operator: "eq"                 # Optional. See Filter Operators below. Default: inferred from type.
       options:                       # Required for select/multi-select types.
         lookup_id: "orders.statuses" # Reference to a LookupDefinition.
         # OR
@@ -168,9 +170,9 @@ table:
 |------|-----------|
 | `text` | Text input |
 | `select` | Single-select dropdown |
-| `multi-select` | Multi-select dropdown |
-| `date-range` | Two date pickers (from/to) |
-| `number-range` | Two number inputs (min/max) |
+| `multi_select` | Multi-select dropdown |
+| `date_range` | Two date pickers (from/to) |
+| `number_range` | Two number inputs (min/max) |
 | `boolean` | Toggle/checkbox |
 
 ### Filter Operators
@@ -372,7 +374,7 @@ actions:
     conditions:                      # Optional. Data-dependent visibility/enablement.
       - field: "status"
         operator: "in"               # "eq", "neq", "in", "not_in", "empty", "not_empty"
-        value: ["pending", "confirmed"]
+        value: "pending,confirmed"   # For "in"/"not_in": comma-separated values. For "eq"/"neq": single value.
         effect: "show"               # "show", "hide", "enable", "disable"
     params:                          # Optional. Static or dynamic params passed to the action.
       id: "{id}"                     # Interpolated from current row/resource data.
@@ -441,7 +443,7 @@ commands:
         customerId: "input.customer_id"
         shippingAddress: "input.shipping_address"
     output:                          # REQUIRED. Output mapping rules.
-      type: "project"               # "passthrough", "project", "envelope".
+      type: "full"                   # "passthrough", "full", "project". See Output Types below.
       fields:                        # Required if type == "project".
         id: "data.id"
         order_number: "data.orderNumber"
@@ -450,8 +452,8 @@ commands:
         INVALID_STATUS: "Cannot edit in current status"
       success_message: "Order updated" # Optional.
     idempotency:                     # Optional.
-      key_source: "header:Idempotency-Key"
-      ttl: "24h"
+      key_source: "header"           # Source for idempotency key. "header" reads Idempotency-Key header.
+      ttl: 3600                      # Time-to-live in seconds for idempotency records.
     rate_limit:                      # Optional.
       max_requests: 10
       window: "1m"
@@ -465,6 +467,14 @@ commands:
 | `passthrough` | Send the frontend's `input` as-is to the backend body | Backend accepts the same shape as the frontend sends |
 | `template` | Construct body from `body_template`, substituting expressions | Backend expects a different structure; need to inject context values |
 | `projection` | Map selected frontend fields to backend fields via `field_projection` | Field-by-field renaming/selection |
+
+### Output Types
+
+| Type | Description | When to Use |
+|------|-------------|-------------|
+| `passthrough` | Return the backend response body as-is | Backend response already matches the frontend contract |
+| `full` | Return the full backend response (equivalent to `passthrough`) | Commonly used when the response shape is already suitable |
+| `project` | Extract and rename specific fields via `fields` map | Frontend needs a subset of backend fields with different names |
 
 ### Source Expression Reference
 
@@ -496,8 +506,8 @@ workflows:
     capabilities:                    # REQUIRED. Caps needed to start this workflow.
       - "orders:approve:execute"
     initial_step: "review"           # REQUIRED. ID of the first step.
-    timeout: "72h"                   # Optional. Overall workflow timeout.
-    on_timeout: "expired"            # Optional. Step to transition to on timeout.
+    timeout: "72h"                   # Optional. Overall workflow timeout (Go duration: "24h", "30m", "72h").
+    on_timeout: "expired"            # Optional. Step ID to transition to on timeout.
 
     steps:                           # REQUIRED. At least two steps (one initial + one terminal).
       - id: "review"                 # REQUIRED. Step ID (unique within workflow).
@@ -520,8 +530,8 @@ workflows:
           type: "project"
           fields:
             confirmed_at: "data.confirmedAt"
-        timeout: "24h"              # Optional. Per-step timeout.
-        on_timeout: "expired"        # Optional. Step to transition to on step timeout.
+        timeout: "24h"              # Optional. Per-step timeout (Go duration format).
+        on_timeout: "expired"        # Optional. Step ID to transition to on step timeout.
         assignee:                    # Optional. Who is responsible for this step.
           type: "role"               # "role", "user", "group", "dynamic"
           value: "order_approver"
@@ -538,12 +548,17 @@ workflows:
 
 | Type | User Interaction | Backend Invocation |
 |------|-----------------|-------------------|
-| `action` | Required (user provides input) | Optional |
+| `human` | Required (user provides input via form) | Optional |
+| `action` | Required (user performs action) | Optional |
 | `approval` | Required (approve/reject) | Optional |
 | `system` | None (automatic) | Required |
 | `wait` | None (waits for event/time) | None |
-| `notification` | None (fire-and-forget) | Required |
+| `notification` | None (automatic, best-effort) | Required |
 | `terminal` | None (end state) | None |
+
+> **Note:** The workflow engine treats `system` and `notification` as auto-executable
+> steps (they run without user interaction). All other types (`human`, `action`,
+> `approval`, `wait`) require an explicit user-initiated advance event.
 
 ### Transition Events
 
@@ -589,14 +604,14 @@ searches:
 ```yaml
 lookups:
   - id: "customers.search"          # REQUIRED.
-    operation:                       # REQUIRED.
-      type: "openapi"
-      operation_id: "searchCustomers"
+    operation:                       # Required for dynamic lookups (backend-fetched).
+      type: "openapi"               #   Can be omitted for static-only lookups
+      operation_id: "searchCustomers"#   whose options are defined inline in forms/filters.
       service_id: "customers-svc"
     label_field: "name"              # REQUIRED. Field to display as option label.
     value_field: "id"                # REQUIRED. Field to use as option value.
     search_field: "query"            # Optional. Query parameter name for search-as-you-type.
     cache:                           # Optional.
-      ttl: "5m"                      # Cache time-to-live.
+      ttl: 300                       # Cache time-to-live in seconds.
       scope: "global"                # "tenant" or "global".
 ```
