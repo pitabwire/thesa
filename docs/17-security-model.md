@@ -237,20 +237,41 @@ Referrer-Policy: strict-origin-when-cross-origin
 
 ## Audit Logging
 
-### What Gets Audited
+### Design Approach
 
-| Event | Logged Fields |
-|-------|--------------|
-| Authentication success | subject_id, tenant_id, ip_address, user_agent |
-| Authentication failure | ip_address, reason, user_agent |
-| Command execution | subject_id, tenant_id, command_id, success/failure |
-| Workflow start | subject_id, tenant_id, workflow_id, instance_id |
-| Workflow advance | subject_id, tenant_id, instance_id, step_id, event |
-| Workflow cancel | subject_id, tenant_id, instance_id, reason |
-| Definition reload | old_checksum, new_checksum, initiator |
-| Capability cache invalidation | subject_id, tenant_id, reason |
+Audit logging in Thesa uses two complementary mechanisms:
+
+1. **CommandObserver** — The `CommandObserver` interface (see [doc 18](18-core-abstractions-and-interfaces.md))
+   receives a `CommandEvent` after every command execution. Implementations may write
+   audit entries, emit metrics, or forward to external systems.
+
+2. **WorkflowEvent** — Workflow state changes are recorded as append-only `WorkflowEvent`
+   records in the WorkflowStore. These serve as an immutable audit trail for all workflow
+   activity.
+
+3. **Structured logging** — Authentication, authorization, and system events are emitted
+   as structured log entries with `"type": "audit"` for separation from application logs.
+
+### Audit Event Catalog
+
+| Event | Source | Fields |
+|-------|--------|--------|
+| `auth.success` | Transport middleware | subject_id, tenant_id, ip_address, user_agent |
+| `auth.failure` | Transport middleware | ip_address, reason, user_agent, attempted_path |
+| `auth.token_expired` | Transport middleware | subject_id, ip_address |
+| `command.executed` | CommandObserver | subject_id, tenant_id, command_id, success, status_code, duration_ms |
+| `command.forbidden` | CommandExecutor | subject_id, tenant_id, command_id |
+| `command.rate_limited` | CommandExecutor | subject_id, tenant_id, command_id, scope |
+| `workflow.started` | WorkflowEngine | subject_id, tenant_id, workflow_id, instance_id |
+| `workflow.advanced` | WorkflowEngine | subject_id, tenant_id, instance_id, step_id, event |
+| `workflow.cancelled` | WorkflowEngine | subject_id, tenant_id, instance_id, reason |
+| `workflow.timeout` | Timeout processor | tenant_id, instance_id, step_id |
+| `definition.reloaded` | DefinitionRegistry | old_checksum, new_checksum, domains_affected[] |
+| `capability.invalidated` | CapabilityResolver | subject_id, tenant_id, reason |
 
 ### Audit Log Format
+
+All audit entries share a common envelope:
 
 ```json
 {
@@ -261,20 +282,58 @@ Referrer-Policy: strict-origin-when-cross-origin
   "tenant_id": "acme-corp",
   "partition_id": "us-production",
   "correlation_id": "corr-456",
-  "command_id": "orders.update",
-  "resource_id": "ord-123",
-  "success": true,
+  "trace_id": "abc123",
   "ip_address": "198.51.100.42",
-  "user_agent": "ThesaFlutter/1.0"
+  "user_agent": "ThesaFlutter/1.0",
+  "data": {
+    "command_id": "orders.update",
+    "resource_id": "ord-123",
+    "success": true,
+    "status_code": 200,
+    "duration_ms": 142
+  }
 }
 ```
+
+The `data` field is event-specific. The envelope fields are always present (except
+`subject_id` for unauthenticated events like `auth.failure`).
+
+### Separation from Application Logs
+
+Audit logs are separated from application logs by the `"type": "audit"` field:
+
+| Concern | Application Logs | Audit Logs |
+|---------|-----------------|------------|
+| Purpose | Debugging, troubleshooting | Compliance, forensics, accountability |
+| Retention | Short (7-30 days) | Long (1-7 years, per regulatory requirements) |
+| Content | Verbose, may include debug info | Minimal, focused on who/what/when |
+| Mutability | Can be rotated and pruned | Append-only, immutable |
+| Destination | stdout / log aggregator | Separate stream (e.g., S3, compliance DB) |
+
+In practice, both may be emitted to the same structured logger. Log routing
+infrastructure (e.g., Fluentd, Vector) separates them by filtering on `type == "audit"`.
 
 ### Audit Log Integrity
 
 Audit logs should be written to a tamper-evident store:
-- Append-only log (e.g., S3 with object lock).
-- Signed log entries (each entry includes a hash of the previous entry).
-- Separate from application logs (different log stream/destination).
+- **Append-only storage:** e.g., S3 with object lock, or a database with INSERT-only permissions.
+- **Hash chaining:** Each entry includes a hash of the previous entry, forming a tamper-evident chain.
+- **Separate access controls:** Audit log storage should have write-only access from the BFF
+  and read-only access for auditors. No process should have delete permissions.
+- **WorkflowEvent immutability:** Workflow events stored in PostgreSQL are INSERT-only
+  (no UPDATE or DELETE operations). The WorkflowStore interface enforces this with
+  `AppendEvent` — there is no update or delete method for events.
+
+### Retention Guidance
+
+| Regulatory Context | Recommended Retention | Notes |
+|--------------------|-----------------------|-------|
+| General (no specific regulation) | 1 year | Minimum for incident investigation |
+| Financial services (SOX, PCI-DSS) | 7 years | Required for financial audit trails |
+| Healthcare (HIPAA) | 6 years | Required for access logs to PHI |
+| EU (GDPR) | As short as practical | Must balance audit needs against data minimization |
+
+Retention policies should be configured at the log routing layer, not in the BFF.
 
 ---
 
