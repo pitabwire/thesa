@@ -55,13 +55,16 @@ type TestHarness struct {
 type HarnessOption func(*harnessConfig)
 
 type harnessConfig struct {
-	definitionDirs []string
-	specSources    []specSourceConfig
-	policyFile     string
-	workflowEnabled bool
+	definitionDirs     []string
+	specSources        []specSourceConfig
+	policyFile         string
+	workflowEnabled    bool
 	idempotencyEnabled bool
-	handlerTimeout time.Duration
-	sdkHandlers    map[string]invoker.SDKHandler
+	handlerTimeout     time.Duration
+	sdkHandlers        map[string]invoker.SDKHandler
+	serviceTimeout     time.Duration
+	circuitBreaker     *config.CircuitBreakerConfig
+	retry              *config.RetryConfig
 }
 
 type specSourceConfig struct {
@@ -112,6 +115,27 @@ func WithIdempotency() HarnessOption {
 func WithHandlerTimeout(d time.Duration) HarnessOption {
 	return func(c *harnessConfig) {
 		c.handlerTimeout = d
+	}
+}
+
+// WithServiceTimeout sets the backend service HTTP client timeout.
+func WithServiceTimeout(d time.Duration) HarnessOption {
+	return func(c *harnessConfig) {
+		c.serviceTimeout = d
+	}
+}
+
+// WithCircuitBreaker configures the circuit breaker for backend services.
+func WithCircuitBreaker(cb config.CircuitBreakerConfig) HarnessOption {
+	return func(c *harnessConfig) {
+		c.circuitBreaker = &cb
+	}
+}
+
+// WithRetry configures the retry policy for backend service calls.
+func WithRetry(r config.RetryConfig) HarnessOption {
+	return func(c *harnessConfig) {
+		c.retry = &r
 	}
 }
 
@@ -226,7 +250,7 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 	// Build service configs pointing to mock backends.
 	serviceConfigs := make(map[string]config.ServiceConfig, len(h.backends))
 	for svcID, mb := range h.backends {
-		serviceConfigs[svcID] = config.ServiceConfig{
+		svcCfg := config.ServiceConfig{
 			BaseURL: mb.URL(),
 			Timeout: 5 * time.Second,
 			Retry: config.RetryConfig{
@@ -234,6 +258,16 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 				IdempotentOnly: true,
 			},
 		}
+		if hc.serviceTimeout > 0 {
+			svcCfg.Timeout = hc.serviceTimeout
+		}
+		if hc.circuitBreaker != nil {
+			svcCfg.CircuitBreaker = *hc.circuitBreaker
+		}
+		if hc.retry != nil {
+			svcCfg.Retry = *hc.retry
+		}
+		serviceConfigs[svcID] = svcCfg
 	}
 
 	h.InvokerRegistry = invoker.NewRegistry()
