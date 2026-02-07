@@ -18,6 +18,7 @@ import (
 type correlationIDKey struct{}
 type claimsKey struct{}
 type capabilitiesKey struct{}
+type rawTokenKey struct{}
 
 // CorrelationIDFrom extracts the correlation ID from the request context.
 func CorrelationIDFrom(ctx context.Context) string {
@@ -40,6 +41,15 @@ func ClaimsFrom(ctx context.Context) map[string]any {
 func CapabilitiesFrom(ctx context.Context) model.CapabilitySet {
 	caps, _ := ctx.Value(capabilitiesKey{}).(model.CapabilitySet)
 	return caps
+}
+
+func withRawToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, rawTokenKey{}, token)
+}
+
+func rawTokenFrom(ctx context.Context) string {
+	token, _ := ctx.Value(rawTokenKey{}).(string)
+	return token
 }
 
 // Recovery catches panics in downstream handlers, logs them, and returns
@@ -151,6 +161,7 @@ func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handl
 				Timezone:      r.Header.Get("X-Timezone"),
 				Locale:        r.Header.Get("Accept-Language"),
 				CorrelationID: CorrelationIDFrom(r.Context()),
+				Token:         rawTokenFrom(r.Context()),
 			}
 			ctx := model.WithRequestContext(r.Context(), rctx)
 			next.ServeHTTP(w, r.WithContext(ctx))

@@ -23,6 +23,7 @@ type RequestContext struct {
 	SpanID        string
 	Locale        string
 	Timezone      string
+	Token         string // Original Bearer token, for forwarding to backends.
 }
 
 // Validate checks that all mandatory fields are present.

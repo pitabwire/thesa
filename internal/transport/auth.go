@@ -238,6 +238,7 @@ func JWTAuthenticator(cfg config.IdentityConfig, jwks *JWKSClient) func(http.Han
 			}
 
 			ctx := WithClaims(r.Context(), map[string]any(claims))
+			ctx = withRawToken(ctx, tokenStr)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
