@@ -368,6 +368,103 @@ For cursor-based backends, the BFF maintains a short-lived cursor cache:
    return an error asking the frontend to restart from page 1.
 ```
 
+### Pagination Deep-Dive: Worked Examples
+
+#### Offset-Based Backend
+
+```
+Frontend request: GET /ui/pages/orders.list/data?page=2&page_size=25
+
+BFF translation (style: "offset", page_param: "offset", size_param: "limit"):
+  offset = (page - 1) * page_size = (2 - 1) * 25 = 25
+  limit  = page_size = 25
+
+Backend request: GET /api/v1/orders?offset=25&limit=25
+
+Backend response:
+  { "items": [...], "total": 142 }
+
+BFF response (DataResponse):
+  { "data": { "items": [...], "total_count": 142, "page": 2, "page_size": 25 } }
+```
+
+#### Page-Number Backend
+
+```
+Frontend request: GET /ui/pages/customers.list/data?page=3&page_size=20
+
+BFF translation (style: "page", page_param: "page", size_param: "per_page"):
+  page     = 3   (passthrough)
+  per_page = 20  (passthrough)
+
+Backend request: GET /api/v1/customers?page=3&per_page=20
+
+Backend response:
+  { "data": [...], "total_count": 87, "page": 3, "per_page": 20 }
+
+BFF response (DataResponse):
+  { "data": { "items": [...], "total_count": 87, "page": 3, "page_size": 20 } }
+```
+
+#### Cursor-Based Backend
+
+```
+Frontend request 1: GET /ui/pages/inventory.list/data?page=1&page_size=25
+
+BFF translation (style: "cursor", cursor_param: "cursor", size_param: "limit"):
+  No cursor for page 1 → omit cursor parameter.
+  limit = 25
+
+Backend request: GET /api/v1/items?limit=25
+
+Backend response:
+  { "items": [...], "next_cursor": "eyJpZCI6MTI1fQ", "has_more": true }
+
+BFF:
+  1. Cache cursor: key=(user_id, "inventory.list", query_hash) → { 2: "eyJpZCI6MTI1fQ" }
+  2. Return: { "data": { "items": [...], "total_count": -1, "page": 1, "page_size": 25 } }
+     (total_count = -1 indicates total is unknown)
+
+Frontend request 2: GET /ui/pages/inventory.list/data?page=2&page_size=25
+
+BFF translation:
+  Look up cursor for page 2 in cache → found: "eyJpZCI6MTI1fQ"
+
+Backend request: GET /api/v1/items?cursor=eyJpZCI6MTI1fQ&limit=25
+
+Backend response:
+  { "items": [...], "next_cursor": "eyJpZCI6MjUwfQ", "has_more": true }
+
+BFF:
+  1. Cache cursor: key → { 2: "eyJpZCI6MTI1fQ", 3: "eyJpZCI6MjUwfQ" }
+  2. Return page 2 data.
+```
+
+### Cursor Cache Management
+
+The cursor cache is keyed by `(subject_id, page_id, query_hash)` where `query_hash`
+is a hash of all filter and sort parameters. This ensures that changing filters or
+sort order invalidates old cursors.
+
+| Property | Value | Rationale |
+|----------|-------|-----------|
+| TTL | 5 minutes | Short enough to avoid stale cursors, long enough for typical browsing |
+| Scope | Per-user | Prevents cursor leakage between users |
+| Invalidation | On filter/sort change | Hash includes filters + sort, so any change produces a new key |
+| Cache miss for page > 1 | Return error | Frontend must restart from page 1 |
+
+### Pagination Edge Cases
+
+| Edge Case | How the BFF Handles It |
+|-----------|----------------------|
+| Backend total changes between page fetches | Accept the new total. The frontend may show a slightly different total between pages. This is acceptable for most use cases. |
+| Cursor becomes invalid (backend data changed) | Backend typically returns 400 or empty results. BFF clears the cached cursor and returns an error asking the frontend to restart from page 1. |
+| Last page has fewer items than page_size | Return the items as-is. The frontend detects `items.length < page_size` or `page * page_size >= total_count` to know it's the last page. |
+| Backend doesn't return total count | Return `total_count: -1`. The frontend disables "jump to page N" and shows only "Next/Previous" navigation. |
+| page_size exceeds maximum (200) | BFF silently caps to 200. |
+| page = 0 or negative | BFF treats as page = 1. |
+| Filter/sort change with cursor backend | Query hash changes → cache miss → restart from page 1. |
+
 ---
 
 ## Filtering Standardization
