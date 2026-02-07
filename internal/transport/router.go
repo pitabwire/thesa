@@ -41,7 +41,7 @@ func NewRouter(deps Dependencies) chi.Router {
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth)
-		r.Use(BuildRequestContext)
+		r.Use(BuildRequestContextMiddleware(deps.Config.Identity.ClaimPaths))
 		r.Use(ResolveCapabilities(deps.CapabilityResolver))
 		r.Use(HandlerTimeout(deps.Config.Server.HandlerTimeout))
 		r.Use(RequestLogging)

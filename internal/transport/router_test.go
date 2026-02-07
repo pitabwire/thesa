@@ -260,7 +260,7 @@ func TestSecurityHeaders(t *testing.T) {
 	}
 }
 
-func TestBuildRequestContext(t *testing.T) {
+func TestBuildRequestContextMiddleware(t *testing.T) {
 	claims := map[string]any{
 		"sub":       "user-42",
 		"email":     "user@example.com",
@@ -268,7 +268,7 @@ func TestBuildRequestContext(t *testing.T) {
 		"roles":     []any{"admin", "viewer"},
 	}
 
-	handler := BuildRequestContext(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := BuildRequestContextMiddleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
 		if rctx == nil {
 			t.Fatal("RequestContext should be in context")
@@ -298,6 +298,38 @@ func TestBuildRequestContext(t *testing.T) {
 	handler.ServeHTTP(w, req)
 }
 
+func TestBuildRequestContextMiddleware_customPaths(t *testing.T) {
+	claims := map[string]any{
+		"sub":   "user-99",
+		"email": "user@keycloak.com",
+		"realm_access": map[string]any{
+			"roles": []any{"manager"},
+		},
+		"custom_tenant": "tenant-kc",
+	}
+
+	paths := map[string]string{
+		"tenant_id": "custom_tenant",
+		"roles":     "realm_access.roles",
+	}
+
+	handler := BuildRequestContextMiddleware(paths)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rctx := model.RequestContextFrom(r.Context())
+		if rctx.TenantID != "tenant-kc" {
+			t.Errorf("TenantID = %q, want tenant-kc", rctx.TenantID)
+		}
+		if len(rctx.Roles) != 1 || rctx.Roles[0] != "manager" {
+			t.Errorf("Roles = %v, want [manager]", rctx.Roles)
+		}
+		w.WriteHeader(200)
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req = req.WithContext(WithClaims(req.Context(), claims))
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+}
+
 func TestResolveCapabilities(t *testing.T) {
 	resolver := &mockResolver{
 		caps: model.CapabilitySet{"orders:list:view": true},
@@ -311,8 +343,8 @@ func TestResolveCapabilities(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	// Chain: BuildRequestContext → ResolveCapabilities → handler
-	handler := BuildRequestContext(ResolveCapabilities(resolver)(inner))
+	// Chain: BuildRequestContextMiddleware → ResolveCapabilities → handler
+	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
 
 	claims := map[string]any{"sub": "user-1", "tenant_id": "t-1"}
 	req := httptest.NewRequest("GET", "/", nil)

@@ -120,26 +120,42 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// BuildRequestContext constructs a model.RequestContext from JWT claims
-// (stored in context by the auth middleware) and standard request headers.
-func BuildRequestContext(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims := ClaimsFrom(r.Context())
-		rctx := &model.RequestContext{
-			SubjectID:     claimString(claims, "sub"),
-			Email:         claimString(claims, "email"),
-			TenantID:      claimString(claims, "tenant_id"),
-			Roles:         claimStringSlice(claims, "roles"),
-			Claims:        claims,
-			PartitionID:   r.Header.Get("X-Partition-Id"),
-			DeviceID:      r.Header.Get("X-Device-Id"),
-			Timezone:      r.Header.Get("X-Timezone"),
-			Locale:        r.Header.Get("Accept-Language"),
-			CorrelationID: CorrelationIDFrom(r.Context()),
-		}
-		ctx := model.WithRequestContext(r.Context(), rctx)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+// BuildRequestContextMiddleware returns middleware that constructs a
+// model.RequestContext from JWT claims (using configurable claim paths)
+// and standard request headers. Claim paths support dot-notation for
+// nested claims (e.g. "realm_access.roles" for Keycloak).
+func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handler) http.Handler {
+	paths := map[string]string{
+		"subject_id": "sub",
+		"tenant_id":  "tenant_id",
+		"email":      "email",
+		"roles":      "roles",
+		"session_id": "session_id",
+	}
+	for k, v := range claimPaths {
+		paths[k] = v
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims := ClaimsFrom(r.Context())
+			rctx := &model.RequestContext{
+				SubjectID:     extractClaimString(claims, paths["subject_id"]),
+				Email:         extractClaimString(claims, paths["email"]),
+				TenantID:      extractClaimString(claims, paths["tenant_id"]),
+				Roles:         extractClaimStringSlice(claims, paths["roles"]),
+				SessionID:     extractClaimString(claims, paths["session_id"]),
+				Claims:        claims,
+				PartitionID:   r.Header.Get("X-Partition-Id"),
+				DeviceID:      r.Header.Get("X-Device-Id"),
+				Timezone:      r.Header.Get("X-Timezone"),
+				Locale:        r.Header.Get("Accept-Language"),
+				CorrelationID: CorrelationIDFrom(r.Context()),
+			}
+			ctx := model.WithRequestContext(r.Context(), rctx)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // ResolveCapabilities returns middleware that eagerly resolves capabilities
@@ -226,19 +242,35 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
-func claimString(claims map[string]any, key string) string {
-	if claims == nil {
-		return ""
+// extractClaim navigates dot-separated paths in a claims map.
+// For example, "realm_access.roles" navigates claims["realm_access"]["roles"].
+func extractClaim(claims map[string]any, path string) any {
+	if claims == nil || path == "" {
+		return nil
 	}
-	v, _ := claims[key].(string)
+	parts := strings.Split(path, ".")
+	var current any = claims
+	for _, part := range parts {
+		m, ok := current.(map[string]any)
+		if !ok {
+			return nil
+		}
+		current = m[part]
+	}
+	return current
+}
+
+func extractClaimString(claims map[string]any, path string) string {
+	v, _ := extractClaim(claims, path).(string)
 	return v
 }
 
-func claimStringSlice(claims map[string]any, key string) []string {
-	if claims == nil {
+func extractClaimStringSlice(claims map[string]any, path string) []string {
+	val := extractClaim(claims, path)
+	if val == nil {
 		return nil
 	}
-	raw, ok := claims[key].([]any)
+	raw, ok := val.([]any)
 	if !ok {
 		return nil
 	}
