@@ -1,0 +1,14 @@
+roles:
+  admin:
+    - "orders:*"
+    - "inventory:*"
+  order_viewer:
+    - "orders:nav:view"
+    - "orders:list:view"
+    - "orders:detail:view"
+  order_manager:
+    - "orders:nav:view"
+    - "orders:list:view"
+    - "orders:detail:view"
+    - "orders:detail:edit"
+    - "orders:cancel:execute"
