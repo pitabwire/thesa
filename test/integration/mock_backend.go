@@ -103,6 +103,11 @@ func (mb *MockBackend) URL() string {
 	return mb.server.URL
 }
 
+// Close shuts down the mock backend server to simulate an unreachable service.
+func (mb *MockBackend) Close() {
+	mb.server.Close()
+}
+
 // OnOperation returns a builder for configuring responses for the named operation.
 func (mb *MockBackend) OnOperation(operationID string) *OperationMock {
 	return &OperationMock{
