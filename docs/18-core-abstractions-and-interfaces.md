@@ -209,11 +209,13 @@ Executes commands through the full pipeline.
 
 ```
 CommandExecutor
-  ├── Execute(ctx, rctx, commandId string, input CommandInput) → (CommandResponse, error)
+  ├── Execute(ctx, rctx, caps CapabilitySet, commandId string, input CommandInput) → (CommandResponse, error)
   │     Full pipeline: resolve → authorize → map → validate → invoke → translate.
+  │     Capabilities are pre-resolved by the transport layer and passed in.
   │
-  └── Validate(commandId string, input CommandInput) → []FieldError
+  └── Validate(rctx, caps CapabilitySet, commandId string, input CommandInput) → []FieldError
         Dry-run validation without execution.
+        Requires rctx for expression resolution and caps for capability checks.
 ```
 
 **Dependencies:** DefinitionRegistry, CapabilityResolver, InvokerRegistry, OpenAPIIndex.
