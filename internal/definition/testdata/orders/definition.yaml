@@ -1,0 +1,50 @@
+domain: "orders"
+version: "1.0.0"
+
+navigation:
+  label: "Orders"
+  icon: "shopping_cart"
+  order: 10
+  capabilities:
+    - "orders:nav:view"
+  children:
+    - label: "All Orders"
+      icon: "list"
+      route: "/orders"
+      page_id: "orders.list"
+      capabilities:
+        - "orders:list:view"
+      order: 1
+
+pages:
+  - id: "orders.list"
+    title: "Orders"
+    route: "/orders"
+    layout: "list"
+    capabilities:
+      - "orders:list:view"
+    table:
+      data_source:
+        operation_id: "listOrders"
+        service_id: "orders-svc"
+        mapping:
+          items_path: "data.orders"
+          total_path: "data.total"
+      columns:
+        - field: "order_number"
+          label: "Order #"
+          type: "text"
+          sortable: true
+
+commands:
+  - id: "orders.update"
+    capabilities:
+      - "orders:edit:execute"
+    operation:
+      type: "openapi"
+      operation_id: "updateOrder"
+      service_id: "orders-svc"
+    input:
+      body_mapping: "passthrough"
+    output:
+      type: "passthrough"
