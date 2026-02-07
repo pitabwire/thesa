@@ -137,98 +137,80 @@ jobs:
 
           echo "model=$MODEL" >> $GITHUB_OUTPUT
 
-      - name: Pre-install Claude Code (latest version)
+      - name: Setup Claude Code and Git
         if: steps.check-pr.outputs.skip != 'true'
         run: |
-          echo "📦 Installing Claude Code latest version to avoid v2.1.31 bugs..."
+          # Install Claude Code v2.1.34+ (works, unlike action's bundled v2.1.31)
+          echo "📦 Installing Claude Code..."
           npm install -g @anthropic-ai/claude-code
           claude --version
 
-      - name: Work on issue with Claude
+          # Configure git for commits
+          git config user.name "claude[bot]"
+          git config user.email "claude[bot]@users.noreply.github.com"
+
+      - name: Work on issue with Claude CLI
         id: claude
         if: steps.check-pr.outputs.skip != 'true'
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ matrix.issue.number }}"
+          ISSUE_TITLE="${{ matrix.issue.title }}"
+          MODEL="${{ steps.complexity.outputs.model }}"
+          MAX_TURNS="${{ steps.complexity.outputs.model == 'claude-opus-4-6' && '150' || '100' }}"
 
-          additional_permissions: |
-            actions: read
+          # Create prompt file
+          cat > /tmp/claude-prompt.txt << 'PROMPT_EOF'
+# Continuous Work Mode - Issue #${ISSUE_NUM}
 
-          prompt: |
-            # Continuous Work Mode - Issue #${{ matrix.issue.number }}
+You are working in **continuous automation mode** on this issue. Your goal is to:
+1. **Understand** the issue completely
+2. **Implement** a complete solution
+3. **Test** your implementation
+4. **Create a PR** when done
 
-            You are working in **continuous automation mode** on this issue. Your goal is to:
+## Issue Details
+- **Issue**: #${ISSUE_NUM}
+- **Title**: ${ISSUE_TITLE}
+- **Repository**: ${{ github.repository }}
+- **Model**: ${MODEL}
 
-            1. **Understand** the issue completely
-            2. **Implement** a complete solution
-            3. **Test** your implementation
-            4. **Create a PR** when done
+## Work Instructions
 
-            ## Issue Details
-            - **Issue**: #${{ matrix.issue.number }}
-            - **Title**: ${{ matrix.issue.title }}
-            - **Repository**: ${{ github.repository }}
-            - **Model**: ${{ steps.complexity.outputs.model }}
+### Step 1: Analyze
+- Read the issue description with: gh issue view ${ISSUE_NUM}
+- Check CLAUDE.md and docs/ for guidelines
+- Identify all requirements
 
-            ## Work Instructions
+### Step 2: Implement
+- Write clean, tested code
+- Follow project patterns
+- Ensure tests pass
 
-            ### Step 1: Analyze
-            - Read the issue description carefully
-            - Check CLAUDE.md and project docs for guidelines
-            - Identify all requirements and acceptance criteria
-            - Plan your implementation approach
+### Step 3: Deliver
+- Commit with clean message (imperative, <72 chars, NO co-author)
+- Create PR: gh pr create --title "..." --body "Closes #${ISSUE_NUM}"
 
-            ### Step 2: Implement
-            - Write clean, well-tested code
-            - Follow project conventions and patterns
-            - Add appropriate tests
-            - Ensure all existing tests still pass
+## Important
+- Use gh CLI for issue/PR operations
+- If blocked: gh issue edit ${ISSUE_NUM} --add-label "blocked" + comment
+- If need info: gh issue edit ${ISSUE_NUM} --add-label "needs-info" + comment
+- Check CLAUDE.md, .claude/, docs/ for project guidelines
 
-            ### Step 3: Verify
-            - Run all tests: `npm test`, `flutter test`, `go test`, `pytest`, etc.
-            - Check for linting errors
-            - Verify the solution meets all requirements
+Begin working systematically.
+PROMPT_EOF
 
-            ### Step 4: Deliver
-            - Commit your changes with a clean commit message
-            - Create a PR that closes this issue:
-              ```bash
-              gh pr create --title "Fix: <descriptive title>" --body "## Summary
-              <what you implemented>
-
-              ## Changes
-              - <change 1>
-              - <change 2>
-
-              ## Testing
-              - <how you tested>
-
-              Closes #${{ matrix.issue.number }}"
-              ```
-
-            ## Important Rules
-            - Work iteratively but aim for completion
-            - If blocked, add "blocked" label and comment explaining why
-            - If you need clarification, add "needs-info" label and ask questions
-            - Do NOT add co-author attributions to commits
-            - Follow the commit message format: imperative, max 72 chars
-
-            ## Context
-            Check for project-specific guidelines in:
-            - CLAUDE.md
-            - .claude/ directory
-            - docs/ directory
-            - CONTRIBUTING.md
-
-            Now, begin working on this issue systematically.
-
-          # track_progress not supported for schedule/workflow_dispatch events
-          track_progress: false
-
-          claude_args: |
-            --model "${{ steps.complexity.outputs.model }}"
-            --max-turns ${{ steps.complexity.outputs.model == 'claude-opus-4-6' && '150' || '100' }}
-            --timeout ${{ steps.complexity.outputs.model == 'claude-opus-4-6' && '2700000' || '1800000' }}
+          # Run Claude Code CLI directly (avoids broken action v1)
+          echo "🤖 Running Claude Code v2.1.34+ (bypassing broken action)..."
+          claude --model "$MODEL" \
+            --max-turns "$MAX_TURNS" \
+            --timeout 1800000 \
+            < /tmp/claude-prompt.txt || {
+            echo "⚠️ Claude Code failed, check logs"
+            exit 1
+          }
 
       - name: Check completion status
         if: always() && steps.check-pr.outputs.skip != 'true'
