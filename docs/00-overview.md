@@ -276,7 +276,7 @@ or jump to any section for targeted reference.
 | 06 | [Definition Schema Reference](06-definition-schema-reference.md) | Complete YAML schema for all definition types. |
 | 07 | [Capabilities & Permissions](07-capabilities-and-permissions.md) | Capability model, resolution, policy evaluation. |
 | 08 | [UI Descriptor Model](08-ui-descriptor-model.md) | Descriptor types, resolution process, frontend contract. |
-| 09 | [Server-Driven UI APIs](09-server-driven-ui-apis.md) | All BFF HTTP endpoints, request/response formats. |
+| 09 | [Server-Driven UI Metadata APIs](09-server-driven-ui-apis.md) | All BFF HTTP endpoints, request/response formats. |
 | 10 | [Command & Action Model](10-command-and-action-model.md) | Command pipeline, input mapping, output mapping. |
 | 11 | [Workflow Engine](11-workflow-engine.md) | Workflow lifecycle, step types, state management. |
 | 12 | [Global Search](12-global-search.md) | Search aggregation, ranking, pagination. |
