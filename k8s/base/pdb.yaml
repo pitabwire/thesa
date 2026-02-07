@@ -1,0 +1,14 @@
+# PodDisruptionBudget ensures at least 2 pods are always available
+# during voluntary disruptions (node upgrades, deployments, etc.).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: thesa-bff
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/part-of: thesa
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: thesa-bff

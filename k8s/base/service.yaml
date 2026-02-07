@@ -1,0 +1,19 @@
+# ClusterIP Service exposing the BFF on port 80 internally.
+# Ingress or Gateway API routes external traffic to this service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: thesa-bff
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/component: bff
+    app.kubernetes.io/part-of: thesa
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: thesa-bff

@@ -1,0 +1,69 @@
+# ConfigMap for application configuration.
+# In practice, definitions and specs are loaded from separate ConfigMaps
+# (thesa-bff-definitions, thesa-bff-specs) to keep them manageable.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thesa-bff-config
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/part-of: thesa
+data:
+  config.yaml: |
+    server:
+      port: 8080
+      read_timeout: 30s
+      write_timeout: 30s
+      handler_timeout: 25s
+      shutdown_timeout: 30s
+    identity:
+      issuer: "https://auth.example.com"
+      audience: "thesa-bff"
+      jwks_url: "https://auth.example.com/.well-known/jwks.json"
+    definitions:
+      directories:
+        - /definitions
+    specs:
+      directory: /specs
+    observability:
+      log_level: info
+      tracing:
+        enabled: true
+        exporter: otlp
+        endpoint: otel-collector:4317
+        sampling_rate: 0.1
+      metrics:
+        enabled: true
+        path: /metrics
+---
+# Environment variable ConfigMap for non-secret overrides.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thesa-bff-env
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/part-of: thesa
+data: {}
+---
+# Placeholder ConfigMap for domain definitions.
+# Replace with actual definition YAML files.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thesa-bff-definitions
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/part-of: thesa
+data: {}
+---
+# Placeholder ConfigMap for OpenAPI specs.
+# Replace with actual spec files.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thesa-bff-specs
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/part-of: thesa
+data: {}

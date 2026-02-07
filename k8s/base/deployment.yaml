@@ -1,0 +1,128 @@
+# Thesa BFF Deployment
+# - RollingUpdate with zero downtime (maxSurge=1, maxUnavailable=0)
+# - Security hardened: non-root, read-only filesystem, no capabilities
+# - Three probes: startup (slow start), liveness (process alive), readiness (deps ok)
+# - preStop hook allows endpoint removal propagation before shutdown
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thesa-bff
+  labels:
+    app.kubernetes.io/name: thesa-bff
+    app.kubernetes.io/component: bff
+    app.kubernetes.io/part-of: thesa
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: thesa-bff
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: thesa-bff
+        app.kubernetes.io/component: bff
+        app.kubernetes.io/part-of: thesa
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: thesa-bff
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: thesa-bff
+          image: thesa-bff:latest
+          args:
+            - "--config"
+            - "/config/config.yaml"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: thesa-bff-env
+                optional: true
+            - secretRef:
+                name: thesa-bff-secrets
+                optional: true
+          # Startup probe: allow up to 30s for initial boot (definition loading, etc.)
+          startupProbe:
+            httpGet:
+              path: /ui/health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            failureThreshold: 15
+          # Liveness: fast, no dependency checks — just "is the process alive?"
+          livenessProbe:
+            httpGet:
+              path: /ui/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # Readiness: checks all critical dependencies
+          readinessProbe:
+            httpGet:
+              path: /ui/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: definitions
+              mountPath: /definitions
+              readOnly: true
+            - name: specs
+              mountPath: /specs
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          # preStop hook: sleep 5s to allow endpoint removal to propagate
+          # through kube-proxy and ingress controllers before shutdown begins.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+      volumes:
+        - name: config
+          configMap:
+            name: thesa-bff-config
+        - name: definitions
+          configMap:
+            name: thesa-bff-definitions
+        - name: specs
+          configMap:
+            name: thesa-bff-specs
+        - name: tmp
+          emptyDir: {}
