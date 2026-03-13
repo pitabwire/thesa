@@ -27,7 +27,7 @@ COPY definitions/ /definitions/
 COPY specs/ /specs/
 COPY config/ /config/
 
-USER nonroot:nonroot
+USER 65532:65532
 EXPOSE 8080
 
 ENTRYPOINT ["/thesa-bff"]
