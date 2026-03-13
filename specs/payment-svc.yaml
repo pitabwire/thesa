@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Payment Service (ConnectRPC)
+  description: Payment processing and payment link management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /payment.payment.v1.PaymentService/ListPayments:
+    post:
+      operationId: listPayments
+      summary: List payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPaymentsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPaymentsResponse'
+
+  /payment.payment.v1.PaymentService/GetPayment:
+    post:
+      operationId: getPayment
+      summary: Get payment by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentObject'
+
+  /payment.payment.v1.PaymentService/CreatePayment:
+    post:
+      operationId: createPayment
+      summary: Create a payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentObject'
+
+  /payment.payment.v1.PaymentService/ListPaymentLinks:
+    post:
+      operationId: listPaymentLinks
+      summary: List payment links
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPaymentLinksRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPaymentLinksResponse'
+
+  /payment.payment.v1.PaymentService/CreatePaymentLink:
+    post:
+      operationId: createPaymentLink
+      summary: Create a payment link
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentLinkRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLinkObject'
+
+  /payment.payment.v1.PaymentService/GetPaymentLink:
+    post:
+      operationId: getPaymentLink
+      summary: Get payment link by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentLinkObject'
+
+components:
+  schemas:
+    ListPaymentsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        payer_id:
+          type: string
+        payee_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPaymentsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentObject'
+    CreatePaymentRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PaymentObject'
+    ListPaymentLinksRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPaymentLinksResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentLinkObject'
+    CreatePaymentLinkRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PaymentLinkObject'
+    PaymentObject:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        payer_id:
+          type: string
+        payee_id:
+          type: string
+        route:
+          type: string
+        state:
+          type: string
+        status:
+          type: string
+        reference:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    PaymentLinkObject:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        state:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

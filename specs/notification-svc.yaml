@@ -1,0 +1,177 @@
+openapi: 3.0.3
+info:
+  title: Notification Service (ConnectRPC)
+  description: Notification delivery and management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /notification.notification.v1.NotificationService/ListNotifications:
+    post:
+      operationId: listNotifications
+      summary: List notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListNotificationsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+
+  /notification.notification.v1.NotificationService/GetNotification:
+    post:
+      operationId: getNotification
+      summary: Get notification by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationObject'
+
+  /notification.notification.v1.NotificationService/CreateNotification:
+    post:
+      operationId: createNotification
+      summary: Create a notification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationObject'
+
+  /notification.notification.v1.NotificationService/UpdateNotification:
+    post:
+      operationId: updateNotification
+      summary: Update a notification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationObject'
+
+  /notification.notification.v1.NotificationService/SearchNotifications:
+    post:
+      operationId: searchNotifications
+      summary: Search notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchNotificationsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+
+components:
+  schemas:
+    ListNotificationsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        recipient_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListNotificationsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationObject'
+    SearchNotificationsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH, IN_APP]
+        state:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    CreateNotificationRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/NotificationObject'
+    UpdateNotificationRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/NotificationObject'
+    NotificationObject:
+      type: object
+      properties:
+        id:
+          type: string
+        recipient_id:
+          type: string
+        channel:
+          type: string
+          enum: [EMAIL, SMS, PUSH, IN_APP]
+        subject:
+          type: string
+        body:
+          type: string
+        state:
+          type: string
+        status:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

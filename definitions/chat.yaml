@@ -1,0 +1,314 @@
+domain: chat
+version: "1.0.0"
+
+navigation:
+  label: Messaging
+  icon: chat
+  order: 4
+  capabilities:
+    - "chat:view"
+  children:
+    - label: Rooms
+      icon: forum
+      route: /chat/rooms
+      page_id: chat.rooms
+      capabilities:
+        - "chat:view"
+      order: 1
+    - label: Create Room
+      icon: add_comment
+      route: /chat/rooms/new
+      page_id: chat.create_room_form
+      capabilities:
+        - "chat:create"
+      order: 2
+
+pages:
+  - id: chat.rooms
+    title: Chat Rooms
+    route: /chat/rooms
+    layout: table
+    capabilities:
+      - "chat:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Messaging
+        route: /chat/rooms
+    table:
+      data_source:
+        operation_id: listRooms
+        service_id: chat-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /chat/rooms/{id}
+            params:
+              id: id
+        - field: room_type
+          label: Type
+          type: badge
+          sortable: true
+          status_map:
+            DIRECT: info
+            GROUP: success
+            CHANNEL: warning
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            ARCHIVED: warning
+            DELETED: error
+      filters:
+        - field: room_type
+          label: Type
+          type: select
+          options:
+            static:
+              - label: Direct
+                value: DIRECT
+              - label: Group
+                value: GROUP
+              - label: Channel
+                value: CHANNEL
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Archived
+                value: ARCHIVED
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_room
+        label: Create Room
+        icon: add
+        style: primary
+        type: form
+        form_id: chat.create_room_form
+        capabilities:
+          - "chat:create"
+
+  - id: chat.room_detail
+    title: "{name}"
+    route: /chat/rooms/{id}
+    layout: detail
+    capabilities:
+      - "chat:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Messaging
+        route: /chat/rooms
+      - label: "{name}"
+        route: /chat/rooms/{id}
+    sections:
+      - id: room_info
+        title: Room Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: name
+            label: Name
+            type: text
+            read_only: true
+          - field: room_type
+            label: Type
+            type: badge
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+      - id: messages
+        title: Messages
+        layout: grid
+        columns: 1
+        fields:
+          - field: messages
+            label: Messages
+            type: text
+            read_only: true
+    actions:
+      - id: send_message
+        label: Send Message
+        icon: send
+        style: primary
+        type: form
+        form_id: chat.send_message_form
+        capabilities:
+          - "chat:create"
+      - id: manage_room
+        label: Manage Room
+        icon: settings
+        style: default
+        type: form
+        form_id: chat.manage_room_form
+        capabilities:
+          - "chat:manage"
+
+forms:
+  - id: chat.create_room_form
+    title: Create Room
+    capabilities:
+      - "chat:create"
+    submit_command: chat.createRoom
+    success_route: /chat/rooms
+    success_message: Room created successfully.
+    sections:
+      - id: details
+        title: Room Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Room Name
+            type: text
+            required: true
+            validation:
+              min_length: 1
+              max_length: 100
+          - field: room_type
+            label: Room Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Direct Message
+                  value: DIRECT
+                - label: Group
+                  value: GROUP
+                - label: Channel
+                  value: CHANNEL
+
+  - id: chat.send_message_form
+    title: Send Message
+    capabilities:
+      - "chat:create"
+    submit_command: chat.sendMessage
+    success_route: /chat/rooms/{id}
+    success_message: Message sent.
+    sections:
+      - id: message
+        title: Message
+        layout: grid
+        columns: 1
+        fields:
+          - field: body
+            label: Message
+            type: textarea
+            required: true
+            validation:
+              min_length: 1
+              max_length: 5000
+
+  - id: chat.manage_room_form
+    title: Manage Room
+    capabilities:
+      - "chat:manage"
+    submit_command: chat.updateRoom
+    load_source:
+      operation_id: getRoom
+      service_id: chat-svc
+    success_route: /chat/rooms/{id}
+    success_message: Room updated successfully.
+    sections:
+      - id: details
+        title: Room Settings
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Room Name
+            type: text
+            required: true
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Archived
+                  value: ARCHIVED
+
+commands:
+  - id: chat.createRoom
+    capabilities:
+      - "chat:create"
+    operation:
+      type: openapi
+      operation_id: createRoom
+      service_id: chat-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.room_type: input.room_type
+    output:
+      type: full
+
+  - id: chat.sendMessage
+    capabilities:
+      - "chat:create"
+    operation:
+      type: openapi
+      operation_id: sendEvent
+      service_id: chat-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.room_id: input.room_id
+        data.body: input.body
+    output:
+      type: full
+
+  - id: chat.updateRoom
+    capabilities:
+      - "chat:manage"
+    operation:
+      type: openapi
+      operation_id: updateRoom
+      service_id: chat-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.state: input.state
+    output:
+      type: full
+
+searches:
+  - id: chat.search
+    domain: messaging
+    capabilities:
+      - "chat:view"
+    operation:
+      type: openapi
+      operation_id: listRooms
+      service_id: chat-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: room_type
+      id_field: id
+      route: "/chat/rooms/{id}"
+    weight: 0.7
+    max_results: 10

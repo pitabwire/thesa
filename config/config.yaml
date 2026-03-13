@@ -1,0 +1,291 @@
+server:
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+  handler_timeout: 25s
+  shutdown_timeout: 30s
+  cors:
+    allowed_origins:
+      - "http://localhost:3000"
+      - "http://localhost:8081"
+      - "https://app.stawi.org"
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - Authorization
+      - Content-Type
+      - X-Partition-Id
+      - X-Correlation-Id
+      - X-Idempotency-Key
+    max_age: 86400
+
+identity:
+  issuer: "https://oauth2.stawi.org"
+  audience: "thesa-bff"
+  jwks_url: "https://oauth2.stawi.org/.well-known/jwks.json"
+  jwks_cache_ttl: 1h
+  algorithms:
+    - RS256
+  claim_paths:
+    subject_id: sub
+    tenant_id: tenant_id
+    partition_id: partition_id
+    email: email
+    roles: roles
+    profile_id: profile_id
+
+definitions:
+  directories:
+    - definitions
+  hot_reload: false
+  strict_checksums: true
+
+specs:
+  directory: specs
+  sources:
+    - service_id: partition-svc
+      spec_file: partition-svc.yaml
+    - service_id: profile-svc
+      spec_file: profile-svc.yaml
+    - service_id: notification-svc
+      spec_file: notification-svc.yaml
+    - service_id: payment-svc
+      spec_file: payment-svc.yaml
+    - service_id: files-svc
+      spec_file: files-svc.yaml
+    - service_id: settings-svc
+      spec_file: settings-svc.yaml
+    - service_id: chat-svc
+      spec_file: chat-svc.yaml
+    - service_id: ledger-svc
+      spec_file: ledger-svc.yaml
+    - service_id: commerce-svc
+      spec_file: commerce-svc.yaml
+    - service_id: property-svc
+      spec_file: property-svc.yaml
+    - service_id: foundry-svc
+      spec_file: foundry-svc.yaml
+
+services:
+  partition-svc:
+    base_url: "https://partition.stawi.org"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  profile-svc:
+    base_url: "https://profile.stawi.org"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  notification-svc:
+    base_url: "https://notification.stawi.org"
+    timeout: 15s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  payment-svc:
+    base_url: "https://payment.stawi.org"
+    timeout: 15s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 3
+      success_threshold: 2
+      timeout: 60s
+    retry:
+      max_attempts: 2
+      backoff_initial: 200ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  files-svc:
+    base_url: "https://files.stawi.org"
+    timeout: 30s
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  settings-svc:
+    base_url: "https://settings.stawi.org"
+    timeout: 10s
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  chat-svc:
+    base_url: "https://chat.stawi.org"
+    timeout: 15s
+    pagination:
+      style: cursor
+      page_param: cursor
+      size_param: limit
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 2
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  ledger-svc:
+    base_url: "https://ledger.stawi.org"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 3
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 2
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  commerce-svc:
+    base_url: "https://commerce.stawi.org"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  property-svc:
+    base_url: "https://property.stawi.org"
+    timeout: 10s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+  foundry-svc:
+    base_url: "https://foundry.stawi.dev"
+    timeout: 30s
+    pagination:
+      style: offset
+      page_param: page
+      size_param: page_size
+    circuit_breaker:
+      failure_threshold: 5
+      success_threshold: 2
+      timeout: 60s
+    retry:
+      max_attempts: 2
+      backoff_initial: 200ms
+      backoff_multiplier: 2.0
+      idempotent_only: true
+
+capability:
+  evaluator: static
+  static_policy_file: config/policies.yaml
+  cache:
+    ttl: 5m
+    max_entries: 10000
+
+workflow:
+  enabled: true
+  store:
+    driver: postgres
+    dsn_env: WORKFLOW_DSN
+  timeout_check_interval: 60s
+
+idempotency:
+  enabled: true
+  store:
+    driver: memory
+
+search:
+  timeout_per_provider: 3s
+  max_results_per_provider: 50
+
+lookup:
+  cache:
+    ttl: 5m
+    max_entries: 1000
+
+observability:
+  log_level: info
+  tracing:
+    enabled: true
+    exporter: otlp
+    endpoint: "http://otel-collector:4317"
+    sampling_rate: 0.1
+  metrics:
+    enabled: true
+    path: /metrics

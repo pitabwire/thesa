@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: Ledger Service (ConnectRPC)
+  description: Double-entry ledger with accounts and transactions via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /ledger.ledger.v1.LedgerService/ListAccounts:
+    post:
+      operationId: listAccounts
+      summary: List accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAccountsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAccountsResponse'
+
+  /ledger.ledger.v1.LedgerService/GetAccount:
+    post:
+      operationId: getAccount
+      summary: Get account by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountObject'
+
+  /ledger.ledger.v1.LedgerService/CreateAccount:
+    post:
+      operationId: createAccount
+      summary: Create an account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountObject'
+
+  /ledger.ledger.v1.LedgerService/ListTransactions:
+    post:
+      operationId: listTransactions
+      summary: List transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListTransactionsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTransactionsResponse'
+
+  /ledger.ledger.v1.LedgerService/CreateTransaction:
+    post:
+      operationId: createTransaction
+      summary: Create a transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionObject'
+
+  /ledger.ledger.v1.LedgerService/GetTransaction:
+    post:
+      operationId: getTransaction
+      summary: Get transaction by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionObject'
+
+  /ledger.ledger.v1.LedgerService/ReverseTransaction:
+    post:
+      operationId: reverseTransaction
+      summary: Reverse a transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                reference:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionObject'
+
+components:
+  schemas:
+    ListAccountsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        account_type:
+          type: string
+          enum: [ASSET, LIABILITY, INCOME, EXPENSE, CAPITAL]
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListAccountsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountObject'
+    CreateAccountRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AccountObject'
+    ListTransactionsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        account_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListTransactionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionObject'
+    CreateTransactionRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TransactionObject'
+    AccountObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        account_type:
+          type: string
+          enum: [ASSET, LIABILITY, INCOME, EXPENSE, CAPITAL]
+        currency:
+          type: string
+        balance:
+          type: number
+        state:
+          type: string
+    TransactionObject:
+      type: object
+      properties:
+        id:
+          type: string
+        debit_account_id:
+          type: string
+        credit_account_id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        reference:
+          type: string
+        transaction_type:
+          type: string
+          enum: [NORMAL, REVERSAL, RESERVATION]
+        state:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

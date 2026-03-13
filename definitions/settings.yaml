@@ -1,0 +1,157 @@
+domain: settings
+version: "1.0.0"
+
+navigation:
+  label: Settings
+  icon: settings
+  order: 8
+  group: bottom
+  capabilities:
+    - "settings:view"
+  children:
+    - label: All Settings
+      icon: tune
+      route: /settings
+      page_id: settings.list
+      capabilities:
+        - "settings:view"
+      order: 1
+
+pages:
+  - id: settings.list
+    title: Settings
+    route: /settings
+    layout: table
+    capabilities:
+      - "settings:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Settings
+        route: /settings
+    table:
+      data_source:
+        operation_id: listSettings
+        service_id: settings-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: module
+          label: Module
+          type: text
+          sortable: true
+        - field: key
+          label: Key
+          type: text
+          sortable: true
+        - field: value
+          label: Value
+          type: text
+        - field: scope
+          label: Scope
+          type: badge
+          sortable: true
+          status_map:
+            GLOBAL: info
+            TENANT: success
+            USER: warning
+      filters:
+        - field: module
+          label: Module
+          type: text
+        - field: scope
+          label: Scope
+          type: select
+          options:
+            static:
+              - label: Global
+                value: GLOBAL
+              - label: Tenant
+                value: TENANT
+              - label: User
+                value: USER
+      row_actions:
+        - id: edit_setting
+          label: Edit
+          icon: edit
+          style: primary
+          type: form
+          form_id: settings.edit_form
+          capabilities:
+            - "settings:edit"
+      default_sort: module
+      sort_dir: asc
+      page_size: 25
+
+forms:
+  - id: settings.edit_form
+    title: Edit Setting
+    capabilities:
+      - "settings:edit"
+    submit_command: settings.update
+    load_source:
+      operation_id: getSetting
+      service_id: settings-svc
+    success_route: /settings
+    success_message: Setting updated successfully.
+    sections:
+      - id: details
+        title: Setting Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: key
+            label: Key
+            type: text
+            read_only: true
+          - field: value
+            label: Value
+            type: textarea
+            required: true
+          - field: scope
+            label: Scope
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Global
+                  value: GLOBAL
+                - label: Tenant
+                  value: TENANT
+                - label: User
+                  value: USER
+
+commands:
+  - id: settings.update
+    capabilities:
+      - "settings:edit"
+    operation:
+      type: openapi
+      operation_id: updateSetting
+      service_id: settings-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.key: input.key
+        data.value: input.value
+        data.scope: input.scope
+    output:
+      type: full
+
+searches:
+  - id: settings.search
+    domain: settings
+    capabilities:
+      - "settings:view"
+    operation:
+      type: openapi
+      operation_id: listSettings
+      service_id: settings-svc
+    result_mapping:
+      items_path: data
+      title_field: key
+      subtitle_field: module
+      id_field: id
+      route: "/settings/{id}"
+    weight: 0.4
+    max_results: 10

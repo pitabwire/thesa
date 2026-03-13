@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: Files Service (ConnectRPC)
+  description: File storage and sharing management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /files.files.v1.FilesService/ListFiles:
+    post:
+      operationId: listFiles
+      summary: List files
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListFilesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListFilesResponse'
+
+  /files.files.v1.FilesService/GetFile:
+    post:
+      operationId: getFile
+      summary: Get file by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileObject'
+
+  /files.files.v1.FilesService/DeleteFile:
+    post:
+      operationId: deleteFile
+      summary: Delete a file
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /files.files.v1.FilesService/ShareFile:
+    post:
+      operationId: shareFile
+      summary: Share a file
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareFileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileObject'
+
+components:
+  schemas:
+    ListFilesRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        owner_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListFilesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileObject'
+    ShareFileRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        access_level:
+          type: string
+          enum: [USER, SERVICE, ORGANIZATION, CHAT_GROUP]
+        target_id:
+          type: string
+    FileObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        content_type:
+          type: string
+        size:
+          type: integer
+          format: int64
+        owner_id:
+          type: string
+        access_level:
+          type: string
+          enum: [USER, SERVICE, ORGANIZATION, CHAT_GROUP]
+        state:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

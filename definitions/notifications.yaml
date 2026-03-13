@@ -1,0 +1,247 @@
+domain: notifications
+version: "1.0.0"
+
+navigation:
+  label: Notifications
+  icon: notifications
+  order: 5
+  capabilities:
+    - "notifications:view"
+  children:
+    - label: All Notifications
+      icon: mail
+      route: /notifications
+      page_id: notifications.list
+      capabilities:
+        - "notifications:view"
+      order: 1
+    - label: Send Notification
+      icon: send
+      route: /notifications/new
+      page_id: notifications.create_form
+      capabilities:
+        - "notifications:create"
+      order: 2
+
+pages:
+  - id: notifications.list
+    title: Notifications
+    route: /notifications
+    layout: table
+    capabilities:
+      - "notifications:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Notifications
+        route: /notifications
+    table:
+      data_source:
+        operation_id: listNotifications
+        service_id: notification-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: recipient
+          label: Recipient
+          type: text
+          sortable: true
+          link:
+            route: /notifications/{id}
+            params:
+              id: id
+        - field: channel
+          label: Channel
+          type: badge
+          sortable: true
+          status_map:
+            EMAIL: info
+            SMS: success
+            PUSH: warning
+            IN_APP: info
+        - field: subject
+          label: Subject
+          type: text
+          sortable: true
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            SENT: success
+            PENDING: warning
+            FAILED: error
+            QUEUED: info
+        - field: sent_at
+          label: Sent At
+          type: datetime
+          sortable: true
+      filters:
+        - field: channel
+          label: Channel
+          type: select
+          options:
+            static:
+              - label: Email
+                value: EMAIL
+              - label: SMS
+                value: SMS
+              - label: Push
+                value: PUSH
+              - label: In-App
+                value: IN_APP
+        - field: status
+          label: Status
+          type: select
+          options:
+            static:
+              - label: Sent
+                value: SENT
+              - label: Pending
+                value: PENDING
+              - label: Failed
+                value: FAILED
+      default_sort: sent_at
+      sort_dir: desc
+      page_size: 25
+    actions:
+      - id: create_notification
+        label: Send Notification
+        icon: send
+        style: primary
+        type: form
+        form_id: notifications.create_form
+        capabilities:
+          - "notifications:create"
+
+  - id: notifications.detail
+    title: "Notification Detail"
+    route: /notifications/{id}
+    layout: detail
+    capabilities:
+      - "notifications:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Notifications
+        route: /notifications
+      - label: Detail
+        route: /notifications/{id}
+    sections:
+      - id: info
+        title: Notification Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: recipient
+            label: Recipient
+            type: text
+            read_only: true
+          - field: channel
+            label: Channel
+            type: badge
+            read_only: true
+          - field: subject
+            label: Subject
+            type: text
+            read_only: true
+          - field: body
+            label: Body
+            type: text
+            read_only: true
+          - field: status
+            label: Status
+            type: badge
+            read_only: true
+          - field: sent_at
+            label: Sent At
+            type: datetime
+            read_only: true
+
+forms:
+  - id: notifications.create_form
+    title: Send Notification
+    capabilities:
+      - "notifications:create"
+    submit_command: notifications.create
+    success_route: /notifications
+    success_message: Notification sent successfully.
+    sections:
+      - id: details
+        title: Notification Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: recipient
+            label: Recipient
+            type: text
+            required: true
+            placeholder: "Email address, phone number, or user ID"
+          - field: channel
+            label: Channel
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Email
+                  value: EMAIL
+                - label: SMS
+                  value: SMS
+                - label: Push Notification
+                  value: PUSH
+                - label: In-App
+                  value: IN_APP
+          - field: subject
+            label: Subject
+            type: text
+            required: true
+            validation:
+              min_length: 1
+              max_length: 200
+          - field: body
+            label: Body
+            type: textarea
+            required: true
+            validation:
+              min_length: 1
+              max_length: 5000
+
+commands:
+  - id: notifications.create
+    capabilities:
+      - "notifications:create"
+    operation:
+      type: openapi
+      operation_id: createNotification
+      service_id: notification-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.recipient: input.recipient
+        data.channel: input.channel
+        data.subject: input.subject
+        data.body: input.body
+    output:
+      type: full
+
+searches:
+  - id: notifications.search
+    domain: notifications
+    capabilities:
+      - "notifications:view"
+    operation:
+      type: openapi
+      operation_id: listNotifications
+      service_id: notification-svc
+    result_mapping:
+      items_path: data
+      title_field: subject
+      subtitle_field: recipient
+      id_field: id
+      route: "/notifications/{id}"
+    weight: 0.6
+    max_results: 10

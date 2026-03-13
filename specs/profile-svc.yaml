@@ -1,0 +1,351 @@
+openapi: 3.0.3
+info:
+  title: Profile Service (ConnectRPC)
+  description: User profile, contact, and relationship management via ConnectRPC HTTP/JSON.
+  version: 1.52.1
+
+paths:
+  /profile.profile.v1.ProfileService/Search:
+    post:
+      operationId: searchProfiles
+      summary: Search profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchProfileResponse'
+
+  /profile.profile.v1.ProfileService/GetById:
+    post:
+      operationId: getProfileById
+      summary: Get profile by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileObject'
+
+  /profile.profile.v1.ProfileService/GetByContact:
+    post:
+      operationId: getProfileByContact
+      summary: Get profile by contact (email/phone)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileObject'
+
+  /profile.profile.v1.ProfileService/Create:
+    post:
+      operationId: createProfile
+      summary: Create a new profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileObject'
+
+  /profile.profile.v1.ProfileService/Update:
+    post:
+      operationId: updateProfile
+      summary: Update profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileObject'
+
+  /profile.profile.v1.ProfileService/AddContact:
+    post:
+      operationId: addContact
+      summary: Add contact to profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddContactRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactObject'
+
+  /profile.profile.v1.ProfileService/RemoveContact:
+    post:
+      operationId: removeContact
+      summary: Remove contact from profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /profile.profile.v1.ProfileService/AddAddress:
+    post:
+      operationId: addAddress
+      summary: Add address to profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddAddressRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressObject'
+
+  /profile.profile.v1.ProfileService/ListRelationship:
+    post:
+      operationId: listRelationships
+      summary: List profile relationships
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListRelationshipRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRelationshipResponse'
+
+  /profile.profile.v1.ProfileService/AddRelationship:
+    post:
+      operationId: addRelationship
+      summary: Add relationship between profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRelationshipRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipObject'
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          type: object
+          properties:
+            limit:
+              type: integer
+            page:
+              type: integer
+    SearchProfileResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileObject'
+    ProfileObject:
+      type: object
+      properties:
+        id:
+          type: string
+        profile_type:
+          type: string
+          enum: [PERSON, INSTITUTION, BOT]
+        state:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactObject'
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddressObject'
+    ContactObject:
+      type: object
+      properties:
+        id:
+          type: string
+        contact_type:
+          type: string
+          enum: [EMAIL, MSISDN]
+        detail:
+          type: string
+        is_verified:
+          type: boolean
+        state:
+          type: string
+    AddressObject:
+      type: object
+      properties:
+        id:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        street:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+    RelationshipObject:
+      type: object
+      properties:
+        id:
+          type: string
+        from_profile_id:
+          type: string
+        to_profile_id:
+          type: string
+        relationship_type:
+          type: string
+          enum: [MEMBER, AFFILIATED, BLACK_LISTED]
+        state:
+          type: string
+    CreateProfileRequest:
+      type: object
+      properties:
+        profile_type:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    UpdateProfileRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        state:
+          type: string
+    AddContactRequest:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        contact_type:
+          type: string
+        detail:
+          type: string
+    AddAddressRequest:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        street:
+          type: string
+    ListRelationshipRequest:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        page:
+          type: object
+          properties:
+            limit:
+              type: integer
+            page:
+              type: integer
+    ListRelationshipResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationshipObject'
+    AddRelationshipRequest:
+      type: object
+      properties:
+        from_profile_id:
+          type: string
+        to_profile_id:
+          type: string
+        relationship_type:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string

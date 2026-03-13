@@ -1,0 +1,263 @@
+openapi: 3.0.3
+info:
+  title: Chat Service (ConnectRPC)
+  description: Chat rooms, messaging, and subscription management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /chat.chat.v1.ChatService/ListRooms:
+    post:
+      operationId: listRooms
+      summary: List chat rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListRoomsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRoomsResponse'
+
+  /chat.chat.v1.ChatService/GetRoom:
+    post:
+      operationId: getRoom
+      summary: Get room by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomObject'
+
+  /chat.chat.v1.ChatService/CreateRoom:
+    post:
+      operationId: createRoom
+      summary: Create a chat room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomObject'
+
+  /chat.chat.v1.ChatService/ListMessages:
+    post:
+      operationId: listMessages
+      summary: List messages in a room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListMessagesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMessagesResponse'
+
+  /chat.chat.v1.ChatService/SendEvent:
+    post:
+      operationId: sendEvent
+      summary: Send a message or event to a room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEventRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageObject'
+
+  /chat.chat.v1.ChatService/ListSubscriptions:
+    post:
+      operationId: listSubscriptions
+      summary: List room subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListSubscriptionsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSubscriptionsResponse'
+
+  /chat.chat.v1.ChatService/CreateSubscription:
+    post:
+      operationId: createSubscription
+      summary: Subscribe a profile to a room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionObject'
+
+  /chat.chat.v1.ChatService/RemoveSubscription:
+    post:
+      operationId: removeSubscription
+      summary: Remove a subscription from a room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+components:
+  schemas:
+    ListRoomsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListRoomsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomObject'
+    CreateRoomRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RoomObject'
+    ListMessagesRequest:
+      type: object
+      properties:
+        room_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListMessagesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageObject'
+    SendEventRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MessageObject'
+    ListSubscriptionsRequest:
+      type: object
+      properties:
+        room_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListSubscriptionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionObject'
+    CreateSubscriptionRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SubscriptionObject'
+    RoomObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        room_type:
+          type: string
+          enum: [DIRECT, GROUP, CHANNEL]
+        state:
+          type: string
+    MessageObject:
+      type: object
+      properties:
+        id:
+          type: string
+        room_id:
+          type: string
+        sender_id:
+          type: string
+        content:
+          type: string
+        message_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    SubscriptionObject:
+      type: object
+      properties:
+        id:
+          type: string
+        room_id:
+          type: string
+        profile_id:
+          type: string
+        role:
+          type: string
+        state:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

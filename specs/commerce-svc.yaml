@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: Commerce Service (ConnectRPC)
+  description: Shop, product, and order management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /commerce.commerce.v1.CommerceService/ListShops:
+    post:
+      operationId: listShops
+      summary: List shops
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListShopsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListShopsResponse'
+
+  /commerce.commerce.v1.CommerceService/GetShop:
+    post:
+      operationId: getShop
+      summary: Get shop by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopObject'
+
+  /commerce.commerce.v1.CommerceService/CreateShop:
+    post:
+      operationId: createShop
+      summary: Create a shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShopRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopObject'
+
+  /commerce.commerce.v1.CommerceService/UpdateShop:
+    post:
+      operationId: updateShop
+      summary: Update a shop
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShopRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopObject'
+
+  /commerce.commerce.v1.CommerceService/ListProducts:
+    post:
+      operationId: listProducts
+      summary: List products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListProductsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListProductsResponse'
+
+  /commerce.commerce.v1.CommerceService/GetProduct:
+    post:
+      operationId: getProduct
+      summary: Get product by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductObject'
+
+  /commerce.commerce.v1.CommerceService/CreateProduct:
+    post:
+      operationId: createProduct
+      summary: Create a product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductObject'
+
+  /commerce.commerce.v1.CommerceService/UpdateProduct:
+    post:
+      operationId: updateProduct
+      summary: Update a product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductObject'
+
+  /commerce.commerce.v1.CommerceService/ListOrders:
+    post:
+      operationId: listOrders
+      summary: List orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListOrdersRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrdersResponse'
+
+  /commerce.commerce.v1.CommerceService/GetOrder:
+    post:
+      operationId: getOrder
+      summary: Get order by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderObject'
+
+components:
+  schemas:
+    ListShopsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListShopsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopObject'
+    CreateShopRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ShopObject'
+    UpdateShopRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ShopObject'
+    ListProductsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        shop_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListProductsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductObject'
+    CreateProductRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProductObject'
+    UpdateProductRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ProductObject'
+    ListOrdersRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        shop_id:
+          type: string
+        customer_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListOrdersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderObject'
+    ShopObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: string
+    ProductObject:
+      type: object
+      properties:
+        id:
+          type: string
+        shop_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        state:
+          type: string
+    OrderObject:
+      type: object
+      properties:
+        id:
+          type: string
+        shop_id:
+          type: string
+        customer_id:
+          type: string
+        total:
+          type: number
+        currency:
+          type: string
+        state:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemObject'
+    OrderItemObject:
+      type: object
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

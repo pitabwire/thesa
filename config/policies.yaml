@@ -1,0 +1,154 @@
+roles:
+  # Platform admin — full access to everything
+  admin:
+    - "*"
+
+  # System internal services
+  system_internal:
+    - "*"
+
+  # ===== Partition / Tenant Management =====
+  tenant_admin:
+    - "tenants:view"
+    - "tenants:create"
+    - "tenants:edit"
+    - "partitions:view"
+    - "partitions:create"
+    - "partitions:edit"
+    - "roles:view"
+    - "roles:create"
+    - "roles:edit"
+    - "roles:delete"
+    - "access:view"
+    - "access:create"
+    - "access:edit"
+    - "access:delete"
+
+  partition_admin:
+    - "partitions:view"
+    - "partitions:create"
+    - "partitions:edit"
+    - "roles:view"
+    - "roles:create"
+    - "roles:edit"
+    - "roles:delete"
+    - "access:view"
+    - "access:create"
+    - "access:edit"
+    - "access:delete"
+
+  # ===== Profile / User Management =====
+  user_admin:
+    - "profiles:view"
+    - "profiles:create"
+    - "profiles:edit"
+    - "profiles:contacts"
+    - "profiles:addresses"
+    - "profiles:relationships"
+
+  user_viewer:
+    - "profiles:view"
+
+  # ===== Notification Management =====
+  notification_admin:
+    - "notifications:view"
+    - "notifications:create"
+    - "notifications:edit"
+
+  notification_viewer:
+    - "notifications:view"
+
+  # ===== Payment Management =====
+  payment_admin:
+    - "payments:view"
+    - "payments:create"
+    - "payments:edit"
+    - "payments:reconcile"
+
+  payment_viewer:
+    - "payments:view"
+
+  # ===== File Management =====
+  file_admin:
+    - "files:view"
+    - "files:upload"
+    - "files:delete"
+    - "files:share"
+
+  file_viewer:
+    - "files:view"
+
+  # ===== Settings Management =====
+  settings_admin:
+    - "settings:view"
+    - "settings:edit"
+
+  settings_viewer:
+    - "settings:view"
+
+  # ===== Chat Management =====
+  chat_admin:
+    - "chat:view"
+    - "chat:create"
+    - "chat:manage"
+
+  chat_user:
+    - "chat:view"
+    - "chat:create"
+
+  # ===== Ledger / Accounting =====
+  ledger_admin:
+    - "ledger:view"
+    - "ledger:create"
+    - "ledger:edit"
+    - "ledger:reverse"
+
+  ledger_viewer:
+    - "ledger:view"
+
+  # ===== Commerce =====
+  commerce_admin:
+    - "commerce:view"
+    - "commerce:create"
+    - "commerce:edit"
+    - "commerce:manage"
+
+  commerce_viewer:
+    - "commerce:view"
+
+  # ===== Property =====
+  property_admin:
+    - "property:view"
+    - "property:create"
+    - "property:edit"
+    - "property:manage"
+
+  property_viewer:
+    - "property:view"
+
+  # ===== Foundry (Site Builder) =====
+  foundry_admin:
+    - "foundry:view"
+    - "foundry:create"
+    - "foundry:build"
+    - "foundry:manage"
+    - "foundry:templates"
+
+  foundry_user:
+    - "foundry:view"
+    - "foundry:create"
+    - "foundry:build"
+
+  # ===== Default user role =====
+  # This maps to the "user" role in JWT claims from Hydra
+  user:
+    - "profiles:view"
+    - "notifications:view"
+    - "files:view"
+    - "files:upload"
+    - "settings:view"
+    - "chat:view"
+    - "chat:create"
+    - "foundry:view"
+    - "foundry:create"
+    - "foundry:build"

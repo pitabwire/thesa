@@ -1,0 +1,443 @@
+domain: property
+version: "1.0.0"
+
+navigation:
+  label: Property
+  icon: apartment
+  order: 11
+  capabilities:
+    - "property:view"
+  children:
+    - label: All Properties
+      icon: home_work
+      route: /properties
+      page_id: property.list
+      capabilities:
+        - "property:view"
+      order: 1
+    - label: Add Property
+      icon: add_home
+      route: /properties/new
+      page_id: property.create_form
+      capabilities:
+        - "property:create"
+      order: 2
+
+pages:
+  - id: property.list
+    title: Properties
+    route: /properties
+    layout: table
+    capabilities:
+      - "property:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Properties
+        route: /properties
+    table:
+      data_source:
+        operation_id: listProperties
+        service_id: property-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /properties/{id}
+            params:
+              id: id
+        - field: property_type
+          label: Type
+          type: badge
+          sortable: true
+          status_map:
+            RESIDENTIAL: info
+            COMMERCIAL: success
+            INDUSTRIAL: warning
+            LAND: info
+        - field: location
+          label: Location
+          type: text
+          sortable: true
+        - field: price
+          label: Price
+          type: currency
+          sortable: true
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            AVAILABLE: success
+            OCCUPIED: info
+            UNDER_MAINTENANCE: warning
+            SOLD: error
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+            DELETED: error
+      filters:
+        - field: property_type
+          label: Type
+          type: select
+          options:
+            static:
+              - label: Residential
+                value: RESIDENTIAL
+              - label: Commercial
+                value: COMMERCIAL
+              - label: Industrial
+                value: INDUSTRIAL
+              - label: Land
+                value: LAND
+        - field: status
+          label: Status
+          type: select
+          options:
+            static:
+              - label: Available
+                value: AVAILABLE
+              - label: Occupied
+                value: OCCUPIED
+              - label: Under Maintenance
+                value: UNDER_MAINTENANCE
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Inactive
+                value: INACTIVE
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_property
+        label: Add Property
+        icon: add
+        style: primary
+        type: form
+        form_id: property.create_form
+        capabilities:
+          - "property:create"
+
+  - id: property.detail
+    title: "{name}"
+    route: /properties/{id}
+    layout: detail
+    capabilities:
+      - "property:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Properties
+        route: /properties
+      - label: "{name}"
+        route: /properties/{id}
+    sections:
+      - id: info
+        title: Property Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: name
+            label: Name
+            type: text
+            read_only: true
+          - field: property_type
+            label: Type
+            type: badge
+            read_only: true
+          - field: location
+            label: Location
+            type: text
+            read_only: true
+          - field: address
+            label: Address
+            type: text
+            read_only: true
+          - field: price
+            label: Price
+            type: currency
+            read_only: true
+          - field: size
+            label: Size
+            type: text
+            read_only: true
+          - field: description
+            label: Description
+            type: text
+            read_only: true
+          - field: status
+            label: Status
+            type: badge
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+    actions:
+      - id: edit_property
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: property.edit_form
+        capabilities:
+          - "property:edit"
+      - id: manage_property
+        label: Manage
+        icon: settings
+        style: default
+        type: form
+        form_id: property.manage_form
+        capabilities:
+          - "property:manage"
+
+forms:
+  - id: property.create_form
+    title: Add Property
+    capabilities:
+      - "property:create"
+    submit_command: property.create
+    success_route: /properties
+    success_message: Property created successfully.
+    sections:
+      - id: details
+        title: Property Details
+        layout: grid
+        columns: 2
+        fields:
+          - field: name
+            label: Property Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 200
+          - field: property_type
+            label: Property Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Residential
+                  value: RESIDENTIAL
+                - label: Commercial
+                  value: COMMERCIAL
+                - label: Industrial
+                  value: INDUSTRIAL
+                - label: Land
+                  value: LAND
+          - field: location
+            label: Location
+            type: text
+            required: true
+          - field: address
+            label: Address
+            type: textarea
+          - field: price
+            label: Price
+            type: number
+            validation:
+              min: 0
+          - field: size
+            label: Size
+            type: text
+            placeholder: "e.g. 250 sqm"
+          - field: description
+            label: Description
+            type: textarea
+            span: 2
+
+  - id: property.edit_form
+    title: Edit Property
+    capabilities:
+      - "property:edit"
+    submit_command: property.update
+    load_source:
+      operation_id: getProperty
+      service_id: property-svc
+    success_route: /properties/{id}
+    success_message: Property updated successfully.
+    sections:
+      - id: details
+        title: Property Details
+        layout: grid
+        columns: 2
+        fields:
+          - field: name
+            label: Property Name
+            type: text
+            required: true
+          - field: property_type
+            label: Property Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Residential
+                  value: RESIDENTIAL
+                - label: Commercial
+                  value: COMMERCIAL
+                - label: Industrial
+                  value: INDUSTRIAL
+                - label: Land
+                  value: LAND
+          - field: location
+            label: Location
+            type: text
+            required: true
+          - field: address
+            label: Address
+            type: textarea
+          - field: price
+            label: Price
+            type: number
+          - field: size
+            label: Size
+            type: text
+          - field: description
+            label: Description
+            type: textarea
+            span: 2
+          - field: status
+            label: Status
+            type: select
+            lookup:
+              static:
+                - label: Available
+                  value: AVAILABLE
+                - label: Occupied
+                  value: OCCUPIED
+                - label: Under Maintenance
+                  value: UNDER_MAINTENANCE
+                - label: Sold
+                  value: SOLD
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Inactive
+                  value: INACTIVE
+
+  - id: property.manage_form
+    title: Manage Property
+    capabilities:
+      - "property:manage"
+    submit_command: property.update
+    load_source:
+      operation_id: getProperty
+      service_id: property-svc
+    success_route: /properties/{id}
+    success_message: Property settings updated.
+    sections:
+      - id: management
+        title: Property Management
+        layout: grid
+        columns: 1
+        fields:
+          - field: status
+            label: Status
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Available
+                  value: AVAILABLE
+                - label: Occupied
+                  value: OCCUPIED
+                - label: Under Maintenance
+                  value: UNDER_MAINTENANCE
+                - label: Sold
+                  value: SOLD
+          - field: state
+            label: State
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Inactive
+                  value: INACTIVE
+
+commands:
+  - id: property.create
+    capabilities:
+      - "property:create"
+    operation:
+      type: openapi
+      operation_id: createProperty
+      service_id: property-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.property_type: input.property_type
+        data.location: input.location
+        data.address: input.address
+        data.price: input.price
+        data.size: input.size
+        data.description: input.description
+    output:
+      type: full
+
+  - id: property.update
+    capabilities:
+      - "property:edit"
+    operation:
+      type: openapi
+      operation_id: updateProperty
+      service_id: property-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.property_type: input.property_type
+        data.location: input.location
+        data.address: input.address
+        data.price: input.price
+        data.size: input.size
+        data.description: input.description
+        data.status: input.status
+        data.state: input.state
+    output:
+      type: full
+
+searches:
+  - id: property.search
+    domain: properties
+    capabilities:
+      - "property:view"
+    operation:
+      type: openapi
+      operation_id: listProperties
+      service_id: property-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: location
+      id_field: id
+      route: "/properties/{id}"
+    weight: 0.7
+    max_results: 10

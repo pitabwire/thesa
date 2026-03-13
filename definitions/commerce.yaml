@@ -1,0 +1,576 @@
+domain: commerce
+version: "1.0.0"
+
+navigation:
+  label: Commerce
+  icon: storefront
+  order: 10
+  capabilities:
+    - "commerce:view"
+  children:
+    - label: Shops
+      icon: store
+      route: /commerce/shops
+      page_id: commerce.shops
+      capabilities:
+        - "commerce:view"
+      order: 1
+    - label: Products
+      icon: inventory_2
+      route: /commerce/products
+      page_id: commerce.products
+      capabilities:
+        - "commerce:view"
+      order: 2
+    - label: Orders
+      icon: shopping_bag
+      route: /commerce/orders
+      page_id: commerce.orders
+      capabilities:
+        - "commerce:view"
+      order: 3
+
+pages:
+  - id: commerce.shops
+    title: Shops
+    route: /commerce/shops
+    layout: table
+    capabilities:
+      - "commerce:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Commerce
+        route: /commerce/shops
+      - label: Shops
+        route: /commerce/shops
+    table:
+      data_source:
+        operation_id: listShops
+        service_id: commerce-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /commerce/shops/{id}
+            params:
+              id: id
+        - field: description
+          label: Description
+          type: text
+        - field: category
+          label: Category
+          type: text
+          sortable: true
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            SUSPENDED: warning
+            CLOSED: error
+      filters:
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Suspended
+                value: SUSPENDED
+              - label: Closed
+                value: CLOSED
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_shop
+        label: Create Shop
+        icon: add
+        style: primary
+        type: form
+        form_id: commerce.create_shop_form
+        capabilities:
+          - "commerce:create"
+
+  - id: commerce.shop_detail
+    title: "{name}"
+    route: /commerce/shops/{id}
+    layout: detail
+    capabilities:
+      - "commerce:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Commerce
+        route: /commerce/shops
+      - label: Shops
+        route: /commerce/shops
+      - label: "{name}"
+        route: /commerce/shops/{id}
+    sections:
+      - id: info
+        title: Shop Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: name
+            label: Name
+            type: text
+            read_only: true
+          - field: description
+            label: Description
+            type: text
+            read_only: true
+          - field: category
+            label: Category
+            type: text
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+    actions:
+      - id: edit_shop
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: commerce.edit_shop_form
+        capabilities:
+          - "commerce:edit"
+      - id: manage_shop
+        label: Manage
+        icon: settings
+        style: default
+        type: form
+        form_id: commerce.manage_shop_form
+        capabilities:
+          - "commerce:manage"
+
+  - id: commerce.products
+    title: Products
+    route: /commerce/products
+    layout: table
+    capabilities:
+      - "commerce:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Commerce
+        route: /commerce/shops
+      - label: Products
+        route: /commerce/products
+    table:
+      data_source:
+        operation_id: listProducts
+        service_id: commerce-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+        - field: sku
+          label: SKU
+          type: text
+          sortable: true
+        - field: price
+          label: Price
+          type: currency
+          sortable: true
+        - field: currency
+          label: Currency
+          type: text
+        - field: stock
+          label: Stock
+          type: text
+          sortable: true
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            OUT_OF_STOCK: warning
+            DISCONTINUED: error
+      filters:
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Out of Stock
+                value: OUT_OF_STOCK
+              - label: Discontinued
+                value: DISCONTINUED
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_product
+        label: Create Product
+        icon: add
+        style: primary
+        type: form
+        form_id: commerce.create_product_form
+        capabilities:
+          - "commerce:create"
+
+  - id: commerce.orders
+    title: Shop Orders
+    route: /commerce/orders
+    layout: table
+    capabilities:
+      - "commerce:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Commerce
+        route: /commerce/shops
+      - label: Orders
+        route: /commerce/orders
+    table:
+      data_source:
+        operation_id: listShopOrders
+        service_id: commerce-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: order_number
+          label: Order #
+          type: text
+          sortable: true
+        - field: shop_name
+          label: Shop
+          type: text
+          sortable: true
+        - field: customer_name
+          label: Customer
+          type: text
+          sortable: true
+        - field: total_amount
+          label: Total
+          type: currency
+          sortable: true
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            PENDING: warning
+            CONFIRMED: info
+            SHIPPED: info
+            DELIVERED: success
+            CANCELLED: error
+        - field: created_at
+          label: Created
+          type: datetime
+          sortable: true
+      filters:
+        - field: status
+          label: Status
+          type: select
+          options:
+            static:
+              - label: Pending
+                value: PENDING
+              - label: Confirmed
+                value: CONFIRMED
+              - label: Shipped
+                value: SHIPPED
+              - label: Delivered
+                value: DELIVERED
+              - label: Cancelled
+                value: CANCELLED
+      default_sort: created_at
+      sort_dir: desc
+      page_size: 25
+
+forms:
+  - id: commerce.create_shop_form
+    title: Create Shop
+    capabilities:
+      - "commerce:create"
+    submit_command: commerce.createShop
+    success_route: /commerce/shops
+    success_message: Shop created successfully.
+    sections:
+      - id: details
+        title: Shop Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Shop Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 100
+          - field: description
+            label: Description
+            type: textarea
+          - field: category
+            label: Category
+            type: text
+
+  - id: commerce.edit_shop_form
+    title: Edit Shop
+    capabilities:
+      - "commerce:edit"
+    submit_command: commerce.updateShop
+    load_source:
+      operation_id: getShop
+      service_id: commerce-svc
+    success_route: /commerce/shops/{id}
+    success_message: Shop updated successfully.
+    sections:
+      - id: details
+        title: Shop Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Shop Name
+            type: text
+            required: true
+          - field: description
+            label: Description
+            type: textarea
+          - field: category
+            label: Category
+            type: text
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Suspended
+                  value: SUSPENDED
+                - label: Closed
+                  value: CLOSED
+
+  - id: commerce.manage_shop_form
+    title: Manage Shop
+    capabilities:
+      - "commerce:manage"
+    submit_command: commerce.updateShop
+    load_source:
+      operation_id: getShop
+      service_id: commerce-svc
+    success_route: /commerce/shops/{id}
+    success_message: Shop settings updated.
+    sections:
+      - id: settings
+        title: Shop Settings
+        layout: grid
+        columns: 1
+        fields:
+          - field: state
+            label: State
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Suspended
+                  value: SUSPENDED
+                - label: Closed
+                  value: CLOSED
+
+  - id: commerce.create_product_form
+    title: Create Product
+    capabilities:
+      - "commerce:create"
+    submit_command: commerce.createProduct
+    success_route: /commerce/products
+    success_message: Product created successfully.
+    sections:
+      - id: details
+        title: Product Details
+        layout: grid
+        columns: 2
+        fields:
+          - field: name
+            label: Product Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 200
+          - field: sku
+            label: SKU
+            type: text
+            required: true
+          - field: price
+            label: Price
+            type: number
+            required: true
+            validation:
+              min: 0.01
+          - field: currency
+            label: Currency
+            type: text
+            required: true
+            validation:
+              min_length: 3
+              max_length: 3
+            placeholder: "e.g. KES, USD"
+          - field: stock
+            label: Initial Stock
+            type: number
+            validation:
+              min: 0
+          - field: description
+            label: Description
+            type: textarea
+          - field: shop_id
+            label: Shop
+            type: reference
+            required: true
+            lookup:
+              operation_id: listShops
+              service_id: commerce-svc
+              label_field: name
+              value_field: id
+
+commands:
+  - id: commerce.createShop
+    capabilities:
+      - "commerce:create"
+    operation:
+      type: openapi
+      operation_id: createShop
+      service_id: commerce-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.description: input.description
+        data.category: input.category
+    output:
+      type: full
+
+  - id: commerce.updateShop
+    capabilities:
+      - "commerce:edit"
+    operation:
+      type: openapi
+      operation_id: updateShop
+      service_id: commerce-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.description: input.description
+        data.category: input.category
+        data.state: input.state
+    output:
+      type: full
+
+  - id: commerce.createProduct
+    capabilities:
+      - "commerce:create"
+    operation:
+      type: openapi
+      operation_id: createProduct
+      service_id: commerce-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.sku: input.sku
+        data.price: input.price
+        data.currency: input.currency
+        data.stock: input.stock
+        data.description: input.description
+        data.shop_id: input.shop_id
+    output:
+      type: full
+
+  - id: commerce.updateProduct
+    capabilities:
+      - "commerce:edit"
+    operation:
+      type: openapi
+      operation_id: updateProduct
+      service_id: commerce-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.price: input.price
+        data.stock: input.stock
+        data.state: input.state
+    output:
+      type: full
+
+  - id: commerce.deleteProduct
+    capabilities:
+      - "commerce:manage"
+    operation:
+      type: openapi
+      operation_id: deleteProduct
+      service_id: commerce-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+searches:
+  - id: commerce.shops_search
+    domain: shops
+    capabilities:
+      - "commerce:view"
+    operation:
+      type: openapi
+      operation_id: listShops
+      service_id: commerce-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: description
+      id_field: id
+      route: "/commerce/shops/{id}"
+    weight: 0.7
+    max_results: 10
+
+  - id: commerce.products_search
+    domain: products
+    capabilities:
+      - "commerce:view"
+    operation:
+      type: openapi
+      operation_id: listProducts
+      service_id: commerce-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: sku
+      id_field: id
+      route: "/commerce/products/{id}"
+    weight: 0.7
+    max_results: 10

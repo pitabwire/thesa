@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Property Service (ConnectRPC)
+  description: Property listing and management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /property.property.v1.PropertyService/ListProperties:
+    post:
+      operationId: listProperties
+      summary: List properties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPropertiesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPropertiesResponse'
+
+  /property.property.v1.PropertyService/GetProperty:
+    post:
+      operationId: getProperty
+      summary: Get property by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyObject'
+
+  /property.property.v1.PropertyService/CreateProperty:
+    post:
+      operationId: createProperty
+      summary: Create a property
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePropertyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyObject'
+
+  /property.property.v1.PropertyService/UpdateProperty:
+    post:
+      operationId: updateProperty
+      summary: Update a property
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePropertyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyObject'
+
+components:
+  schemas:
+    ListPropertiesRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        property_type:
+          type: string
+        locality_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPropertiesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyObject'
+    CreatePropertyRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PropertyObject'
+    UpdatePropertyRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PropertyObject'
+    PropertyObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        property_type:
+          type: string
+        locality_id:
+          type: string
+        state:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

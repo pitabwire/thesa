@@ -1,0 +1,506 @@
+openapi: 3.0.3
+info:
+  title: Partition Service (ConnectRPC)
+  description: Tenant, partition, role, and access management via ConnectRPC HTTP/JSON.
+  version: 1.52.1
+
+paths:
+  /partition.partition.v1.PartitionService/ListTenant:
+    post:
+      operationId: listTenants
+      summary: List tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListTenantRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTenantResponse'
+
+  /partition.partition.v1.PartitionService/GetTenant:
+    post:
+      operationId: getTenant
+      summary: Get tenant by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTenantRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantObject'
+
+  /partition.partition.v1.PartitionService/CreateTenant:
+    post:
+      operationId: createTenant
+      summary: Create a new tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantObject'
+
+  /partition.partition.v1.PartitionService/UpdateTenant:
+    post:
+      operationId: updateTenant
+      summary: Update tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenantRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantObject'
+
+  /partition.partition.v1.PartitionService/ListPartition:
+    post:
+      operationId: listPartitions
+      summary: List partitions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPartitionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPartitionResponse'
+
+  /partition.partition.v1.PartitionService/GetPartition:
+    post:
+      operationId: getPartition
+      summary: Get partition by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetPartitionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartitionObject'
+
+  /partition.partition.v1.PartitionService/CreatePartition:
+    post:
+      operationId: createPartition
+      summary: Create partition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartitionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartitionObject'
+
+  /partition.partition.v1.PartitionService/UpdatePartition:
+    post:
+      operationId: updatePartition
+      summary: Update partition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePartitionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartitionObject'
+
+  /partition.partition.v1.PartitionService/ListPartitionRole:
+    post:
+      operationId: listPartitionRoles
+      summary: List roles for a partition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPartitionRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPartitionRoleResponse'
+
+  /partition.partition.v1.PartitionService/CreatePartitionRole:
+    post:
+      operationId: createPartitionRole
+      summary: Create a partition role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartitionRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartitionRoleObject'
+
+  /partition.partition.v1.PartitionService/RemovePartitionRole:
+    post:
+      operationId: removePartitionRole
+      summary: Remove a partition role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemovePartitionRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /partition.partition.v1.PartitionService/GetAccess:
+    post:
+      operationId: getAccess
+      summary: Get access grant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAccessRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessObject'
+
+  /partition.partition.v1.PartitionService/CreateAccess:
+    post:
+      operationId: createAccess
+      summary: Grant access to a partition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccessRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessObject'
+
+  /partition.partition.v1.PartitionService/RemoveAccess:
+    post:
+      operationId: removeAccess
+      summary: Revoke access from a partition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveAccessRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /partition.partition.v1.PartitionService/ListAccessRole:
+    post:
+      operationId: listAccessRoles
+      summary: List roles for an access grant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListAccessRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAccessRoleResponse'
+
+  /partition.partition.v1.PartitionService/CreateAccessRole:
+    post:
+      operationId: createAccessRole
+      summary: Assign a role to an access grant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccessRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessRoleObject'
+
+  /partition.partition.v1.PartitionService/RemoveAccessRole:
+    post:
+      operationId: removeAccessRole
+      summary: Remove a role from an access grant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveAccessRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+components:
+  schemas:
+    ListTenantRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListTenantResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantObject'
+    GetTenantRequest:
+      type: object
+      properties:
+        id:
+          type: string
+    CreateTenantRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TenantObject'
+    UpdateTenantRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/TenantObject'
+    TenantObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: string
+        properties:
+          type: object
+    ListPartitionRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        tenant_id:
+          type: string
+        parent_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPartitionResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartitionObject'
+    GetPartitionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+    CreatePartitionRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PartitionObject'
+    UpdatePartitionRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PartitionObject'
+    PartitionObject:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant_id:
+          type: string
+        parent_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: string
+        properties:
+          type: object
+    ListPartitionRoleRequest:
+      type: object
+      properties:
+        partition_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPartitionRoleResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartitionRoleObject'
+    CreatePartitionRoleRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PartitionRoleObject'
+    RemovePartitionRoleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+    PartitionRoleObject:
+      type: object
+      properties:
+        id:
+          type: string
+        partition_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: string
+    GetAccessRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        partition_id:
+          type: string
+        profile_id:
+          type: string
+    CreateAccessRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AccessObject'
+    RemoveAccessRequest:
+      type: object
+      properties:
+        id:
+          type: string
+    AccessObject:
+      type: object
+      properties:
+        id:
+          type: string
+        partition_id:
+          type: string
+        profile_id:
+          type: string
+        state:
+          type: string
+    ListAccessRoleRequest:
+      type: object
+      properties:
+        access_id:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListAccessRoleResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessRoleObject'
+    CreateAccessRoleRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/AccessRoleObject'
+    RemoveAccessRoleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+    AccessRoleObject:
+      type: object
+      properties:
+        id:
+          type: string
+        access_id:
+          type: string
+        partition_role_id:
+          type: string
+        state:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

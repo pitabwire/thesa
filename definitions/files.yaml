@@ -1,0 +1,215 @@
+domain: files
+version: "1.0.0"
+
+navigation:
+  label: Files
+  icon: folder
+  order: 7
+  capabilities:
+    - "files:view"
+  children:
+    - label: All Files
+      icon: insert_drive_file
+      route: /files
+      page_id: files.list
+      capabilities:
+        - "files:view"
+      order: 1
+
+pages:
+  - id: files.list
+    title: Files
+    route: /files
+    layout: table
+    capabilities:
+      - "files:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Files
+        route: /files
+    table:
+      data_source:
+        operation_id: listFiles
+        service_id: files-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+        - field: content_type
+          label: Content Type
+          type: text
+          sortable: true
+        - field: size
+          label: Size
+          type: text
+          sortable: true
+        - field: access_level
+          label: Access Level
+          type: badge
+          sortable: true
+          status_map:
+            PUBLIC: success
+            PRIVATE: error
+            RESTRICTED: warning
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            ARCHIVED: warning
+            DELETED: error
+      filters:
+        - field: access_level
+          label: Access Level
+          type: select
+          options:
+            static:
+              - label: Public
+                value: PUBLIC
+              - label: Private
+                value: PRIVATE
+              - label: Restricted
+                value: RESTRICTED
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Archived
+                value: ARCHIVED
+      row_actions:
+        - id: share_file
+          label: Share
+          icon: share
+          style: default
+          type: command
+          command_id: files.share
+          capabilities:
+            - "files:share"
+        - id: delete_file
+          label: Delete
+          icon: delete
+          style: danger
+          type: command
+          command_id: files.delete
+          capabilities:
+            - "files:delete"
+          confirmation:
+            title: Delete File
+            message: "Are you sure you want to delete {name}?"
+            confirm: Delete
+            cancel: Cancel
+            style: danger
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: upload_file
+        label: Upload File
+        icon: upload
+        style: primary
+        type: form
+        form_id: files.upload_form
+        capabilities:
+          - "files:upload"
+
+forms:
+  - id: files.upload_form
+    title: Upload File
+    capabilities:
+      - "files:upload"
+    submit_command: files.upload
+    success_route: /files
+    success_message: File uploaded successfully.
+    sections:
+      - id: details
+        title: File Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: file
+            label: File
+            type: file
+            required: true
+          - field: access_level
+            label: Access Level
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Public
+                  value: PUBLIC
+                - label: Private
+                  value: PRIVATE
+                - label: Restricted
+                  value: RESTRICTED
+
+commands:
+  - id: files.upload
+    capabilities:
+      - "files:upload"
+    operation:
+      type: openapi
+      operation_id: uploadFile
+      service_id: files-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.file: input.file
+        data.access_level: input.access_level
+    output:
+      type: full
+
+  - id: files.delete
+    capabilities:
+      - "files:delete"
+    operation:
+      type: openapi
+      operation_id: deleteFile
+      service_id: files-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+  - id: files.share
+    capabilities:
+      - "files:share"
+    operation:
+      type: openapi
+      operation_id: shareFile
+      service_id: files-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+searches:
+  - id: files.search
+    domain: files
+    capabilities:
+      - "files:view"
+    operation:
+      type: openapi
+      operation_id: listFiles
+      service_id: files-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: content_type
+      id_field: id
+      route: "/files/{id}"
+    weight: 0.6
+    max_results: 10

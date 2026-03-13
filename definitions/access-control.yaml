@@ -1,0 +1,659 @@
+domain: access-control
+version: "1.0.0"
+
+navigation:
+  label: Access Control
+  icon: admin_panel_settings
+  order: 1
+  capabilities:
+    - "tenants:view"
+  children:
+    - label: Tenants
+      icon: business
+      route: /tenants
+      page_id: tenants.list
+      capabilities:
+        - "tenants:view"
+      order: 1
+    - label: Partitions
+      icon: account_tree
+      route: /partitions
+      page_id: partitions.list
+      capabilities:
+        - "partitions:view"
+      order: 2
+    - label: Roles
+      icon: badge
+      route: /roles
+      page_id: roles.list
+      capabilities:
+        - "roles:view"
+      order: 3
+    - label: Access Grants
+      icon: vpn_key
+      route: /access
+      page_id: access.list
+      capabilities:
+        - "access:view"
+      order: 4
+
+pages:
+  # ===== Tenants =====
+  - id: tenants.list
+    title: Tenants
+    route: /tenants
+    layout: table
+    capabilities:
+      - "tenants:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Tenants
+        route: /tenants
+    table:
+      data_source:
+        operation_id: listTenants
+        service_id: partition-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /tenants/{id}
+            params:
+              id: id
+        - field: description
+          label: Description
+          type: text
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+            DELETED: error
+      filters:
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Created
+                value: CREATED
+              - label: Inactive
+                value: INACTIVE
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_tenant
+        label: Create Tenant
+        icon: add
+        style: primary
+        type: form
+        form_id: tenants.create_form
+        capabilities:
+          - "tenants:create"
+
+  - id: tenants.detail
+    title: "{name}"
+    route: /tenants/{id}
+    layout: detail
+    capabilities:
+      - "tenants:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Tenants
+        route: /tenants
+      - label: "{name}"
+        route: /tenants/{id}
+    sections:
+      - id: info
+        title: Tenant Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: name
+            label: Name
+            type: text
+            read_only: true
+          - field: description
+            label: Description
+            type: text
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+    actions:
+      - id: edit_tenant
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: tenants.edit_form
+        capabilities:
+          - "tenants:edit"
+
+  # ===== Partitions =====
+  - id: partitions.list
+    title: Partitions
+    route: /partitions
+    layout: table
+    capabilities:
+      - "partitions:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Partitions
+        route: /partitions
+    table:
+      data_source:
+        operation_id: listPartitions
+        service_id: partition-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /partitions/{id}
+            params:
+              id: id
+        - field: description
+          label: Description
+          type: text
+        - field: parent_id
+          label: Parent
+          type: text
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_partition
+        label: Create Partition
+        icon: add
+        style: primary
+        type: form
+        form_id: partitions.create_form
+        capabilities:
+          - "partitions:create"
+
+  # ===== Roles =====
+  - id: roles.list
+    title: Partition Roles
+    route: /roles
+    layout: table
+    capabilities:
+      - "roles:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Roles
+        route: /roles
+    table:
+      data_source:
+        operation_id: listPartitionRoles
+        service_id: partition-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Role Name
+          type: text
+          sortable: true
+        - field: description
+          label: Description
+          type: text
+        - field: partition_id
+          label: Partition
+          type: text
+        - field: state
+          label: State
+          type: badge
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+      row_actions:
+        - id: delete_role
+          label: Delete
+          icon: delete
+          style: danger
+          type: command
+          command_id: access-control.removePartitionRole
+          capabilities:
+            - "roles:delete"
+          confirmation:
+            title: Delete Role
+            message: "Are you sure you want to delete role {name}?"
+            confirm: Delete
+            cancel: Cancel
+            style: danger
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_role
+        label: Create Role
+        icon: add
+        style: primary
+        type: form
+        form_id: roles.create_form
+        capabilities:
+          - "roles:create"
+
+  # ===== Access Grants =====
+  - id: access.list
+    title: Access Grants
+    route: /access
+    layout: table
+    capabilities:
+      - "access:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Access Grants
+        route: /access
+    table:
+      data_source:
+        operation_id: listAccessRoles
+        service_id: partition-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: profile_id
+          label: Profile
+          type: text
+        - field: partition_id
+          label: Partition
+          type: text
+        - field: state
+          label: State
+          type: badge
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+      row_actions:
+        - id: revoke_access
+          label: Revoke
+          icon: remove_circle
+          style: danger
+          type: command
+          command_id: access-control.removeAccess
+          capabilities:
+            - "access:delete"
+          confirmation:
+            title: Revoke Access
+            message: "Revoke this access grant?"
+            confirm: Revoke
+            cancel: Cancel
+            style: danger
+      default_sort: profile_id
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: grant_access
+        label: Grant Access
+        icon: add
+        style: primary
+        type: form
+        form_id: access.grant_form
+        capabilities:
+          - "access:create"
+
+forms:
+  - id: tenants.create_form
+    title: Create Tenant
+    capabilities:
+      - "tenants:create"
+    submit_command: access-control.createTenant
+    success_route: /tenants
+    success_message: Tenant created successfully.
+    sections:
+      - id: details
+        title: Tenant Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Tenant Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 100
+          - field: description
+            label: Description
+            type: textarea
+
+  - id: tenants.edit_form
+    title: Edit Tenant
+    capabilities:
+      - "tenants:edit"
+    submit_command: access-control.updateTenant
+    load_source:
+      operation_id: getTenant
+      service_id: partition-svc
+    success_route: /tenants/{id}
+    success_message: Tenant updated successfully.
+    sections:
+      - id: details
+        title: Tenant Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Tenant Name
+            type: text
+            required: true
+          - field: description
+            label: Description
+            type: textarea
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Inactive
+                  value: INACTIVE
+
+  - id: partitions.create_form
+    title: Create Partition
+    capabilities:
+      - "partitions:create"
+    submit_command: access-control.createPartition
+    success_route: /partitions
+    success_message: Partition created successfully.
+    sections:
+      - id: details
+        title: Partition Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Partition Name
+            type: text
+            required: true
+          - field: description
+            label: Description
+            type: textarea
+          - field: parent_id
+            label: Parent Partition
+            type: reference
+            lookup:
+              operation_id: listPartitions
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+
+  - id: roles.create_form
+    title: Create Role
+    capabilities:
+      - "roles:create"
+    submit_command: access-control.createPartitionRole
+    success_route: /roles
+    success_message: Role created successfully.
+    sections:
+      - id: details
+        title: Role Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Role Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 50
+          - field: description
+            label: Description
+            type: textarea
+          - field: partition_id
+            label: Partition
+            type: reference
+            required: true
+            lookup:
+              operation_id: listPartitions
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+
+  - id: access.grant_form
+    title: Grant Access
+    capabilities:
+      - "access:create"
+    submit_command: access-control.createAccess
+    success_route: /access
+    success_message: Access granted successfully.
+    sections:
+      - id: details
+        title: Access Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: profile_id
+            label: User (Profile ID)
+            type: text
+            required: true
+          - field: partition_id
+            label: Partition
+            type: reference
+            required: true
+            lookup:
+              operation_id: listPartitions
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+      - id: role_assignment
+        title: Role Assignment
+        layout: grid
+        columns: 1
+        fields:
+          - field: partition_role_id
+            label: Role
+            type: reference
+            required: true
+            lookup:
+              operation_id: listPartitionRoles
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+
+commands:
+  - id: access-control.createTenant
+    capabilities:
+      - "tenants:create"
+    operation:
+      type: openapi
+      operation_id: createTenant
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.description: input.description
+    output:
+      type: full
+
+  - id: access-control.updateTenant
+    capabilities:
+      - "tenants:edit"
+    operation:
+      type: openapi
+      operation_id: updateTenant
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.description: input.description
+        data.state: input.state
+    output:
+      type: full
+
+  - id: access-control.createPartition
+    capabilities:
+      - "partitions:create"
+    operation:
+      type: openapi
+      operation_id: createPartition
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.description: input.description
+        data.parent_id: input.parent_id
+    output:
+      type: full
+
+  - id: access-control.createPartitionRole
+    capabilities:
+      - "roles:create"
+    operation:
+      type: openapi
+      operation_id: createPartitionRole
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.description: input.description
+        data.partition_id: input.partition_id
+    output:
+      type: full
+
+  - id: access-control.removePartitionRole
+    capabilities:
+      - "roles:delete"
+    operation:
+      type: openapi
+      operation_id: removePartitionRole
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+  - id: access-control.createAccess
+    capabilities:
+      - "access:create"
+    operation:
+      type: openapi
+      operation_id: createAccess
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.profile_id: input.profile_id
+        data.partition_id: input.partition_id
+    output:
+      type: full
+
+  - id: access-control.removeAccess
+    capabilities:
+      - "access:delete"
+    operation:
+      type: openapi
+      operation_id: removeAccess
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+  - id: access-control.createAccessRole
+    capabilities:
+      - "access:edit"
+    operation:
+      type: openapi
+      operation_id: createAccessRole
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.access_id: input.access_id
+        data.partition_role_id: input.partition_role_id
+    output:
+      type: full
+
+  - id: access-control.removeAccessRole
+    capabilities:
+      - "access:edit"
+    operation:
+      type: openapi
+      operation_id: removeAccessRole
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+searches:
+  - id: access-control.tenants
+    domain: tenants
+    capabilities:
+      - "tenants:view"
+    operation:
+      type: openapi
+      operation_id: listTenants
+      service_id: partition-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: description
+      id_field: id
+      route: "/tenants/{id}"
+    weight: 0.8
+    max_results: 10
+
+  - id: access-control.partitions
+    domain: partitions
+    capabilities:
+      - "partitions:view"
+    operation:
+      type: openapi
+      operation_id: listPartitions
+      service_id: partition-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: description
+      id_field: id
+      route: "/partitions/{id}"
+    weight: 0.8
+    max_results: 10

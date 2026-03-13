@@ -1,0 +1,117 @@
+openapi: 3.0.3
+info:
+  title: Settings Service (ConnectRPC)
+  description: Application settings management via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  /settings.settings.v1.SettingsService/ListSettings:
+    post:
+      operationId: listSettings
+      summary: List settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListSettingsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSettingsResponse'
+
+  /settings.settings.v1.SettingsService/GetSetting:
+    post:
+      operationId: getSetting
+      summary: Get setting by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingObject'
+
+  /settings.settings.v1.SettingsService/UpdateSetting:
+    post:
+      operationId: updateSetting
+      summary: Update a setting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingObject'
+
+components:
+  schemas:
+    ListSettingsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        module:
+          type: string
+        scope:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListSettingsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingObject'
+    UpdateSettingRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SettingObject'
+    SettingObject:
+      type: object
+      properties:
+        id:
+          type: string
+        module:
+          type: string
+        key:
+          type: string
+        value:
+          type: string
+        language:
+          type: string
+        scope:
+          type: string
+        object_id:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer

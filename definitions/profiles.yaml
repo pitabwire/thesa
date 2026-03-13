@@ -1,0 +1,431 @@
+domain: profiles
+version: "1.0.0"
+
+navigation:
+  label: Users
+  icon: people
+  order: 2
+  capabilities:
+    - "profiles:view"
+  children:
+    - label: All Users
+      icon: person
+      route: /users
+      page_id: profiles.list
+      capabilities:
+        - "profiles:view"
+      order: 1
+    - label: Create User
+      icon: person_add
+      route: /users/new
+      page_id: profiles.create_form
+      capabilities:
+        - "profiles:create"
+      order: 2
+
+pages:
+  - id: profiles.list
+    title: Users
+    route: /users
+    layout: table
+    capabilities:
+      - "profiles:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Users
+        route: /users
+    table:
+      data_source:
+        operation_id: searchProfiles
+        service_id: profile-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: id
+          label: ID
+          type: text
+          link:
+            route: /users/{id}
+            params:
+              id: id
+        - field: profile_type
+          label: Type
+          type: badge
+          sortable: true
+          status_map:
+            PERSON: info
+            INSTITUTION: success
+            BOT: warning
+        - field: properties.first_name
+          label: First Name
+          type: text
+          sortable: true
+        - field: properties.last_name
+          label: Last Name
+          type: text
+          sortable: true
+        - field: contacts[0].detail
+          label: Primary Contact
+          type: text
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            CHECKED: info
+            INACTIVE: warning
+            DELETED: error
+      filters:
+        - field: profile_type
+          label: Type
+          type: select
+          options:
+            static:
+              - label: Person
+                value: PERSON
+              - label: Institution
+                value: INSTITUTION
+              - label: Bot
+                value: BOT
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Inactive
+                value: INACTIVE
+      default_sort: properties.last_name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_user
+        label: Create User
+        icon: person_add
+        style: primary
+        type: form
+        form_id: profiles.create_form
+        capabilities:
+          - "profiles:create"
+
+  - id: profiles.detail
+    title: "User Profile"
+    route: /users/{id}
+    layout: detail
+    capabilities:
+      - "profiles:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Users
+        route: /users
+      - label: Profile
+        route: /users/{id}
+    sections:
+      - id: basic_info
+        title: Basic Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: Profile ID
+            type: text
+            read_only: true
+          - field: profile_type
+            label: Type
+            type: badge
+            read_only: true
+          - field: properties.first_name
+            label: First Name
+            type: text
+            read_only: true
+          - field: properties.last_name
+            label: Last Name
+            type: text
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+      - id: contacts
+        title: Contacts
+        layout: grid
+        columns: 1
+        fields:
+          - field: contacts
+            label: Contacts
+            type: text
+            read_only: true
+      - id: addresses
+        title: Addresses
+        layout: grid
+        columns: 1
+        collapsible: true
+        fields:
+          - field: addresses
+            label: Addresses
+            type: text
+            read_only: true
+    actions:
+      - id: edit_profile
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: profiles.edit_form
+        capabilities:
+          - "profiles:edit"
+      - id: add_contact
+        label: Add Contact
+        icon: contact_mail
+        style: default
+        type: form
+        form_id: profiles.add_contact_form
+        capabilities:
+          - "profiles:contacts"
+      - id: add_address
+        label: Add Address
+        icon: location_on
+        style: default
+        type: form
+        form_id: profiles.add_address_form
+        capabilities:
+          - "profiles:addresses"
+
+forms:
+  - id: profiles.create_form
+    title: Create User
+    capabilities:
+      - "profiles:create"
+    submit_command: profiles.createProfile
+    success_route: /users
+    success_message: User created successfully.
+    sections:
+      - id: basic
+        title: Basic Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: profile_type
+            label: Profile Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Person
+                  value: PERSON
+                - label: Institution
+                  value: INSTITUTION
+          - field: properties.first_name
+            label: First Name
+            type: text
+            required: true
+            validation:
+              min_length: 1
+              max_length: 100
+          - field: properties.last_name
+            label: Last Name
+            type: text
+            required: true
+            validation:
+              min_length: 1
+              max_length: 100
+      - id: contact
+        title: Primary Contact
+        layout: grid
+        columns: 2
+        fields:
+          - field: contact_type
+            label: Contact Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Email
+                  value: EMAIL
+                - label: Phone
+                  value: MSISDN
+          - field: contact_detail
+            label: Contact Detail
+            type: text
+            required: true
+            placeholder: "email@example.com or +254..."
+
+  - id: profiles.edit_form
+    title: Edit Profile
+    capabilities:
+      - "profiles:edit"
+    submit_command: profiles.updateProfile
+    load_source:
+      operation_id: getProfileById
+      service_id: profile-svc
+    success_route: /users/{id}
+    success_message: Profile updated successfully.
+    sections:
+      - id: basic
+        title: Basic Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: properties.first_name
+            label: First Name
+            type: text
+            required: true
+          - field: properties.last_name
+            label: Last Name
+            type: text
+            required: true
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Inactive
+                  value: INACTIVE
+
+  - id: profiles.add_contact_form
+    title: Add Contact
+    capabilities:
+      - "profiles:contacts"
+    submit_command: profiles.addContact
+    success_route: /users/{id}
+    success_message: Contact added successfully.
+    sections:
+      - id: contact
+        title: Contact Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: contact_type
+            label: Contact Type
+            type: select
+            required: true
+            lookup:
+              static:
+                - label: Email
+                  value: EMAIL
+                - label: Phone (MSISDN)
+                  value: MSISDN
+          - field: detail
+            label: Contact Value
+            type: text
+            required: true
+            placeholder: "email@example.com or +254700000000"
+
+  - id: profiles.add_address_form
+    title: Add Address
+    capabilities:
+      - "profiles:addresses"
+    submit_command: profiles.addAddress
+    success_route: /users/{id}
+    success_message: Address added successfully.
+    sections:
+      - id: address
+        title: Address Details
+        layout: grid
+        columns: 2
+        fields:
+          - field: country
+            label: Country
+            type: text
+            required: true
+          - field: city
+            label: City
+            type: text
+            required: true
+          - field: area
+            label: Area
+            type: text
+          - field: street
+            label: Street
+            type: text
+
+commands:
+  - id: profiles.createProfile
+    capabilities:
+      - "profiles:create"
+    operation:
+      type: openapi
+      operation_id: createProfile
+      service_id: profile-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        profile_type: input.profile_type
+        properties: input.properties
+    output:
+      type: full
+
+  - id: profiles.updateProfile
+    capabilities:
+      - "profiles:edit"
+    operation:
+      type: openapi
+      operation_id: updateProfile
+      service_id: profile-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+        properties: input.properties
+        state: input.state
+    output:
+      type: full
+
+  - id: profiles.addContact
+    capabilities:
+      - "profiles:contacts"
+    operation:
+      type: openapi
+      operation_id: addContact
+      service_id: profile-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        profile_id: input.profile_id
+        contact_type: input.contact_type
+        detail: input.detail
+    output:
+      type: full
+
+  - id: profiles.addAddress
+    capabilities:
+      - "profiles:addresses"
+    operation:
+      type: openapi
+      operation_id: addAddress
+      service_id: profile-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        profile_id: input.profile_id
+        country: input.country
+        city: input.city
+        area: input.area
+        street: input.street
+    output:
+      type: full
+
+searches:
+  - id: profiles.search
+    domain: users
+    capabilities:
+      - "profiles:view"
+    operation:
+      type: openapi
+      operation_id: searchProfiles
+      service_id: profile-svc
+    result_mapping:
+      items_path: data
+      title_field: properties.first_name
+      subtitle_field: properties.last_name
+      id_field: id
+      route: "/users/{id}"
+    weight: 1.0
+    max_results: 10

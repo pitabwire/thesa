@@ -1,0 +1,448 @@
+domain: foundry
+version: "1.0.0"
+
+navigation:
+  label: Site Builder
+  icon: construction
+  order: 3
+  capabilities:
+    - "foundry:view"
+  children:
+    - label: Projects
+      icon: source
+      route: /foundry/projects
+      page_id: foundry.projects
+      capabilities:
+        - "foundry:view"
+      order: 1
+    - label: Builds
+      icon: build_circle
+      route: /foundry/builds
+      page_id: foundry.builds
+      capabilities:
+        - "foundry:build"
+      order: 2
+    - label: Templates
+      icon: dashboard_customize
+      route: /foundry/templates
+      page_id: foundry.templates
+      capabilities:
+        - "foundry:templates"
+      order: 3
+
+pages:
+  - id: foundry.projects
+    title: Projects
+    route: /foundry/projects
+    layout: table
+    capabilities:
+      - "foundry:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Site Builder
+        route: /foundry/projects
+      - label: Projects
+        route: /foundry/projects
+    table:
+      data_source:
+        operation_id: listRepos
+        service_id: foundry-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+          link:
+            route: /foundry/projects/{id}
+            params:
+              id: id
+        - field: remote_url
+          label: Remote URL
+          type: text
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            BUILDING: warning
+            FAILED: error
+            ARCHIVED: error
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+            DELETED: error
+      filters:
+        - field: status
+          label: Status
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Building
+                value: BUILDING
+              - label: Failed
+                value: FAILED
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Archived
+                value: ARCHIVED
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: create_project
+        label: Create Project
+        icon: add
+        style: primary
+        type: form
+        form_id: foundry.create_project_form
+        capabilities:
+          - "foundry:create"
+
+  - id: foundry.builds
+    title: Builds
+    route: /foundry/builds
+    layout: table
+    capabilities:
+      - "foundry:build"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Site Builder
+        route: /foundry/projects
+      - label: Builds
+        route: /foundry/builds
+    table:
+      data_source:
+        operation_id: listBuilds
+        service_id: foundry-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: project_name
+          label: Project
+          type: text
+          sortable: true
+        - field: prompt
+          label: Prompt
+          type: text
+        - field: template_name
+          label: Template
+          type: text
+        - field: status
+          label: Status
+          type: badge
+          sortable: true
+          status_map:
+            QUEUED: info
+            BUILDING: warning
+            COMPLETED: success
+            FAILED: error
+            CANCELLED: error
+            PROMOTED: success
+        - field: created_at
+          label: Created
+          type: datetime
+          sortable: true
+      filters:
+        - field: status
+          label: Status
+          type: select
+          options:
+            static:
+              - label: Queued
+                value: QUEUED
+              - label: Building
+                value: BUILDING
+              - label: Completed
+                value: COMPLETED
+              - label: Failed
+                value: FAILED
+              - label: Cancelled
+                value: CANCELLED
+      row_actions:
+        - id: cancel_build
+          label: Cancel
+          icon: cancel
+          style: danger
+          type: command
+          command_id: foundry.cancelBuild
+          capabilities:
+            - "foundry:build"
+          confirmation:
+            title: Cancel Build
+            message: "Are you sure you want to cancel this build?"
+            confirm: Cancel Build
+            cancel: Keep
+            style: danger
+          conditions:
+            - field: status
+              operator: in
+              value: "QUEUED,BUILDING"
+              effect: show
+        - id: promote_build
+          label: Promote
+          icon: publish
+          style: primary
+          type: command
+          command_id: foundry.promoteBuild
+          capabilities:
+            - "foundry:manage"
+          confirmation:
+            title: Promote Build
+            message: "Promote this build to production?"
+            confirm: Promote
+            cancel: Cancel
+            style: primary
+          conditions:
+            - field: status
+              operator: eq
+              value: COMPLETED
+              effect: show
+      default_sort: created_at
+      sort_dir: desc
+      page_size: 25
+    actions:
+      - id: start_build
+        label: Start Build
+        icon: play_arrow
+        style: primary
+        type: form
+        form_id: foundry.start_build_form
+        capabilities:
+          - "foundry:build"
+
+  - id: foundry.templates
+    title: Templates
+    route: /foundry/templates
+    layout: table
+    capabilities:
+      - "foundry:templates"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Site Builder
+        route: /foundry/projects
+      - label: Templates
+        route: /foundry/templates
+    table:
+      data_source:
+        operation_id: listTemplates
+        service_id: foundry-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: name
+          label: Name
+          type: text
+          sortable: true
+        - field: description
+          label: Description
+          type: text
+        - field: category
+          label: Category
+          type: text
+          sortable: true
+        - field: state
+          label: State
+          type: badge
+          sortable: true
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            DEPRECATED: warning
+      filters:
+        - field: category
+          label: Category
+          type: text
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Deprecated
+                value: DEPRECATED
+      default_sort: name
+      sort_dir: asc
+      page_size: 25
+
+forms:
+  - id: foundry.create_project_form
+    title: Create Project
+    capabilities:
+      - "foundry:create"
+    submit_command: foundry.createRepo
+    success_route: /foundry/projects
+    success_message: Project created successfully.
+    sections:
+      - id: details
+        title: Project Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Project Name
+            type: text
+            required: true
+            validation:
+              min_length: 2
+              max_length: 100
+          - field: remote_url
+            label: Remote URL
+            type: text
+            required: true
+            placeholder: "https://github.com/org/repo.git"
+            validation:
+              max_length: 500
+
+  - id: foundry.start_build_form
+    title: Start Build
+    capabilities:
+      - "foundry:build"
+    submit_command: foundry.startBuild
+    success_route: /foundry/builds
+    success_message: Build started successfully.
+    sections:
+      - id: details
+        title: Build Configuration
+        layout: grid
+        columns: 1
+        fields:
+          - field: project_id
+            label: Project
+            type: reference
+            required: true
+            lookup:
+              operation_id: listRepos
+              service_id: foundry-svc
+              label_field: name
+              value_field: id
+          - field: prompt
+            label: Prompt
+            type: textarea
+            required: true
+            placeholder: "Describe the changes you want to make..."
+            validation:
+              min_length: 10
+              max_length: 5000
+          - field: template_id
+            label: Template
+            type: reference
+            lookup:
+              operation_id: listTemplates
+              service_id: foundry-svc
+              label_field: name
+              value_field: id
+
+commands:
+  - id: foundry.createRepo
+    capabilities:
+      - "foundry:create"
+    operation:
+      type: openapi
+      operation_id: createRepo
+      service_id: foundry-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.name: input.name
+        data.remote_url: input.remote_url
+    output:
+      type: full
+
+  - id: foundry.startBuild
+    capabilities:
+      - "foundry:build"
+    operation:
+      type: openapi
+      operation_id: startBuild
+      service_id: foundry-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.project_id: input.project_id
+        data.prompt: input.prompt
+        data.template_id: input.template_id
+    output:
+      type: full
+
+  - id: foundry.cancelBuild
+    capabilities:
+      - "foundry:build"
+    operation:
+      type: openapi
+      operation_id: cancelBuild
+      service_id: foundry-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+  - id: foundry.promoteBuild
+    capabilities:
+      - "foundry:manage"
+    operation:
+      type: openapi
+      operation_id: promoteBuild
+      service_id: foundry-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        id: input.id
+    output:
+      type: full
+
+searches:
+  - id: foundry.projects_search
+    domain: projects
+    capabilities:
+      - "foundry:view"
+    operation:
+      type: openapi
+      operation_id: listRepos
+      service_id: foundry-svc
+    result_mapping:
+      items_path: data
+      title_field: name
+      subtitle_field: remote_url
+      id_field: id
+      route: "/foundry/projects/{id}"
+    weight: 0.8
+    max_results: 10
+
+  - id: foundry.builds_search
+    domain: builds
+    capabilities:
+      - "foundry:build"
+    operation:
+      type: openapi
+      operation_id: listBuilds
+      service_id: foundry-svc
+    result_mapping:
+      items_path: data
+      title_field: project_name
+      subtitle_field: status
+      id_field: id
+      route: "/foundry/builds/{id}"
+    weight: 0.6
+    max_results: 10

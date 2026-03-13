@@ -1,0 +1,459 @@
+openapi: 3.0.3
+info:
+  title: Foundry Site Builder Service (ConnectRPC)
+  description: Site building, repository management, and AI planning via ConnectRPC HTTP/JSON.
+  version: 1.0.0
+
+paths:
+  # BuildService
+  /build.v1.BuildService/ListBuilds:
+    post:
+      operationId: listBuilds
+      summary: List builds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListBuildsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListBuildsResponse'
+
+  /build.v1.BuildService/GetBuildStatus:
+    post:
+      operationId: getBuildStatus
+      summary: Get build status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildObject'
+
+  /build.v1.BuildService/StartBuild:
+    post:
+      operationId: startBuild
+      summary: Start a new build
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartBuildRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildObject'
+
+  /build.v1.BuildService/CancelBuild:
+    post:
+      operationId: cancelBuild
+      summary: Cancel a running build
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildObject'
+
+  /build.v1.BuildService/PromoteBuild:
+    post:
+      operationId: promoteBuild
+      summary: Promote a build to production
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                environment:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildObject'
+
+  # RepoService
+  /repo.v1.RepoService/ListRepos:
+    post:
+      operationId: listRepos
+      summary: List repositories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListReposRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListReposResponse'
+
+  /repo.v1.RepoService/GetRepoStatus:
+    post:
+      operationId: getRepoStatus
+      summary: Get repository status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoObject'
+
+  /repo.v1.RepoService/CreateRepo:
+    post:
+      operationId: createRepo
+      summary: Create a repository
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRepoRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoObject'
+
+  /repo.v1.RepoService/UpdateRepo:
+    post:
+      operationId: updateRepo
+      summary: Update a repository
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRepoRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepoObject'
+
+  /repo.v1.RepoService/DeleteRepo:
+    post:
+      operationId: deleteRepo
+      summary: Delete a repository
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # PlannerService
+  /planner.v1.PlannerService/ListPlans:
+    post:
+      operationId: listPlans
+      summary: List plans
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListPlansRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPlansResponse'
+
+  /planner.v1.PlannerService/GetPlan:
+    post:
+      operationId: getPlan
+      summary: Get plan by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanObject'
+
+  /planner.v1.PlannerService/SubmitPrompt:
+    post:
+      operationId: submitPrompt
+      summary: Submit a prompt for AI planning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPromptRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanObject'
+
+  /planner.v1.PlannerService/ListTemplates:
+    post:
+      operationId: listTemplates
+      summary: List available templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListTemplatesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTemplatesResponse'
+
+  /planner.v1.PlannerService/GetTemplate:
+    post:
+      operationId: getTemplate
+      summary: Get template by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateObject'
+
+components:
+  schemas:
+    # Build schemas
+    ListBuildsRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        repo_id:
+          type: string
+        status:
+          type: string
+          enum: [QUEUED, DISPATCHED, RUNNING, COMPLETED, FAILED, CANCELLED]
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListBuildsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildObject'
+    StartBuildRequest:
+      type: object
+      properties:
+        repo_id:
+          type: string
+        branch:
+          type: string
+    BuildObject:
+      type: object
+      properties:
+        id:
+          type: string
+        repo_id:
+          type: string
+        status:
+          type: string
+          enum: [QUEUED, DISPATCHED, RUNNING, COMPLETED, FAILED, CANCELLED]
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          additionalProperties:
+            type: string
+
+    # Repo schemas
+    ListReposRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListReposResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepoObject'
+    CreateRepoRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RepoObject'
+    UpdateRepoRequest:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RepoObject'
+    RepoObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, INITIALIZING, READY, ERROR]
+        remote_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # Planner schemas
+    ListPlansRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListPlansResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanObject'
+    SubmitPromptRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+        template_id:
+          type: string
+    PlanObject:
+      type: object
+      properties:
+        id:
+          type: string
+        prompt:
+          type: string
+        status:
+          type: string
+          enum: [PLANNING, CLARIFYING, EXPANDING, READY, BUILDING, COMPLETED, FAILED]
+        site_spec:
+          type: object
+          additionalProperties:
+            type: string
+    ListTemplatesRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          $ref: '#/components/schemas/PageCursor'
+    ListTemplatesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateObject'
+    TemplateObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        published:
+          type: boolean
+        install_count:
+          type: integer
+
+    StatusResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        status:
+          type: string
+    PageCursor:
+      type: object
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer
