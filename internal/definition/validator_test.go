@@ -21,10 +21,10 @@ func validDomain() model.DomainDefinition {
 		},
 		Pages: []model.PageDefinition{
 			{
-				ID:     "orders.list",
-				Title:  "Orders",
-				Route:  "/orders",
-				Layout: "list",
+				ID:           "orders.list",
+				Title:        "Orders",
+				Route:        "/orders",
+				Layout:       "list",
 				Capabilities: []string{"orders:list:view"},
 				Table: &model.TableDefinition{
 					DataSource: model.DataSourceDefinition{
@@ -241,13 +241,23 @@ func TestValidator_workflow_bad_step_type(t *testing.T) {
 	}
 }
 
-func TestValidator_capability_namespace_mismatch(t *testing.T) {
+func TestValidator_capability_invalid_format(t *testing.T) {
 	v := NewValidator()
 	def := validDomain()
-	def.Pages[0].Capabilities = []string{"inventory:list:view"}
+	def.Pages[0].Capabilities = []string{"nocoloncapability"}
 	errs := v.Validate([]model.DomainDefinition{def}, nil)
-	if !hasCode(errs, "NAMESPACE_MISMATCH") {
-		t.Error("expected NAMESPACE_MISMATCH error")
+	if !hasCode(errs, "INVALID_FORMAT") {
+		t.Error("expected INVALID_FORMAT error for capability without colon")
+	}
+}
+
+func TestValidator_capability_cross_domain_allowed(t *testing.T) {
+	v := NewValidator()
+	def := validDomain()
+	def.Pages[0].Capabilities = []string{"inventory:view"}
+	errs := v.Validate([]model.DomainDefinition{def}, nil)
+	if hasCode(errs, "INVALID_FORMAT") {
+		t.Error("cross-domain capabilities with colon separator should be allowed")
 	}
 }
 

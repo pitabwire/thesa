@@ -94,17 +94,15 @@ func (v *Validator) validateDomain(prefix string, def model.DomainDefinition, in
 		}
 	}
 
-	// Validate capability namespaces match domain ID.
-	if def.Domain != "" {
-		for i, p := range def.Pages {
-			for _, cap := range p.Capabilities {
-				if !strings.HasPrefix(cap, def.Domain+":") && cap != "*" {
-					errs = append(errs, VError{
-						Path:    fmt.Sprintf("%s.pages[%d].capabilities", prefix, i),
-						Code:    "NAMESPACE_MISMATCH",
-						Message: fmt.Sprintf("capability %q does not match domain %q", cap, def.Domain),
-					})
-				}
+	// Validate capability format (must contain a colon separator).
+	for i, p := range def.Pages {
+		for _, cap := range p.Capabilities {
+			if cap != "*" && !strings.Contains(cap, ":") {
+				errs = append(errs, VError{
+					Path:    fmt.Sprintf("%s.pages[%d].capabilities", prefix, i),
+					Code:    "INVALID_FORMAT",
+					Message: fmt.Sprintf("capability %q must contain a colon separator (e.g. %q)", cap, def.Domain+":view"),
+				})
 			}
 		}
 	}
@@ -113,7 +111,7 @@ func (v *Validator) validateDomain(prefix string, def model.DomainDefinition, in
 }
 
 var validPageLayouts = map[string]bool{
-	"list": true, "detail": true, "dashboard": true, "custom": true,
+	"list": true, "detail": true, "dashboard": true, "custom": true, "table": true,
 }
 
 func (v *Validator) validatePage(prefix string, p model.PageDefinition, domain string, index *openapi.Index) []VError {
@@ -131,8 +129,8 @@ func (v *Validator) validatePage(prefix string, p model.PageDefinition, domain s
 		errs = append(errs, VError{Path: prefix + ".layout", Code: "INVALID_ENUM", Message: fmt.Sprintf("invalid layout %q", p.Layout)})
 	}
 
-	if p.Layout == "list" && p.Table == nil {
-		errs = append(errs, VError{Path: prefix + ".table", Code: "REQUIRED", Message: "table is required for list layout"})
+	if (p.Layout == "list" || p.Layout == "table") && p.Table == nil {
+		errs = append(errs, VError{Path: prefix + ".table", Code: "REQUIRED", Message: fmt.Sprintf("table is required for %s layout", p.Layout)})
 	}
 
 	if p.Table != nil {

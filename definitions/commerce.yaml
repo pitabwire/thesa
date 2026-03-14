@@ -247,7 +247,7 @@ pages:
         route: /commerce/orders
     table:
       data_source:
-        operation_id: listShopOrders
+        operation_id: listOrders
         service_id: commerce-svc
         mapping:
           items_path: data
@@ -523,20 +523,6 @@ commands:
         data.price: input.price
         data.stock: input.stock
         data.state: input.state
-    output:
-      type: full
-
-  - id: commerce.deleteProduct
-    capabilities:
-      - "commerce:manage"
-    operation:
-      type: openapi
-      operation_id: deleteProduct
-      service_id: commerce-svc
-    input:
-      body_mapping: projection
-      field_projection:
-        id: input.id
     output:
       type: full
 

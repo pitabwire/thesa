@@ -157,9 +157,8 @@ commands:
     capabilities:
       - "files:upload"
     operation:
-      type: openapi
-      operation_id: uploadFile
-      service_id: files-svc
+      type: sdk
+      handler: files.upload
     input:
       body_mapping: projection
       field_projection:

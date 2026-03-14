@@ -154,15 +154,6 @@ pages:
         form_id: chat.send_message_form
         capabilities:
           - "chat:create"
-      - id: manage_room
-        label: Manage Room
-        icon: settings
-        style: default
-        type: form
-        form_id: chat.manage_room_form
-        capabilities:
-          - "chat:manage"
-
 forms:
   - id: chat.create_room_form
     title: Create Room
@@ -218,36 +209,6 @@ forms:
               min_length: 1
               max_length: 5000
 
-  - id: chat.manage_room_form
-    title: Manage Room
-    capabilities:
-      - "chat:manage"
-    submit_command: chat.updateRoom
-    load_source:
-      operation_id: getRoom
-      service_id: chat-svc
-    success_route: /chat/rooms/{id}
-    success_message: Room updated successfully.
-    sections:
-      - id: details
-        title: Room Settings
-        layout: grid
-        columns: 1
-        fields:
-          - field: name
-            label: Room Name
-            type: text
-            required: true
-          - field: state
-            label: State
-            type: select
-            lookup:
-              static:
-                - label: Active
-                  value: ACTIVE
-                - label: Archived
-                  value: ARCHIVED
-
 commands:
   - id: chat.createRoom
     capabilities:
@@ -276,22 +237,6 @@ commands:
       field_projection:
         data.room_id: input.room_id
         data.body: input.body
-    output:
-      type: full
-
-  - id: chat.updateRoom
-    capabilities:
-      - "chat:manage"
-    operation:
-      type: openapi
-      operation_id: updateRoom
-      service_id: chat-svc
-    input:
-      body_mapping: projection
-      field_projection:
-        data.id: input.id
-        data.name: input.name
-        data.state: input.state
     output:
       type: full
 

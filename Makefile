@@ -5,13 +5,17 @@ REGISTRY ?= ""
 
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT)
 
-.PHONY: build test lint docker-build docker-push clean
+.PHONY: build test lint format docker-build docker-push clean
 
 build:
 	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o bin/thesa-bff ./cmd/bff
 
 test:
 	go test -race ./...
+
+format:
+	gofmt -w .
+	goimports -w . 2>/dev/null || true
 
 lint:
 	golangci-lint run ./...

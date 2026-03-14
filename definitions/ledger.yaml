@@ -264,16 +264,6 @@ pages:
             label: State
             type: badge
             read_only: true
-    actions:
-      - id: edit_account
-        label: Edit
-        icon: edit
-        style: primary
-        type: form
-        form_id: ledger.edit_account_form
-        capabilities:
-          - "ledger:edit"
-
 forms:
   - id: ledger.create_account_form
     title: Create Account
@@ -373,38 +363,6 @@ forms:
             type: text
             placeholder: "External reference"
 
-  - id: ledger.edit_account_form
-    title: Edit Account
-    capabilities:
-      - "ledger:edit"
-    submit_command: ledger.updateAccount
-    load_source:
-      operation_id: getAccount
-      service_id: ledger-svc
-    success_route: /ledger/accounts/{id}
-    success_message: Account updated successfully.
-    sections:
-      - id: details
-        title: Account Details
-        layout: grid
-        columns: 1
-        fields:
-          - field: name
-            label: Account Name
-            type: text
-            required: true
-          - field: state
-            label: State
-            type: select
-            lookup:
-              static:
-                - label: Active
-                  value: ACTIVE
-                - label: Frozen
-                  value: FROZEN
-                - label: Closed
-                  value: CLOSED
-
 commands:
   - id: ledger.createAccount
     capabilities:
@@ -419,22 +377,6 @@ commands:
         data.name: input.name
         data.type: input.type
         data.currency: input.currency
-    output:
-      type: full
-
-  - id: ledger.updateAccount
-    capabilities:
-      - "ledger:edit"
-    operation:
-      type: openapi
-      operation_id: updateAccount
-      service_id: ledger-svc
-    input:
-      body_mapping: projection
-      field_projection:
-        data.id: input.id
-        data.name: input.name
-        data.state: input.state
     output:
       type: full
 
