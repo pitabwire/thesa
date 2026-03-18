@@ -4,7 +4,7 @@ FROM ghcr.io/cirruslabs/flutter:latest AS flutter-builder
 WORKDIR /ui
 
 # Copy dependency files first for caching.
-COPY ui/pubspec.yaml ui/pubspec.lock ./
+COPY ui/pubspec.yaml ./
 COPY ui/packages/ packages/
 RUN flutter pub get
 
