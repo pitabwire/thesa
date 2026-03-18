@@ -349,6 +349,11 @@ func buildWorkflowStore(ctx context.Context, cfg config.WorkflowConfig, logger *
 		}
 
 		store := workflow.NewPgWorkflowStore(pool)
+		if err := store.EnsureSchema(ctx); err != nil {
+			pool.Close()
+			return nil, nil, fmt.Errorf("workflow store: ensure schema: %w", err)
+		}
+		logger.Info("workflow store schema ensured")
 		return store, pool.Close, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported workflow store driver: %q", cfg.Store.Driver)

@@ -22,6 +22,64 @@ func NewPgWorkflowStore(pool *pgxpool.Pool) *PgWorkflowStore {
 	return &PgWorkflowStore{pool: pool}
 }
 
+// EnsureSchema creates the workflow tables if they do not already exist.
+func (s *PgWorkflowStore) EnsureSchema(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS workflow_instances (
+			id              TEXT PRIMARY KEY,
+			workflow_id     TEXT NOT NULL,
+			tenant_id       TEXT NOT NULL,
+			partition_id    TEXT NOT NULL DEFAULT '',
+			subject_id      TEXT NOT NULL,
+			current_step    TEXT NOT NULL,
+			status          TEXT NOT NULL DEFAULT 'active',
+			state           JSONB DEFAULT '{}',
+			version         INTEGER NOT NULL DEFAULT 1,
+			created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			expires_at      TIMESTAMPTZ,
+			idempotency_key TEXT
+		)`)
+	if err != nil {
+		return fmt.Errorf("create workflow_instances table: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS workflow_events (
+			id                    TEXT PRIMARY KEY,
+			workflow_instance_id  TEXT NOT NULL REFERENCES workflow_instances(id) ON DELETE CASCADE,
+			step_id               TEXT NOT NULL,
+			event                 TEXT NOT NULL,
+			actor_id              TEXT NOT NULL DEFAULT '',
+			data                  JSONB DEFAULT '{}',
+			comment               TEXT DEFAULT '',
+			created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`)
+	if err != nil {
+		return fmt.Errorf("create workflow_events table: %w", err)
+	}
+
+	// Create indexes for common query patterns.
+	for _, ddl := range []string{
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_tenant_status ON workflow_instances (tenant_id, status)`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_workflow_id ON workflow_instances (workflow_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_expires ON workflow_instances (expires_at) WHERE status = 'active' AND expires_at IS NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_idempotency ON workflow_instances (idempotency_key) WHERE idempotency_key IS NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_events_instance ON workflow_events (workflow_instance_id, created_at)`,
+	} {
+		if _, err := s.pool.Exec(ctx, ddl); err != nil {
+			return fmt.Errorf("create index: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// HealthCheck verifies the database connection is alive.
+func (s *PgWorkflowStore) HealthCheck(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}
+
 // Create inserts a new workflow instance.
 func (s *PgWorkflowStore) Create(ctx context.Context, inst model.WorkflowInstance) error {
 	stateJSON, err := json.Marshal(inst.State)
