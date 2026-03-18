@@ -25,6 +25,8 @@ data:
         - /definitions
     specs:
       directory: /specs
+    ui:
+      dir: /ui
     observability:
       log_level: info
       tracing:

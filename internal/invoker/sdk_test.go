@@ -11,7 +11,7 @@ import (
 
 // mockSDKHandler is a test double for SDKHandler.
 type mockSDKHandler struct {
-	name      string
+	name     string
 	invokeFn func(ctx context.Context, rctx *model.RequestContext, input model.InvocationInput) (model.InvocationResult, error)
 }
 

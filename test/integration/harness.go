@@ -38,14 +38,14 @@ type TestHarness struct {
 	issuer *tokenIssuer
 
 	// Internal components exposed for advanced test scenarios.
-	Registry        *definition.Registry
-	OAIndex         *openapi.Index
-	InvokerRegistry *invoker.Registry
-	WorkflowStore   *workflow.MemoryWorkflowStore
-	WorkflowEngine  *workflow.Engine
+	Registry         *definition.Registry
+	OAIndex          *openapi.Index
+	InvokerRegistry  *invoker.Registry
+	WorkflowStore    *workflow.MemoryWorkflowStore
+	WorkflowEngine   *workflow.Engine
 	IdempotencyStore *command.MemoryIdempotencyStore
-	CommandExecutor *command.CommandExecutor
-	CapResolver     model.CapabilityResolver
+	CommandExecutor  *command.CommandExecutor
+	CapResolver      model.CapabilityResolver
 
 	backends map[string]*MockBackend
 	cfg      *config.Config

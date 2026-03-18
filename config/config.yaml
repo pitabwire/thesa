@@ -279,6 +279,9 @@ lookup:
     ttl: 5m
     max_entries: 1000
 
+ui:
+  dir: ""
+
 observability:
   log_level: info
   tracing:

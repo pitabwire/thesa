@@ -17,11 +17,11 @@ const defaultChainLimit = 10
 
 // Engine manages the lifecycle of workflow instances.
 type Engine struct {
-	registry   *definition.Registry
-	store      WorkflowStore
-	invokers   *invoker.Registry
+	registry    *definition.Registry
+	store       WorkflowStore
+	invokers    *invoker.Registry
 	capResolver model.CapabilityResolver
-	chainLimit int
+	chainLimit  int
 }
 
 // NewEngine creates a new workflow engine.

@@ -166,9 +166,9 @@ func TestInputMapper_projection(t *testing.T) {
 	}
 	input := model.CommandInput{
 		Input: map[string]any{
-			"reason":        "Customer requested cancellation",
-			"refund_type":   "full",
-			"extra_field":   "should be excluded",
+			"reason":      "Customer requested cancellation",
+			"refund_type": "full",
+			"extra_field": "should be excluded",
 		},
 	}
 

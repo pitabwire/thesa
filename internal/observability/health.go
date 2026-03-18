@@ -23,8 +23,8 @@ type HealthResponse struct {
 
 // ReadinessResponse is the JSON response for the readiness endpoint.
 type ReadinessResponse struct {
-	Status string                   `json:"status"`
-	Checks map[string]CheckResult   `json:"checks"`
+	Status string                 `json:"status"`
+	Checks map[string]CheckResult `json:"checks"`
 }
 
 // CheckResult is the result of a single readiness check.

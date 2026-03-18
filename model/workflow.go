@@ -53,12 +53,12 @@ type WorkflowSummary struct {
 
 // WorkflowEvent records an event in a workflow's audit trail.
 type WorkflowEvent struct {
-	ID                 string    `json:"id"`
-	WorkflowInstanceID string    `json:"workflow_instance_id"`
-	StepID             string    `json:"step_id"`
-	Event              string    `json:"event"`
-	ActorID            string    `json:"actor_id"`
+	ID                 string         `json:"id"`
+	WorkflowInstanceID string         `json:"workflow_instance_id"`
+	StepID             string         `json:"step_id"`
+	Event              string         `json:"event"`
+	ActorID            string         `json:"actor_id"`
 	Data               map[string]any `json:"data,omitempty"`
-	Comment            string    `json:"comment,omitempty"`
-	Timestamp          time.Time `json:"timestamp"`
+	Comment            string         `json:"comment,omitempty"`
+	Timestamp          time.Time      `json:"timestamp"`
 }

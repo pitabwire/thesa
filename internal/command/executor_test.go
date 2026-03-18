@@ -884,7 +884,7 @@ func TestApplyOutputMapping(t *testing.T) {
 	}
 	output := model.OutputMapping{
 		Fields: map[string]string{
-			"order_id":    "id",
+			"order_id":     "id",
 			"order_status": "status",
 		},
 	}

@@ -143,6 +143,8 @@ func run() int {
 	menuProvider := metadata.NewMenuProvider(registry, invokerReg)
 	pageProvider := metadata.NewPageProvider(registry, invokerReg, actionProvider)
 	formProvider := metadata.NewFormProvider(registry, invokerReg, actionProvider)
+	schemaProvider := metadata.NewSchemaProvider(registry)
+	resourceProvider := metadata.NewResourceProvider(registry, invokerReg, oaIndex)
 	searchProvider := search.NewSearchProvider(
 		registry, invokerReg,
 		cfg.Search.TimeoutPerProvider,
@@ -183,9 +185,12 @@ func run() int {
 		Config:             cfg,
 		Authenticate:       transport.JWTAuthenticator(cfg.Identity, jwks),
 		CapabilityResolver: capResolver,
+		Registry:           registry,
 		MenuProvider:       menuProvider,
 		PageProvider:       pageProvider,
 		FormProvider:       formProvider,
+		SchemaProvider:     schemaProvider,
+		ResourceProvider:   resourceProvider,
 		CommandExecutor:    cmdExecutor,
 		WorkflowEngine:     wfEngine,
 		SearchProvider:     searchProvider,
@@ -193,6 +198,7 @@ func run() int {
 		HealthHandler:      observability.HandleHealth(),
 		ReadyHandler:       observability.HandleReady(readinessChecks),
 		MetricsHandler:     observability.Handler(),
+		AppVersion:         version,
 	})
 
 	// Wrap router with metrics middleware.

@@ -26,7 +26,7 @@ type IdempotencyStore interface {
 
 // idempotencyEntry is the stored value for an idempotency key.
 type idempotencyEntry struct {
-	InputHash string               `json:"input_hash"`
+	InputHash string                `json:"input_hash"`
 	Result    model.CommandResponse `json:"result"`
 }
 

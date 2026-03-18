@@ -1,0 +1,21 @@
+name: stawi_theme
+description: >
+  A modern, production-grade Flutter theme inspired by BoundaryML's design system.
+  Features dark/light modes, custom color tokens, border-based layouts, and
+  developer-focused UI components.
+version: 0.1.0
+homepage: https://stawi.dev
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

@@ -31,8 +31,8 @@ func testResolver() *ExpressionResolver {
 			Email:       "admin@acme.com",
 		},
 		WorkflowState: map[string]any{
-			"order_id":      "ord-789",
-			"approved_by":   "user-bob",
+			"order_id":       "ord-789",
+			"approved_by":    "user-bob",
 			"approval_notes": "Looks good",
 		},
 	}

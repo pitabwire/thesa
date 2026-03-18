@@ -78,18 +78,18 @@ func newRegistry(defs ...model.DomainDefinition) *definition.Registry {
 	return definition.NewRegistry(defs)
 }
 
-// --- stub invoker ---
+// --- fake invoker (test double returning canned responses) ---
 
-type stubInvoker struct {
+type fakeInvoker struct {
 	result model.InvocationResult
 	err    error
 }
 
-func (s *stubInvoker) Invoke(_ context.Context, _ *model.RequestContext, _ model.OperationBinding, _ model.InvocationInput) (model.InvocationResult, error) {
-	return s.result, s.err
+func (f *fakeInvoker) Invoke(_ context.Context, _ *model.RequestContext, _ model.OperationBinding, _ model.InvocationInput) (model.InvocationResult, error) {
+	return f.result, f.err
 }
 
-func (s *stubInvoker) Supports(_ model.OperationBinding) bool { return true }
+func (f *fakeInvoker) Supports(_ model.OperationBinding) bool { return true }
 
 func newTestInvokerRegistry(inv model.OperationInvoker) *invoker.Registry {
 	reg := invoker.NewRegistry()
@@ -97,16 +97,16 @@ func newTestInvokerRegistry(inv model.OperationInvoker) *invoker.Registry {
 	return reg
 }
 
-// --- stub cap resolver ---
+// --- fake capability resolver (test double returning canned capabilities) ---
 
-type stubCapResolver struct {
+type fakeCapResolver struct {
 	caps model.CapabilitySet
 }
 
-func (s *stubCapResolver) Resolve(_ *model.RequestContext) (model.CapabilitySet, error) {
-	return s.caps, nil
+func (f *fakeCapResolver) Resolve(_ *model.RequestContext) (model.CapabilitySet, error) {
+	return f.caps, nil
 }
-func (s *stubCapResolver) Invalidate(_, _ string) {}
+func (f *fakeCapResolver) Invalidate(_, _ string) {}
 
 // --- Navigation handler tests ---
 
@@ -194,7 +194,7 @@ func TestHandleGetPage_notFound(t *testing.T) {
 }
 
 func TestHandleGetPageData_success(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body: map[string]any{
@@ -308,7 +308,7 @@ func TestHandleGetFormData_noLoadSource(t *testing.T) {
 }
 
 func TestHandleGetFormData_withLoadSource(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body:       map[string]any{"name": "Existing Order", "amount": float64(100)},
@@ -366,7 +366,7 @@ func TestHandleGetForm_noRequestContext(t *testing.T) {
 // --- Command handler tests ---
 
 func TestHandleCommand_success(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body:       map[string]any{"id": "order-1"},
@@ -411,7 +411,7 @@ func TestHandleCommand_success(t *testing.T) {
 
 func TestHandleCommand_invalidJSON(t *testing.T) {
 	reg := newRegistry()
-	executor := command.NewCommandExecutor(reg, newTestInvokerRegistry(&stubInvoker{}), nil)
+	executor := command.NewCommandExecutor(reg, newTestInvokerRegistry(&fakeInvoker{}), nil)
 	handler := handleCommand(executor)
 
 	w := makeRouterRequest("POST", "/ui/commands/{commandId}", "/ui/commands/orders.create", []byte("not json"), handler, testRequestContext(), testCaps())
@@ -422,7 +422,7 @@ func TestHandleCommand_invalidJSON(t *testing.T) {
 
 func TestHandleCommand_notFound(t *testing.T) {
 	reg := newRegistry()
-	executor := command.NewCommandExecutor(reg, newTestInvokerRegistry(&stubInvoker{}), nil)
+	executor := command.NewCommandExecutor(reg, newTestInvokerRegistry(&fakeInvoker{}), nil)
 	handler := handleCommand(executor)
 
 	body, _ := json.Marshal(model.CommandInput{Input: map[string]any{}})
@@ -433,7 +433,7 @@ func TestHandleCommand_notFound(t *testing.T) {
 }
 
 func TestHandleCommand_idempotencyKeyFromHeader(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body:       map[string]any{},
@@ -476,7 +476,7 @@ func TestHandleCommand_idempotencyKeyFromHeader(t *testing.T) {
 }
 
 func TestHandleCommand_noRequestContext(t *testing.T) {
-	executor := command.NewCommandExecutor(newRegistry(), newTestInvokerRegistry(&stubInvoker{}), nil)
+	executor := command.NewCommandExecutor(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), nil)
 	handler := handleCommand(executor)
 
 	r := chi.NewRouter()
@@ -514,12 +514,12 @@ func newTestWorkflowEngine(inv model.OperationInvoker, caps model.CapabilitySet)
 	})
 
 	store := workflow.NewMemoryWorkflowStore()
-	resolver := &stubCapResolver{caps: caps}
+	resolver := &fakeCapResolver{caps: caps}
 	return workflow.NewEngine(reg, store, newTestInvokerRegistry(inv), resolver)
 }
 
 func TestHandleWorkflowStart_success(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowStart(engine)
 
 	body, _ := json.Marshal(map[string]any{
@@ -542,7 +542,7 @@ func TestHandleWorkflowStart_success(t *testing.T) {
 }
 
 func TestHandleWorkflowStart_invalidJSON(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowStart(engine)
 
 	w := makeRouterRequest("POST", "/ui/workflows/{workflowId}/start", "/ui/workflows/approval/start", []byte("bad"), handler, testRequestContext(), testCaps())
@@ -552,7 +552,7 @@ func TestHandleWorkflowStart_invalidJSON(t *testing.T) {
 }
 
 func TestHandleWorkflowStart_notFound(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowStart(engine)
 
 	body, _ := json.Marshal(map[string]any{"input": map[string]any{}})
@@ -563,7 +563,7 @@ func TestHandleWorkflowStart_notFound(t *testing.T) {
 }
 
 func TestHandleWorkflowAdvance_success(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	rctx := testRequestContext()
 
 	inst, err := engine.Start(context.Background(), rctx, "approval", map[string]any{"name": "Test"})
@@ -590,7 +590,7 @@ func TestHandleWorkflowAdvance_success(t *testing.T) {
 }
 
 func TestHandleWorkflowAdvance_invalidJSON(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowAdvance(engine)
 
 	w := makeRouterRequest("POST", "/ui/workflows/{instanceId}/advance", "/ui/workflows/inst-1/advance", []byte("bad"), handler, testRequestContext(), testCaps())
@@ -600,7 +600,7 @@ func TestHandleWorkflowAdvance_invalidJSON(t *testing.T) {
 }
 
 func TestHandleWorkflowGet_success(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	rctx := testRequestContext()
 
 	inst, err := engine.Start(context.Background(), rctx, "approval", nil)
@@ -622,7 +622,7 @@ func TestHandleWorkflowGet_success(t *testing.T) {
 }
 
 func TestHandleWorkflowGet_notFound(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowGet(engine)
 
 	w := makeRouterRequest("GET", "/ui/workflows/{instanceId}", "/ui/workflows/nonexistent", nil, handler, testRequestContext(), testCaps())
@@ -632,7 +632,7 @@ func TestHandleWorkflowGet_notFound(t *testing.T) {
 }
 
 func TestHandleWorkflowCancel_success(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	rctx := testRequestContext()
 
 	inst, err := engine.Start(context.Background(), rctx, "approval", nil)
@@ -649,7 +649,7 @@ func TestHandleWorkflowCancel_success(t *testing.T) {
 }
 
 func TestHandleWorkflowCancel_invalidJSON(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowCancel(engine)
 
 	w := makeRouterRequest("POST", "/ui/workflows/{instanceId}/cancel", "/ui/workflows/inst-1/cancel", []byte("bad"), handler, testRequestContext(), testCaps())
@@ -659,7 +659,7 @@ func TestHandleWorkflowCancel_invalidJSON(t *testing.T) {
 }
 
 func TestHandleWorkflowList_success(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	rctx := testRequestContext()
 
 	_, _ = engine.Start(context.Background(), rctx, "approval", map[string]any{"name": "A"})
@@ -685,7 +685,7 @@ func TestHandleWorkflowList_success(t *testing.T) {
 }
 
 func TestHandleWorkflowList_noRequestContext(t *testing.T) {
-	engine := newTestWorkflowEngine(&stubInvoker{}, testCaps())
+	engine := newTestWorkflowEngine(&fakeInvoker{}, testCaps())
 	handler := handleWorkflowList(engine)
 
 	r := chi.NewRouter()
@@ -701,7 +701,7 @@ func TestHandleWorkflowList_noRequestContext(t *testing.T) {
 // --- Search handler tests ---
 
 func TestHandleSearch_success(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body: []any{
@@ -748,7 +748,7 @@ func TestHandleSearch_success(t *testing.T) {
 
 func TestHandleSearch_queryTooShort(t *testing.T) {
 	reg := newRegistry()
-	provider := search.NewSearchProvider(reg, newTestInvokerRegistry(&stubInvoker{}), 3*time.Second, 50)
+	provider := search.NewSearchProvider(reg, newTestInvokerRegistry(&fakeInvoker{}), 3*time.Second, 50)
 	handler := handleSearch(provider)
 
 	w := makeRouterRequest("GET", "/ui/search", "/ui/search?q=a", nil, handler, testRequestContext(), testCaps())
@@ -758,7 +758,7 @@ func TestHandleSearch_queryTooShort(t *testing.T) {
 }
 
 func TestHandleSearch_noRequestContext(t *testing.T) {
-	provider := search.NewSearchProvider(newRegistry(), newTestInvokerRegistry(&stubInvoker{}), 3*time.Second, 50)
+	provider := search.NewSearchProvider(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), 3*time.Second, 50)
 	handler := handleSearch(provider)
 
 	r := chi.NewRouter()
@@ -774,7 +774,7 @@ func TestHandleSearch_noRequestContext(t *testing.T) {
 // --- Lookup handler tests ---
 
 func TestHandleLookup_success(t *testing.T) {
-	inv := &stubInvoker{
+	inv := &fakeInvoker{
 		result: model.InvocationResult{
 			StatusCode: 200,
 			Body:       []any{map[string]any{"name": "USD", "code": "USD"}},
@@ -814,7 +814,7 @@ func TestHandleLookup_success(t *testing.T) {
 
 func TestHandleLookup_notFound(t *testing.T) {
 	reg := newRegistry()
-	provider := search.NewLookupProvider(reg, newTestInvokerRegistry(&stubInvoker{}), 5*time.Minute, 100)
+	provider := search.NewLookupProvider(reg, newTestInvokerRegistry(&fakeInvoker{}), 5*time.Minute, 100)
 	handler := handleLookup(provider)
 
 	w := makeRouterRequest("GET", "/ui/lookups/{lookupId}", "/ui/lookups/nonexistent", nil, handler, testRequestContext(), testCaps())
@@ -824,7 +824,7 @@ func TestHandleLookup_notFound(t *testing.T) {
 }
 
 func TestHandleLookup_noRequestContext(t *testing.T) {
-	provider := search.NewLookupProvider(newRegistry(), newTestInvokerRegistry(&stubInvoker{}), 5*time.Minute, 100)
+	provider := search.NewLookupProvider(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), 5*time.Minute, 100)
 	handler := handleLookup(provider)
 
 	r := chi.NewRouter()

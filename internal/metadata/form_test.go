@@ -22,16 +22,16 @@ func testFormDefinitions() []model.DomainDefinition {
 			Domain: "users",
 			Forms: []model.FormDefinition{
 				{
-					ID:           "create-user",
-					Title:        "Create User",
-					SubmitCommand: "create-user-cmd",
-					SuccessRoute: "/users/{id}",
+					ID:             "create-user",
+					Title:          "Create User",
+					SubmitCommand:  "create-user-cmd",
+					SuccessRoute:   "/users/{id}",
 					SuccessMessage: "User created successfully",
 					Sections: []model.SectionDefinition{
 						{
-							ID:     "basic-info",
-							Title:  "Basic Information",
-							Layout: "grid",
+							ID:      "basic-info",
+							Title:   "Basic Information",
+							Layout:  "grid",
 							Columns: 2,
 							Fields: []model.FieldDefinition{
 								{
@@ -63,9 +63,9 @@ func testFormDefinitions() []model.DomainDefinition {
 									Span:     2,
 								},
 								{
-									Field:    "role",
-									Label:    "Role",
-									Type:     "select",
+									Field: "role",
+									Label: "Role",
+									Type:  "select",
 									Lookup: &model.LookupRefDefinition{
 										Static: []model.StaticOption{
 											{Label: "Admin", Value: "admin"},
@@ -120,7 +120,7 @@ func testFormDefinitions() []model.DomainDefinition {
 						ServiceID:   "user-svc",
 						Mapping: model.ResponseMappingDefinition{
 							FieldMap: map[string]string{
-								"user_name": "name",
+								"user_name":  "name",
 								"user_email": "email",
 							},
 						},
@@ -531,9 +531,9 @@ func TestFormProvider_GetFormData_success(t *testing.T) {
 		return model.InvocationResult{
 			StatusCode: http.StatusOK,
 			Body: map[string]any{
-				"user_name":  "Alice",
-				"user_email": "alice@example.com",
-				"status":     "active",
+				"user_name":   "Alice",
+				"user_email":  "alice@example.com",
+				"status":      "active",
 				"extra_field": "should be excluded",
 			},
 		}, nil

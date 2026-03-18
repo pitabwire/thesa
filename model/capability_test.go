@@ -126,7 +126,7 @@ func TestMatchWildcard(t *testing.T) {
 		{"orders:list:*", "orders:list:export", true},
 		{"orders:list:*", "orders:detail:view", false},
 		{"orders:list:view", "orders:list:view", false}, // exact match handled by map lookup, not wildcard
-		{"orders:list", "orders:list:view", false},       // no wildcard suffix
+		{"orders:list", "orders:list:view", false},      // no wildcard suffix
 	}
 	for _, tt := range tests {
 		t.Run(tt.pattern+"_vs_"+tt.cap, func(t *testing.T) {

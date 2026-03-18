@@ -13,17 +13,25 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	Server        ServerConfig               `yaml:"server"`
-	Identity      IdentityConfig             `yaml:"identity"`
-	Definitions   DefinitionsConfig          `yaml:"definitions"`
-	Specs         SpecsConfig                `yaml:"specs"`
-	Services      map[string]ServiceConfig   `yaml:"services"`
-	Capability    CapabilityConfig           `yaml:"capability"`
-	Workflow      WorkflowConfig             `yaml:"workflow"`
-	Idempotency   IdempotencyConfig          `yaml:"idempotency"`
-	Search        SearchConfig               `yaml:"search"`
-	Lookup        LookupCacheConfig          `yaml:"lookup"`
-	Observability ObservabilityConfig        `yaml:"observability"`
+	Server        ServerConfig             `yaml:"server"`
+	Identity      IdentityConfig           `yaml:"identity"`
+	Definitions   DefinitionsConfig        `yaml:"definitions"`
+	Specs         SpecsConfig              `yaml:"specs"`
+	Services      map[string]ServiceConfig `yaml:"services"`
+	Capability    CapabilityConfig         `yaml:"capability"`
+	Workflow      WorkflowConfig           `yaml:"workflow"`
+	Idempotency   IdempotencyConfig        `yaml:"idempotency"`
+	Search        SearchConfig             `yaml:"search"`
+	Lookup        LookupCacheConfig        `yaml:"lookup"`
+	Observability ObservabilityConfig      `yaml:"observability"`
+	UI            UIConfig                 `yaml:"ui"`
+}
+
+// UIConfig describes the static file serving settings for the frontend.
+type UIConfig struct {
+	// Dir is the path to the directory containing the built frontend assets.
+	// When empty, no static file serving is configured.
+	Dir string `yaml:"dir"`
 }
 
 // ServerConfig describes HTTP server settings.
@@ -46,19 +54,19 @@ type CORSConfig struct {
 
 // IdentityConfig describes JWT and identity provider settings.
 type IdentityConfig struct {
-	Issuer      string            `yaml:"issuer"`
-	Audience    string            `yaml:"audience"`
-	JWKSURL     string            `yaml:"jwks_url"`
-	JWKSCacheTTL time.Duration   `yaml:"jwks_cache_ttl"`
-	Algorithms  []string          `yaml:"algorithms"`
-	ClaimPaths  map[string]string `yaml:"claim_paths"`
+	Issuer       string            `yaml:"issuer"`
+	Audience     string            `yaml:"audience"`
+	JWKSURL      string            `yaml:"jwks_url"`
+	JWKSCacheTTL time.Duration     `yaml:"jwks_cache_ttl"`
+	Algorithms   []string          `yaml:"algorithms"`
+	ClaimPaths   map[string]string `yaml:"claim_paths"`
 }
 
 // DefinitionsConfig describes where to find definition YAML files.
 type DefinitionsConfig struct {
-	Directories      []string `yaml:"directories"`
-	HotReload        bool     `yaml:"hot_reload"`
-	StrictChecksums  bool     `yaml:"strict_checksums"`
+	Directories     []string `yaml:"directories"`
+	HotReload       bool     `yaml:"hot_reload"`
+	StrictChecksums bool     `yaml:"strict_checksums"`
 }
 
 // SpecsConfig describes where to find OpenAPI specification files.
@@ -75,12 +83,12 @@ type SpecSource struct {
 
 // ServiceConfig describes a backend service.
 type ServiceConfig struct {
-	BaseURL        string              `yaml:"base_url"`
-	Timeout        time.Duration       `yaml:"timeout"`
-	Auth           ServiceAuthConfig   `yaml:"auth"`
-	Pagination     PaginationConfig    `yaml:"pagination"`
+	BaseURL        string               `yaml:"base_url"`
+	Timeout        time.Duration        `yaml:"timeout"`
+	Auth           ServiceAuthConfig    `yaml:"auth"`
+	Pagination     PaginationConfig     `yaml:"pagination"`
 	CircuitBreaker CircuitBreakerConfig `yaml:"circuit_breaker"`
-	Retry          RetryConfig         `yaml:"retry"`
+	Retry          RetryConfig          `yaml:"retry"`
 }
 
 // ServiceAuthConfig describes authentication for backend calls.
@@ -120,10 +128,10 @@ type RetryConfig struct {
 
 // CapabilityConfig describes authorization settings.
 type CapabilityConfig struct {
-	Evaluator        string          `yaml:"evaluator"`
-	StaticPolicyFile string          `yaml:"static_policy_file"`
-	Cache            CacheConfig     `yaml:"cache"`
-	OPA              OPAConfig       `yaml:"opa"`
+	Evaluator        string      `yaml:"evaluator"`
+	StaticPolicyFile string      `yaml:"static_policy_file"`
+	Cache            CacheConfig `yaml:"cache"`
+	OPA              OPAConfig   `yaml:"opa"`
 }
 
 // OPAConfig describes OPA policy engine settings.
@@ -141,9 +149,9 @@ type CacheConfig struct {
 
 // WorkflowConfig describes workflow engine settings.
 type WorkflowConfig struct {
-	Enabled              bool               `yaml:"enabled"`
+	Enabled              bool                `yaml:"enabled"`
 	Store                WorkflowStoreConfig `yaml:"store"`
-	TimeoutCheckInterval time.Duration      `yaml:"timeout_check_interval"`
+	TimeoutCheckInterval time.Duration       `yaml:"timeout_check_interval"`
 }
 
 // WorkflowStoreConfig describes workflow persistence settings.
@@ -157,7 +165,7 @@ type WorkflowStoreConfig struct {
 
 // IdempotencyConfig describes idempotency store settings.
 type IdempotencyConfig struct {
-	Enabled bool                 `yaml:"enabled"`
+	Enabled bool                   `yaml:"enabled"`
 	Store   IdempotencyStoreConfig `yaml:"store"`
 }
 

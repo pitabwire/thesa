@@ -243,7 +243,7 @@ func TestMemoryWorkflowStore_FindActive(t *testing.T) {
 	inst2 := testInstance("wf-2", "tenant-1", "approval", "submit")
 	inst2.CreatedAt = time.Now().Add(-1 * time.Hour)
 	inst3 := testInstance("wf-3", "tenant-1", "approval", "done")
-	inst3.Status = model.WorkflowStatusCompleted // Not active.
+	inst3.Status = model.WorkflowStatusCompleted                    // Not active.
 	inst4 := testInstance("wf-4", "tenant-2", "approval", "review") // Different tenant.
 
 	_ = store.Create(context.Background(), inst1)

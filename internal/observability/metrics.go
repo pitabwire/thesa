@@ -21,29 +21,29 @@ var (
 // Metrics holds all Prometheus metric instruments for the BFF.
 type Metrics struct {
 	// HTTP metrics
-	HTTPRequestsTotal        *prometheus.CounterVec
-	HTTPRequestDuration      *prometheus.HistogramVec
-	HTTPRequestSizeBytes     *prometheus.HistogramVec
-	HTTPResponseSizeBytes    *prometheus.HistogramVec
+	HTTPRequestsTotal     *prometheus.CounterVec
+	HTTPRequestDuration   *prometheus.HistogramVec
+	HTTPRequestSizeBytes  *prometheus.HistogramVec
+	HTTPResponseSizeBytes *prometheus.HistogramVec
 
 	// Command metrics
-	CommandExecutionsTotal       *prometheus.CounterVec
-	CommandDuration              *prometheus.HistogramVec
-	CommandValidationFailures    *prometheus.CounterVec
+	CommandExecutionsTotal    *prometheus.CounterVec
+	CommandDuration           *prometheus.HistogramVec
+	CommandValidationFailures *prometheus.CounterVec
 
 	// Workflow metrics
-	WorkflowStartsTotal       *prometheus.CounterVec
-	WorkflowAdvancesTotal      *prometheus.CounterVec
-	WorkflowCompletionsTotal   *prometheus.CounterVec
-	WorkflowActiveInstances    *prometheus.GaugeVec
-	WorkflowStepDuration       *prometheus.HistogramVec
-	WorkflowTimeoutsTotal      *prometheus.CounterVec
+	WorkflowStartsTotal      *prometheus.CounterVec
+	WorkflowAdvancesTotal    *prometheus.CounterVec
+	WorkflowCompletionsTotal *prometheus.CounterVec
+	WorkflowActiveInstances  *prometheus.GaugeVec
+	WorkflowStepDuration     *prometheus.HistogramVec
+	WorkflowTimeoutsTotal    *prometheus.CounterVec
 
 	// Backend invocation metrics
-	BackendRequestsTotal        *prometheus.CounterVec
-	BackendRequestDuration      *prometheus.HistogramVec
-	BackendCircuitBreakerState  *prometheus.GaugeVec
-	BackendRetriesTotal         *prometheus.CounterVec
+	BackendRequestsTotal       *prometheus.CounterVec
+	BackendRequestDuration     *prometheus.HistogramVec
+	BackendCircuitBreakerState *prometheus.GaugeVec
+	BackendRetriesTotal        *prometheus.CounterVec
 
 	// Cache metrics
 	CapabilityCacheHitsTotal   prometheus.Counter
@@ -52,11 +52,11 @@ type Metrics struct {
 	LookupCacheMissesTotal     *prometheus.CounterVec
 
 	// System metrics
-	DefinitionReloadTotal      *prometheus.CounterVec
-	DefinitionsLoaded          prometheus.Gauge
-	OpenAPIOperationsIndexed   *prometheus.GaugeVec
-	SearchDuration             prometheus.Histogram
-	SearchProvidersResponded   prometheus.Histogram
+	DefinitionReloadTotal    *prometheus.CounterVec
+	DefinitionsLoaded        prometheus.Gauge
+	OpenAPIOperationsIndexed *prometheus.GaugeVec
+	SearchDuration           prometheus.Histogram
+	SearchProvidersResponded prometheus.Histogram
 }
 
 // InitMetrics creates and registers all Prometheus metric instruments.

@@ -63,6 +63,37 @@ func handleWorkflowAdvance(engine *workflow.Engine) http.HandlerFunc {
 	}
 }
 
+// handleWorkflowStep adapts the UI's step-based workflow submission to the
+// engine's advance operation. The UI sends POST /ui/workflows/{workflowId}/steps/{stepId}
+// with step data, which maps to Advance with the stepId as the event name.
+func handleWorkflowStep(engine *workflow.Engine) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rctx := model.RequestContextFrom(r.Context())
+		if rctx == nil {
+			WriteError(w, model.NewUnauthorizedError("missing request context"))
+			return
+		}
+		workflowID := chi.URLParam(r, "workflowId")
+		stepID := chi.URLParam(r, "stepId")
+
+		var body struct {
+			Data map[string]any `json:"data"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			WriteError(w, model.NewBadRequestError("invalid JSON body"))
+			return
+		}
+
+		// Use the stepId as the advance event and workflowId as the instance ID.
+		inst, err := engine.Advance(r.Context(), rctx, workflowID, stepID, body.Data)
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
+		WriteJSON(w, http.StatusOK, inst)
+	}
+}
+
 func handleWorkflowGet(engine *workflow.Engine) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())

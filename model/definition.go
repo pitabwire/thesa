@@ -30,12 +30,12 @@ type NavigationDefinition struct {
 
 // NavigationChildDefinition describes a child navigation item in the menu.
 type NavigationChildDefinition struct {
-	Label        string          `yaml:"label"        json:"label"`
-	Icon         string          `yaml:"icon"         json:"icon,omitempty"`
-	Route        string          `yaml:"route"        json:"route"`
-	PageID       string          `yaml:"page_id"      json:"page_id"`
-	Capabilities []string        `yaml:"capabilities" json:"capabilities"`
-	Order        int             `yaml:"order"        json:"order"`
+	Label        string           `yaml:"label"        json:"label"`
+	Icon         string           `yaml:"icon"         json:"icon,omitempty"`
+	Route        string           `yaml:"route"        json:"route"`
+	PageID       string           `yaml:"page_id"      json:"page_id"`
+	Capabilities []string         `yaml:"capabilities" json:"capabilities"`
+	Order        int              `yaml:"order"        json:"order"`
 	Badge        *BadgeDefinition `yaml:"badge"        json:"badge,omitempty"`
 }
 
@@ -81,9 +81,9 @@ type TableDefinition struct {
 
 // DataSourceDefinition describes how to fetch data from a backend service.
 type DataSourceDefinition struct {
-	OperationID string                `yaml:"operation_id" json:"operation_id,omitempty"`
-	ServiceID   string                `yaml:"service_id"   json:"service_id,omitempty"`
-	Handler     string                `yaml:"handler"      json:"handler,omitempty"`
+	OperationID string                    `yaml:"operation_id" json:"operation_id,omitempty"`
+	ServiceID   string                    `yaml:"service_id"   json:"service_id,omitempty"`
+	Handler     string                    `yaml:"handler"      json:"handler,omitempty"`
 	Mapping     ResponseMappingDefinition `yaml:"mapping"      json:"mapping"`
 }
 
@@ -116,18 +116,18 @@ type LinkDefinition struct {
 
 // FilterDefinition describes a filter control above a table.
 type FilterDefinition struct {
-	Field    string                  `yaml:"field"    json:"field"`
-	Label    string                  `yaml:"label"    json:"label"`
-	Type     string                  `yaml:"type"     json:"type"`
-	Operator string                  `yaml:"operator" json:"operator"`
+	Field    string                   `yaml:"field"    json:"field"`
+	Label    string                   `yaml:"label"    json:"label"`
+	Type     string                   `yaml:"type"     json:"type"`
+	Operator string                   `yaml:"operator" json:"operator"`
 	Options  *FilterOptionsDefinition `yaml:"options"  json:"options,omitempty"`
-	Default  string                  `yaml:"default"  json:"default,omitempty"`
+	Default  string                   `yaml:"default"  json:"default,omitempty"`
 }
 
 // FilterOptionsDefinition describes options for select/multi-select filters.
 type FilterOptionsDefinition struct {
-	LookupID string              `yaml:"lookup_id" json:"lookup_id,omitempty"`
-	Static   []StaticOption      `yaml:"static"    json:"static,omitempty"`
+	LookupID string         `yaml:"lookup_id" json:"lookup_id,omitempty"`
+	Static   []StaticOption `yaml:"static"    json:"static,omitempty"`
 }
 
 // StaticOption is a label/value pair for dropdowns and filters.
@@ -150,29 +150,29 @@ type SectionDefinition struct {
 
 // FieldDefinition describes a single field in a section or form.
 type FieldDefinition struct {
-	Field       string                  `yaml:"field"       json:"field"`
-	Label       string                  `yaml:"label"       json:"label"`
-	Type        string                  `yaml:"type"        json:"type"`
-	ReadOnly    string                  `yaml:"read_only"   json:"read_only,omitempty"`
-	Required    bool                    `yaml:"required"    json:"required,omitempty"`
-	Validation  *ValidationDefinition   `yaml:"validation"  json:"validation,omitempty"`
-	Lookup      *LookupRefDefinition    `yaml:"lookup"      json:"lookup,omitempty"`
-	Visibility  string                  `yaml:"visibility"  json:"visibility,omitempty"`
-	Format      string                  `yaml:"format"      json:"format,omitempty"`
-	Placeholder string                  `yaml:"placeholder" json:"placeholder,omitempty"`
-	HelpText    string                  `yaml:"help_text"   json:"help_text,omitempty"`
-	Span        int                     `yaml:"span"        json:"span,omitempty"`
-	DependsOn   []FieldDependency       `yaml:"depends_on"  json:"depends_on,omitempty"`
+	Field       string                `yaml:"field"       json:"field"`
+	Label       string                `yaml:"label"       json:"label"`
+	Type        string                `yaml:"type"        json:"type"`
+	ReadOnly    string                `yaml:"read_only"   json:"read_only,omitempty"`
+	Required    bool                  `yaml:"required"    json:"required,omitempty"`
+	Validation  *ValidationDefinition `yaml:"validation"  json:"validation,omitempty"`
+	Lookup      *LookupRefDefinition  `yaml:"lookup"      json:"lookup,omitempty"`
+	Visibility  string                `yaml:"visibility"  json:"visibility,omitempty"`
+	Format      string                `yaml:"format"      json:"format,omitempty"`
+	Placeholder string                `yaml:"placeholder" json:"placeholder,omitempty"`
+	HelpText    string                `yaml:"help_text"   json:"help_text,omitempty"`
+	Span        int                   `yaml:"span"        json:"span,omitempty"`
+	DependsOn   []FieldDependency     `yaml:"depends_on"  json:"depends_on,omitempty"`
 }
 
 // ValidationDefinition describes validation rules for a field.
 type ValidationDefinition struct {
-	MinLength *int    `yaml:"min_length" json:"min_length,omitempty"`
-	MaxLength *int    `yaml:"max_length" json:"max_length,omitempty"`
+	MinLength *int     `yaml:"min_length" json:"min_length,omitempty"`
+	MaxLength *int     `yaml:"max_length" json:"max_length,omitempty"`
 	Min       *float64 `yaml:"min"        json:"min,omitempty"`
 	Max       *float64 `yaml:"max"        json:"max,omitempty"`
-	Pattern   string  `yaml:"pattern"    json:"pattern,omitempty"`
-	Message   string  `yaml:"message"    json:"message,omitempty"`
+	Pattern   string   `yaml:"pattern"    json:"pattern,omitempty"`
+	Message   string   `yaml:"message"    json:"message,omitempty"`
 }
 
 // LookupRefDefinition references a LookupDefinition or provides inline options.
@@ -190,31 +190,31 @@ type FieldDependency struct {
 
 // FormDefinition describes an input form.
 type FormDefinition struct {
-	ID             string              `yaml:"id"              json:"id"`
-	Title          string              `yaml:"title"           json:"title"`
-	Capabilities   []string            `yaml:"capabilities"    json:"capabilities"`
-	SubmitCommand  string              `yaml:"submit_command"  json:"submit_command"`
+	ID             string                `yaml:"id"              json:"id"`
+	Title          string                `yaml:"title"           json:"title"`
+	Capabilities   []string              `yaml:"capabilities"    json:"capabilities"`
+	SubmitCommand  string                `yaml:"submit_command"  json:"submit_command"`
 	LoadSource     *DataSourceDefinition `yaml:"load_source"     json:"load_source,omitempty"`
-	SuccessRoute   string              `yaml:"success_route"   json:"success_route,omitempty"`
-	SuccessMessage string              `yaml:"success_message" json:"success_message,omitempty"`
-	Sections       []SectionDefinition `yaml:"sections"        json:"sections"`
+	SuccessRoute   string                `yaml:"success_route"   json:"success_route,omitempty"`
+	SuccessMessage string                `yaml:"success_message" json:"success_message,omitempty"`
+	Sections       []SectionDefinition   `yaml:"sections"        json:"sections"`
 }
 
 // ActionDefinition describes a UI action (button, menu item).
 type ActionDefinition struct {
-	ID           string                   `yaml:"id"           json:"id"`
-	Label        string                   `yaml:"label"        json:"label"`
-	Icon         string                   `yaml:"icon"         json:"icon,omitempty"`
-	Style        string                   `yaml:"style"        json:"style,omitempty"`
-	Capabilities []string                 `yaml:"capabilities" json:"capabilities"`
-	Type         string                   `yaml:"type"         json:"type"`
-	CommandID    string                   `yaml:"command_id"   json:"command_id,omitempty"`
-	NavigateTo   string                   `yaml:"navigate_to"  json:"navigate_to,omitempty"`
-	WorkflowID   string                   `yaml:"workflow_id"  json:"workflow_id,omitempty"`
-	FormID       string                   `yaml:"form_id"      json:"form_id,omitempty"`
-	Confirmation *ConfirmationDefinition  `yaml:"confirmation" json:"confirmation,omitempty"`
-	Conditions   []ConditionDefinition    `yaml:"conditions"   json:"conditions,omitempty"`
-	Params       map[string]string        `yaml:"params"       json:"params,omitempty"`
+	ID           string                  `yaml:"id"           json:"id"`
+	Label        string                  `yaml:"label"        json:"label"`
+	Icon         string                  `yaml:"icon"         json:"icon,omitempty"`
+	Style        string                  `yaml:"style"        json:"style,omitempty"`
+	Capabilities []string                `yaml:"capabilities" json:"capabilities"`
+	Type         string                  `yaml:"type"         json:"type"`
+	CommandID    string                  `yaml:"command_id"   json:"command_id,omitempty"`
+	NavigateTo   string                  `yaml:"navigate_to"  json:"navigate_to,omitempty"`
+	WorkflowID   string                  `yaml:"workflow_id"  json:"workflow_id,omitempty"`
+	FormID       string                  `yaml:"form_id"      json:"form_id,omitempty"`
+	Confirmation *ConfirmationDefinition `yaml:"confirmation" json:"confirmation,omitempty"`
+	Conditions   []ConditionDefinition   `yaml:"conditions"   json:"conditions,omitempty"`
+	Params       map[string]string       `yaml:"params"       json:"params,omitempty"`
 }
 
 // ConfirmationDefinition describes a confirmation dialog.
@@ -236,13 +236,13 @@ type ConditionDefinition struct {
 
 // CommandDefinition describes a mutable operation.
 type CommandDefinition struct {
-	ID           string              `yaml:"id"           json:"id"`
-	Capabilities []string            `yaml:"capabilities" json:"capabilities"`
-	Operation    OperationBinding    `yaml:"operation"    json:"operation"`
-	Input        InputMapping        `yaml:"input"        json:"input"`
-	Output       OutputMapping       `yaml:"output"       json:"output"`
-	Idempotency  *IdempotencyConfig  `yaml:"idempotency"  json:"idempotency,omitempty"`
-	RateLimit    *RateLimitConfig    `yaml:"rate_limit"   json:"rate_limit,omitempty"`
+	ID           string             `yaml:"id"           json:"id"`
+	Capabilities []string           `yaml:"capabilities" json:"capabilities"`
+	Operation    OperationBinding   `yaml:"operation"    json:"operation"`
+	Input        InputMapping       `yaml:"input"        json:"input"`
+	Output       OutputMapping      `yaml:"output"       json:"output"`
+	Idempotency  *IdempotencyConfig `yaml:"idempotency"  json:"idempotency,omitempty"`
+	RateLimit    *RateLimitConfig   `yaml:"rate_limit"   json:"rate_limit,omitempty"`
 }
 
 // OperationBinding describes the backend operation to invoke.
@@ -286,29 +286,29 @@ type RateLimitConfig struct {
 
 // WorkflowDefinition describes a multi-step process.
 type WorkflowDefinition struct {
-	ID          string                 `yaml:"id"           json:"id"`
-	Name        string                 `yaml:"name"         json:"name"`
-	Capabilities []string              `yaml:"capabilities" json:"capabilities"`
-	InitialStep string                 `yaml:"initial_step" json:"initial_step"`
-	Timeout     string                 `yaml:"timeout"      json:"timeout,omitempty"`
-	OnTimeout   string                 `yaml:"on_timeout"   json:"on_timeout,omitempty"`
-	Steps       []StepDefinition       `yaml:"steps"        json:"steps"`
-	Transitions []TransitionDefinition `yaml:"transitions"  json:"transitions"`
+	ID           string                 `yaml:"id"           json:"id"`
+	Name         string                 `yaml:"name"         json:"name"`
+	Capabilities []string               `yaml:"capabilities" json:"capabilities"`
+	InitialStep  string                 `yaml:"initial_step" json:"initial_step"`
+	Timeout      string                 `yaml:"timeout"      json:"timeout,omitempty"`
+	OnTimeout    string                 `yaml:"on_timeout"   json:"on_timeout,omitempty"`
+	Steps        []StepDefinition       `yaml:"steps"        json:"steps"`
+	Transitions  []TransitionDefinition `yaml:"transitions"  json:"transitions"`
 }
 
 // StepDefinition describes a single step in a workflow.
 type StepDefinition struct {
-	ID           string           `yaml:"id"           json:"id"`
-	Name         string           `yaml:"name"         json:"name"`
-	Type         string           `yaml:"type"         json:"type"`
-	Capabilities []string         `yaml:"capabilities" json:"capabilities,omitempty"`
-	FormID       string           `yaml:"form_id"      json:"form_id,omitempty"`
+	ID           string            `yaml:"id"           json:"id"`
+	Name         string            `yaml:"name"         json:"name"`
+	Type         string            `yaml:"type"         json:"type"`
+	Capabilities []string          `yaml:"capabilities" json:"capabilities,omitempty"`
+	FormID       string            `yaml:"form_id"      json:"form_id,omitempty"`
 	Operation    *OperationBinding `yaml:"operation"    json:"operation,omitempty"`
-	Input        *InputMapping    `yaml:"input"        json:"input,omitempty"`
-	Output       *OutputMapping   `yaml:"output"       json:"output,omitempty"`
-	Timeout      string           `yaml:"timeout"      json:"timeout,omitempty"`
-	OnTimeout    string           `yaml:"on_timeout"   json:"on_timeout,omitempty"`
-	Assignee     *AssigneeConfig  `yaml:"assignee"     json:"assignee,omitempty"`
+	Input        *InputMapping     `yaml:"input"        json:"input,omitempty"`
+	Output       *OutputMapping    `yaml:"output"       json:"output,omitempty"`
+	Timeout      string            `yaml:"timeout"      json:"timeout,omitempty"`
+	OnTimeout    string            `yaml:"on_timeout"   json:"on_timeout,omitempty"`
+	Assignee     *AssigneeConfig   `yaml:"assignee"     json:"assignee,omitempty"`
 }
 
 // AssigneeConfig describes who is responsible for a workflow step.
@@ -328,13 +328,13 @@ type TransitionDefinition struct {
 
 // SearchDefinition describes a search provider for global search.
 type SearchDefinition struct {
-	ID           string              `yaml:"id"             json:"id"`
-	Domain       string              `yaml:"domain"         json:"domain"`
-	Capabilities []string            `yaml:"capabilities"   json:"capabilities"`
-	Operation    OperationBinding    `yaml:"operation"      json:"operation"`
+	ID            string              `yaml:"id"             json:"id"`
+	Domain        string              `yaml:"domain"         json:"domain"`
+	Capabilities  []string            `yaml:"capabilities"   json:"capabilities"`
+	Operation     OperationBinding    `yaml:"operation"      json:"operation"`
 	ResultMapping SearchResultMapping `yaml:"result_mapping" json:"result_mapping"`
-	Weight       int                 `yaml:"weight"         json:"weight,omitempty"`
-	MaxResults   int                 `yaml:"max_results"    json:"max_results,omitempty"`
+	Weight        int                 `yaml:"weight"         json:"weight,omitempty"`
+	MaxResults    int                 `yaml:"max_results"    json:"max_results,omitempty"`
 }
 
 // SearchResultMapping describes how to map backend search results to UI results.

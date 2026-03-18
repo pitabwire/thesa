@@ -1,7 +1,6 @@
 .git
 .github
 docs/
-*.md
 LICENSE
 .gitignore
 .dockerignore
@@ -15,7 +14,7 @@ Makefile
 *.swo
 *~
 
-# Test fixtures
+# Test fixtures (Go)
 testdata/
 *_test.go
 
@@ -23,3 +22,10 @@ testdata/
 bin/
 dist/
 *.exe
+
+# UI build artifacts (built in Docker)
+ui/build/
+ui/.dart_tool/
+ui/.idea/
+ui/docs/
+ui/*.md

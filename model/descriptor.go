@@ -23,15 +23,15 @@ type BadgeDescriptor struct {
 
 // PageDescriptor is the resolved page sent to the frontend.
 type PageDescriptor struct {
-	ID              string              `json:"id"`
-	Title           string              `json:"title"`
-	Route           string              `json:"route"`
-	Layout          string              `json:"layout"`
-	RefreshInterval int                 `json:"refresh_interval"`
+	ID              string                 `json:"id"`
+	Title           string                 `json:"title"`
+	Route           string                 `json:"route"`
+	Layout          string                 `json:"layout"`
+	RefreshInterval int                    `json:"refresh_interval"`
 	Breadcrumb      []BreadcrumbDescriptor `json:"breadcrumb,omitempty"`
-	Table           *TableDescriptor    `json:"table,omitempty"`
-	Sections        []SectionDescriptor `json:"sections,omitempty"`
-	Actions         []ActionDescriptor  `json:"actions,omitempty"`
+	Table           *TableDescriptor       `json:"table,omitempty"`
+	Sections        []SectionDescriptor    `json:"sections,omitempty"`
+	Actions         []ActionDescriptor     `json:"actions,omitempty"`
 }
 
 // BreadcrumbDescriptor is a single breadcrumb entry.
@@ -112,19 +112,19 @@ type SectionDescriptor struct {
 
 // FieldDescriptor is a resolved field sent to the frontend.
 type FieldDescriptor struct {
-	Field       string                       `json:"field"`
-	Label       string                       `json:"label"`
-	Type        string                       `json:"type"`
-	ReadOnly    bool                         `json:"read_only"`
-	Required    bool                         `json:"required"`
-	Validation  *ValidationDescriptor        `json:"validation,omitempty"`
-	Options     []OptionDescriptor           `json:"options,omitempty"`
-	Format      string                       `json:"format,omitempty"`
-	Placeholder string                       `json:"placeholder,omitempty"`
-	HelpText    string                       `json:"help_text,omitempty"`
-	Span        int                          `json:"span,omitempty"`
-	Value       any                          `json:"value,omitempty"`
-	DependsOn   []FieldDependencyDescriptor  `json:"depends_on,omitempty"`
+	Field       string                      `json:"field"`
+	Label       string                      `json:"label"`
+	Type        string                      `json:"type"`
+	ReadOnly    bool                        `json:"read_only"`
+	Required    bool                        `json:"required"`
+	Validation  *ValidationDescriptor       `json:"validation,omitempty"`
+	Options     []OptionDescriptor          `json:"options,omitempty"`
+	Format      string                      `json:"format,omitempty"`
+	Placeholder string                      `json:"placeholder,omitempty"`
+	HelpText    string                      `json:"help_text,omitempty"`
+	Span        int                         `json:"span,omitempty"`
+	Value       any                         `json:"value,omitempty"`
+	DependsOn   []FieldDependencyDescriptor `json:"depends_on,omitempty"`
 }
 
 // ValidationDescriptor describes client-side validation rules.
@@ -181,13 +181,13 @@ type ConditionDescriptor struct {
 
 // WorkflowDescriptor is the resolved workflow instance sent to the frontend.
 type WorkflowDescriptor struct {
-	ID          string           `json:"id"`
-	WorkflowID  string           `json:"workflow_id"`
-	Name        string           `json:"name"`
-	Status      string           `json:"status"`
-	CurrentStep *StepDescriptor  `json:"current_step,omitempty"`
-	Steps       []StepSummary    `json:"steps"`
-	History     []HistoryEntry   `json:"history,omitempty"`
+	ID          string          `json:"id"`
+	WorkflowID  string          `json:"workflow_id"`
+	Name        string          `json:"name"`
+	Status      string          `json:"status"`
+	CurrentStep *StepDescriptor `json:"current_step,omitempty"`
+	Steps       []StepSummary   `json:"steps"`
+	History     []HistoryEntry  `json:"history,omitempty"`
 }
 
 // StepDescriptor describes the current active step.
@@ -233,10 +233,10 @@ type DataPayload struct {
 
 // CommandResponse is the response from executing a command.
 type CommandResponse struct {
-	Success bool            `json:"success"`
-	Message string          `json:"message,omitempty"`
-	Result  map[string]any  `json:"result,omitempty"`
-	Errors  []FieldError    `json:"errors,omitempty"`
+	Success bool           `json:"success"`
+	Message string         `json:"message,omitempty"`
+	Result  map[string]any `json:"result,omitempty"`
+	Errors  []FieldError   `json:"errors,omitempty"`
 }
 
 // SearchResponse is the response from a global search query.

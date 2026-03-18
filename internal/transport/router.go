@@ -1,12 +1,17 @@
 package transport
 
 import (
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/config"
+	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/metadata"
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/internal/workflow"
@@ -18,9 +23,12 @@ type Dependencies struct {
 	Config             *config.Config
 	Authenticate       func(http.Handler) http.Handler
 	CapabilityResolver model.CapabilityResolver
+	Registry           *definition.Registry
 	MenuProvider       *metadata.MenuProvider
 	PageProvider       *metadata.PageProvider
 	FormProvider       *metadata.FormProvider
+	SchemaProvider     *metadata.SchemaProvider
+	ResourceProvider   *metadata.ResourceProvider
 	CommandExecutor    *command.CommandExecutor
 	WorkflowEngine     *workflow.Engine
 	SearchProvider     *search.SearchProvider
@@ -28,6 +36,7 @@ type Dependencies struct {
 	HealthHandler      http.HandlerFunc
 	ReadyHandler       http.HandlerFunc
 	MetricsHandler     http.Handler
+	AppVersion         string
 }
 
 // NewRouter creates a chi.Router with the full middleware pipeline and all
@@ -67,21 +76,79 @@ func NewRouter(deps Dependencies) chi.Router {
 		r.Use(RequestLogging)
 		r.Use(MetricsRecording)
 
+		// Capabilities
+		r.Get("/ui/capabilities", handleCapabilities(deps.CapabilityResolver, deps.AppVersion))
+
+		// Navigation & Pages
 		r.Get("/ui/navigation", handleNavigation(deps.MenuProvider))
 		r.Get("/ui/pages/{pageId}", handleGetPage(deps.PageProvider))
 		r.Get("/ui/pages/{pageId}/data", handleGetPageData(deps.PageProvider))
+
+		// Forms
 		r.Get("/ui/forms/{formId}", handleGetForm(deps.FormProvider))
 		r.Get("/ui/forms/{formId}/data", handleGetFormData(deps.FormProvider))
+
+		// Schemas
+		r.Get("/ui/schemas/{schemaId}", handleGetSchema(deps.SchemaProvider))
+
+		// Commands & Actions
 		r.Post("/ui/commands/{commandId}", handleCommand(deps.CommandExecutor))
+		r.Post("/ui/actions/{actionId}", handleAction(deps.Registry, deps.CommandExecutor, deps.WorkflowEngine))
+
+		// Resources
+		r.Get("/ui/resources/{resourceType}/search", handleResourceSearch(deps.SearchProvider))
+		r.Get("/ui/resources/{resourceType}/{id}", handleGetResourceItem(deps.ResourceProvider))
+		r.Get("/ui/resources/{resourceType}", handleGetResource(deps.ResourceProvider))
+
+		// Workflows
 		r.Post("/ui/workflows/{workflowId}/start", handleWorkflowStart(deps.WorkflowEngine))
+		r.Post("/ui/workflows/{workflowId}/steps/{stepId}", handleWorkflowStep(deps.WorkflowEngine))
 		r.Post("/ui/workflows/{instanceId}/advance", handleWorkflowAdvance(deps.WorkflowEngine))
 		r.Get("/ui/workflows/{instanceId}", handleWorkflowGet(deps.WorkflowEngine))
 		r.Post("/ui/workflows/{instanceId}/cancel", handleWorkflowCancel(deps.WorkflowEngine))
 		r.Get("/ui/workflows", handleWorkflowList(deps.WorkflowEngine))
+
+		// Search & Lookups
 		r.Get("/ui/search", handleSearch(deps.SearchProvider))
 		r.Get("/ui/lookups/{lookupId}", handleLookup(deps.LookupProvider))
+
+		// File operations (proxied to files-svc)
+		filesSvc := deps.Config.Services["files-svc"]
+		r.Post("/ui/upload", handleUpload(filesSvc))
+		r.Get("/ui/download/{fileId}", handleDownload(filesSvc))
 	})
+
+	// Serve frontend static files if UI directory is configured.
+	if deps.Config.UI.Dir != "" {
+		spaHandler := spaFileServer(deps.Config.UI.Dir)
+		r.NotFound(spaHandler.ServeHTTP)
+	}
 
 	return r
 }
 
+// spaFileServer returns an http.Handler that serves static files from dir.
+// For paths that don't match an existing file, it serves index.html to support
+// client-side (SPA) routing.
+func spaFileServer(dir string) http.Handler {
+	fsys := os.DirFS(dir)
+	fileServer := http.FileServer(http.FS(fsys))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Clean the path and strip leading slash for fs.Stat.
+		path := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
+		if path == "" {
+			path = "."
+		}
+
+		// Check if the file exists. If it does, serve it directly.
+		if f, err := fs.Stat(fsys, path); err == nil && !f.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// For any path that doesn't match a file, serve index.html (SPA fallback).
+		r.URL.Path = "/"
+		fileServer.ServeHTTP(w, r)
+	})
+}

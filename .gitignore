@@ -1,36 +1,120 @@
-# Binaries
+# ── Binaries & build artifacts ──
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-/bff
-
-# Test binary
 *.test
-
-# Output of the go coverage tool
 *.out
 coverage.html
+/bff
+/bin/
+/dist/
 
-# Dependency directories
+# ── Dependencies ──
 vendor/
 
-# IDE
+# ── IDE ──
 .idea/
 .vscode/
+*.iml
+*.ipr
+*.iws
 *.swp
 *.swo
 *~
 
-# OS
+# ── OS ──
 .DS_Store
 Thumbs.db
 
-# Environment
+# ── Environment ──
 .env
 .env.local
+.env.*.local
+# Flutter needs .env as a bundled asset for runtime config
+!ui/.env
+!ui/.env.production
 
-# Build output
-/bin/
-/dist/
+# ── Go coverage ──
+coverage.html
+
+# ═══════════════════════════════════
+# Flutter / Dart  (ui/ directory)
+# ═══════════════════════════════════
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+ui/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio build artifacts
+ui/android/app/debug
+ui/android/app/profile
+ui/android/app/release
+
+# Generated Dart files
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.config.dart
+
+# Exceptions — keep these generated files
+!ui/lib/generated_plugin_registrant.dart
+!ui/web/drift_worker.dart
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Secure storage
+*.keystore
+*.jks
+
+# Coverage
+coverage/
+*.lcov
+.test_coverage.dart
+
+# Mobile / desktop build outputs
+*.apk
+*.aab
+*.ipa
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Web (generated build artifacts only)
+ui/web/flutter_service_worker.js
+ui/web/main.dart.js
+ui/web/flutter.js
+ui/web/drift_worker.js
+ui/web/drift_worker.js.deps
+ui/web/drift_worker.js.map
+ui/web/sqlite3.wasm
+
+# Documentation
+.dartdoc/
