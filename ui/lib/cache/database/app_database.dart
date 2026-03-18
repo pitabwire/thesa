@@ -7,12 +7,8 @@
 /// - Reference counting for shared resources
 library;
 
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 
 import '../daos/navigation_dao.dart';
 import '../daos/page_dao.dart';
@@ -62,10 +58,6 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         // Future migrations will go here
-        // Example:
-        // if (from < 2) {
-        //   await m.addColumn(schemaCache, schemaCache.refCount);
-        // }
       },
     );
   }
@@ -103,23 +95,9 @@ class AppDatabase extends _$AppDatabase {
       );
     });
   }
-
-  /// Get database size for monitoring
-  Future<int> getDatabaseSize() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'thesa_ui.db'));
-    if (await file.exists()) {
-      return await file.length();
-    }
-    return 0;
-  }
 }
 
-/// Create the database instance
-///
-/// This is the factory function used throughout the app
-Future<AppDatabase> createDatabase() async {
-  final dbFolder = await getApplicationDocumentsDirectory();
-  final file = File(p.join(dbFolder.path, 'thesa_ui.db'));
-  return AppDatabase(NativeDatabase(file));
+/// Create the database instance using drift_flutter (cross-platform: native + web).
+AppDatabase createDatabase() {
+  return AppDatabase(driftDatabase(name: 'thesa_ui'));
 }
