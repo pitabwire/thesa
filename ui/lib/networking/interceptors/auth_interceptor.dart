@@ -15,7 +15,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
 
-import '../../state/auth/auth_provider.dart';
 import '../../state/auth/oidc_service.dart';
 import '../../telemetry/models/telemetry_event.dart';
 import '../../telemetry/telemetry_service.dart';
@@ -85,7 +84,7 @@ class AuthInterceptor extends Interceptor {
       final options = err.requestOptions;
       options.headers['Authorization'] = 'Bearer $newAccessToken';
 
-      final response = await dio.fetch(options);
+      final response = await dio.fetch<dynamic>(options);
       return handler.resolve(response);
     } catch (e, stack) {
       _logger.severe('Error during token refresh', e, stack);
@@ -139,7 +138,9 @@ class AuthInterceptor extends Interceptor {
     required bool success,
     String? errorMessage,
   }) {
-    if (telemetryService == null) return;
+    if (telemetryService == null) {
+      return;
+    }
 
     final durationMs = DateTime.now().difference(startTime).inMilliseconds;
     telemetryService!.record(

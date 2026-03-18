@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../design/design.dart';
 import 'sidebar.dart';
 
 /// Main app shell with persistent sidebar and dynamic content area

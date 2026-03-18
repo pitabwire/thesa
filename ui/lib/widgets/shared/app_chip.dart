@@ -118,11 +118,10 @@ class _StatusChip extends StatelessWidget {
         vertical: AppSpacing.space4,
       ),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.12),
+        color: statusColor.withValues(alpha:0.12),
         borderRadius: BorderRadius.circular(AppBorderRadius.small),
         border: Border.all(
           color: statusColor,
-          width: 1,
         ),
       ),
       child: Row(

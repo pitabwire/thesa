@@ -40,7 +40,7 @@ class ETagInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
     final url = _buildCacheKey(response.requestOptions);
 
     // Store ETag if present in response

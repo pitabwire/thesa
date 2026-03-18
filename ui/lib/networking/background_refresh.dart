@@ -34,7 +34,9 @@ class BackgroundRefreshCoordinator {
 
   /// Start background refresh timers
   void start() {
-    if (_isRunning) return;
+    if (_isRunning) {
+      return;
+    }
 
     _logger.info('Starting background refresh');
     _isRunning = true;
@@ -50,7 +52,9 @@ class BackgroundRefreshCoordinator {
 
   /// Stop all background refresh timers
   void stop() {
-    if (!_isRunning) return;
+    if (!_isRunning) {
+      return;
+    }
 
     _logger.info('Stopping background refresh');
     _isRunning = false;

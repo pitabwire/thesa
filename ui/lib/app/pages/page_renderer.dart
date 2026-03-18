@@ -99,7 +99,6 @@ class _PageRendererState extends ConsumerState<PageRenderer> {
         renderTimeMs: renderTime,
         componentCount: componentCount,
         fromCache: true, // TODO: Track actual cache status from provider
-        cacheAgeMs: null, // TODO: Get from cache metadata
         stale: false, // TODO: Get from cache metadata
         timestamp: DateTime.now(),
       ),
@@ -211,4 +210,3 @@ class _Breadcrumbs extends StatelessWidget {
     );
   }
 }
-

@@ -23,11 +23,7 @@ TelemetryConfig telemetryConfig(Ref ref) {
     defaultValue: true,
   );
 
-  return TelemetryConfig(
-    flushIntervalSeconds: 30,
-    maxBufferSize: 100,
-    maxBufferSizeBeforeDrop: 10000,
-    enabled: enabled,
+  return const TelemetryConfig(
     exportEndpoint: enabled ? endpoint : null,
   );
 }
@@ -47,9 +43,7 @@ TelemetryService telemetryService(Ref ref) {
     exporter: exporter,
   );
 
-  ref.onDispose(() {
-    service.dispose();
-  });
+  ref.onDispose(service.dispose);
 
   return service;
 }
@@ -61,13 +55,9 @@ PerformanceMonitor performanceMonitor(Ref ref) {
 
   final monitor = PerformanceMonitor(
     telemetryService: telemetryService,
-    jankThresholdMs: 32.0, // 2 frames at 60fps
-    recordAllFrames: false, // Only record janks
   );
 
-  ref.onDispose(() {
-    monitor.dispose();
-  });
+  ref.onDispose(monitor.dispose);
 
   return monitor;
 }

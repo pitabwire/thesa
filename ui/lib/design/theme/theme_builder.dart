@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import '../branding/branding_config.dart';
 import '../tokens/colors.dart';
-import '../tokens/typography.dart';
 
 /// Builds Material ThemeData from design tokens
 class ThemeBuilder {
@@ -23,15 +22,10 @@ class ThemeBuilder {
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
         primary: primaryColor,
-        onPrimary: AppColors.lightOnPrimary,
         secondary: secondaryColor,
         onSecondary: AppColors.lightOnSecondary,
-        surface: AppColors.lightSurface,
         onSurface: AppColors.lightOnSurface,
-        background: AppColors.lightBackground,
-        onBackground: AppColors.lightOnBackground,
         error: AppColors.lightError,
-        onError: AppColors.lightOnError,
       ),
       // Typography
       textTheme: _buildTextTheme(
@@ -105,8 +99,6 @@ class ThemeBuilder {
         onSecondary: AppColors.darkOnSecondary,
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkOnSurface,
-        background: AppColors.darkBackground,
-        onBackground: AppColors.darkOnBackground,
         error: AppColors.darkError,
         onError: AppColors.darkOnError,
       ),

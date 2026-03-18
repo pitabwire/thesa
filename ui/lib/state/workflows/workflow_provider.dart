@@ -3,10 +3,9 @@
 /// Tracks workflow progress and manages step transitions.
 library;
 
+import 'package:drift/drift.dart';
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-import 'package:drift/drift.dart';
 
 import '../../cache/database/app_database.dart';
 import '../../core/core.dart';
@@ -66,7 +65,9 @@ class Workflow extends _$Workflow {
   /// Advance to next step
   Future<void> nextStep(Map<String, dynamic> stepData) async {
     final current = state.value;
-    if (current == null) return;
+    if (current == null) {
+      return;
+    }
 
     _logger.info('Advancing workflow to next step: $instanceId');
 
@@ -105,7 +106,9 @@ class Workflow extends _$Workflow {
   /// Go back to previous step
   Future<void> previousStep() async {
     final current = state.value;
-    if (current == null || current.currentStep == 0) return;
+    if (current == null || current.currentStep == 0) {
+      return;
+    }
 
     _logger.info('Going back to previous step: $instanceId');
 
@@ -127,7 +130,9 @@ class Workflow extends _$Workflow {
   /// Complete workflow
   Future<void> complete() async {
     final current = state.value;
-    if (current == null) return;
+    if (current == null) {
+      return;
+    }
 
     _logger.info('Completing workflow: $instanceId');
 

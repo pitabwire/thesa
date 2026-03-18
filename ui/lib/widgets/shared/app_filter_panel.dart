@@ -49,7 +49,7 @@ class _AppFilterPanelState extends State<AppFilterPanel> {
               children: [
                 const Icon(Icons.filter_list, size: 20),
                 const SizedBox(width: AppSpacing.space8),
-                Text(
+                const Text(
                   'Filters',
                   style: AppTypography.titleMedium,
                 ),
@@ -90,7 +90,6 @@ class _AppFilterPanelState extends State<AppFilterPanel> {
                 AppButton(
                   label: 'Apply',
                   onPressed: _handleApply,
-                  variant: AppButtonVariant.primary,
                   size: AppButtonSize.small,
                 ),
               ],
@@ -125,7 +124,7 @@ class _AppFilterPanelState extends State<AppFilterPanel> {
             labelText: filter.label,
             border: const OutlineInputBorder(),
           ),
-          value: _values[filter.field] as String?,
+          initialValue: _values[filter.field] as String?,
           items: filter.options?.map((option) {
             return DropdownMenuItem(
               value: option.value,

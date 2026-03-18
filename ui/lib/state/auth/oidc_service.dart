@@ -37,7 +37,7 @@ class AuthStorageKeys {
 
 /// OIDC authentication service.
 ///
-/// Wraps [openid_client] with platform-specific auth flows, secure
+/// Wraps `openid_client` with platform-specific auth flows, secure
 /// token storage, and mutex-protected token refresh.
 class OidcService {
   OidcService(this._storage)
@@ -156,7 +156,9 @@ class OidcService {
     final expiresAtStr = await _storage.read(
       key: AuthStorageKeys.tokenExpiresAt,
     );
-    if (expiresAtStr == null) return true;
+    if (expiresAtStr == null) {
+      return true;
+    }
 
     try {
       final expiresAt = DateTime.fromMillisecondsSinceEpoch(
@@ -312,7 +314,9 @@ class OidcService {
       'retry',
     ];
     for (final p in transientPatterns) {
-      if (errorStr.contains(p)) return false;
+      if (errorStr.contains(p)) {
+        return false;
+      }
     }
 
     const permanentOAuthErrors = [
@@ -322,7 +326,9 @@ class OidcService {
       'access_denied',
     ];
     for (final e in permanentOAuthErrors) {
-      if (errorStr.contains(e)) return true;
+      if (errorStr.contains(e)) {
+        return true;
+      }
     }
 
     const permanentMessages = [
@@ -332,7 +338,9 @@ class OidcService {
       'refresh token is no longer active',
     ];
     for (final m in permanentMessages) {
-      if (errorStr.contains(m)) return true;
+      if (errorStr.contains(m)) {
+        return true;
+      }
     }
 
     return false;
@@ -344,7 +352,9 @@ class OidcService {
   Future<bool> isAuthenticated() async {
     await handleRedirectResult();
     final accessToken = await getAccessToken();
-    if (accessToken != null) return true;
+    if (accessToken != null) {
+      return true;
+    }
     final refreshTokenValue = await getRefreshToken();
     return refreshTokenValue != null;
   }
@@ -352,11 +362,15 @@ class OidcService {
   /// Decode user claims from the ID token (JWT payload).
   Future<Map<String, dynamic>?> getUserInfo() async {
     final idToken = await getIdToken();
-    if (idToken == null) return null;
+    if (idToken == null) {
+      return null;
+    }
 
     try {
       final parts = idToken.split('.');
-      if (parts.length != 3) return null;
+      if (parts.length != 3) {
+        return null;
+      }
       final normalized = base64.normalize(parts[1]);
       final decoded = utf8.decode(base64.decode(normalized));
       return json.decode(decoded) as Map<String, dynamic>;

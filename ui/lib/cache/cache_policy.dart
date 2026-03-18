@@ -146,13 +146,17 @@ class CacheResult<T> {
 
   /// How old this data is
   Duration? get age {
-    if (fetchedAt == null) return null;
+    if (fetchedAt == null) {
+      return null;
+    }
     return DateTime.now().difference(fetchedAt!);
   }
 
   /// How much time until expiry (negative if already expired)
   Duration? get timeUntilExpiry {
-    if (expiresAt == null) return null;
+    if (expiresAt == null) {
+      return null;
+    }
     return expiresAt!.difference(DateTime.now());
   }
 }

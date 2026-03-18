@@ -94,7 +94,7 @@ abstract final class StawiInputStyles {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9999),
-        borderSide: BorderSide(color: StawiColors.emerald, width: 2),
+        borderSide: const BorderSide(color: StawiColors.emerald, width: 2),
       ),
     );
   }

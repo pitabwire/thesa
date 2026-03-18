@@ -56,10 +56,10 @@ Future<void> main() async {
 Future<void> _loadEnvironment() async {
   try {
     // Load base .env file
-    await dotenv.load(fileName: '.env');
+    await dotenv.load();
 
     // Try to load environment-specific overrides
-    const envName = String.fromEnvironment('ENV', defaultValue: '');
+    const envName = String.fromEnvironment('ENV');
     if (envName.isNotEmpty) {
       try {
         await dotenv.load(fileName: '.env.$envName', mergeWith: dotenv.env);

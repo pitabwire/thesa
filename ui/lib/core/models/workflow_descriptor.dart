@@ -26,11 +26,9 @@ abstract class WorkflowDescriptor with _$WorkflowDescriptor {
     /// Workflow title
     required String title,
 
-    /// Description
-    String? description,
-
     /// Workflow steps
-    required List<WorkflowStep> steps,
+    required List<WorkflowStep> steps, /// Description
+    String? description,
 
     /// Current step index (0-based)
     @Default(0) int currentStep,

@@ -87,7 +87,7 @@ linter:
     - leading_newlines_in_multiline_strings
     - library_names
     - library_prefixes
-    - lines_longer_than_80_chars
+    # lines_longer_than_80_chars: disabled (too many in generated/API files)
     - no_leading_underscores_for_library_prefixes
     - no_runtimeType_toString
     - non_constant_identifier_names
@@ -108,7 +108,7 @@ linter:
     - prefer_const_literals_to_create_immutables
     - prefer_constructors_over_static_methods
     - prefer_contains
-    - prefer_equal_for_default_values
+    # prefer_equal_for_default_values removed in Dart 3.0
     - prefer_final_fields
     - prefer_final_in_for_each
     - prefer_final_locals

@@ -7,9 +7,10 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'examples/dashboard_page_plugin.dart';
-import 'examples/map_component_plugin.dart';
 import 'examples/invoice_schema_plugin.dart';
+import 'examples/map_component_plugin.dart';
 import 'plugin_provider.dart';
+import 'plugin_registry.dart';
 
 /// Register all application plugins
 ///
@@ -28,13 +29,12 @@ void registerPlugins(WidgetRef ref) {
 }
 
 /// Register example plugins for demonstration
-void registerExamplePlugins(registry) {
-  // Example page plugin
-  registry.registerPage('dashboard', buildDashboardPage);
-
-  // Example component plugin
-  registry.registerComponent('map', buildMapComponent);
-
-  // Example schema renderer plugin
-  registry.registerSchemaRenderer('invoice_schema', buildInvoiceForm);
+void registerExamplePlugins(PluginRegistry registry) {
+  registry
+    // Example page plugin
+    ..registerPage('dashboard', buildDashboardPage)
+    // Example component plugin
+    ..registerComponent('map', buildMapComponent)
+    // Example schema renderer plugin
+    ..registerSchemaRenderer('invoice_schema', buildInvoiceForm);
 }

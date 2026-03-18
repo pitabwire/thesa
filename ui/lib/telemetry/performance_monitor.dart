@@ -1,7 +1,6 @@
 /// Performance monitoring for frame timing and jank detection.
 library;
 
-import 'dart:ui';
 
 import 'package:flutter/scheduler.dart';
 import 'package:logging/logging.dart';
@@ -34,7 +33,6 @@ class PerformanceMonitor {
 
   String? _currentPageId;
   int _widgetBuildCount = 0;
-  FrameTiming? _lastFrameTiming;
 
   /// Set the current page ID for frame attribution
   void setCurrentPage(String pageId) {
@@ -92,8 +90,6 @@ class PerformanceMonitor {
         );
       }
     }
-
-    _lastFrameTiming = timing;
   }
 
   /// Get current jank rate (percentage of frames that are janky)
@@ -102,7 +98,7 @@ class PerformanceMonitor {
   /// For now, we just track individual janks via telemetry.
   double getJankRate() {
     // TODO: Implement sliding window tracking if needed
-    return 0.0;
+    return 0;
   }
 
   /// Dispose resources

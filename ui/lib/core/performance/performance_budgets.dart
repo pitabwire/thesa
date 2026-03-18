@@ -3,7 +3,6 @@ library;
 
 import 'package:logging/logging.dart';
 
-import '../../telemetry/models/telemetry_event.dart';
 import '../../telemetry/telemetry_service.dart';
 
 /// Performance budget thresholds
@@ -23,10 +22,10 @@ class PerformanceBudgets {
   static const int apiResponseMs = 500;
 
   /// Frame render should complete in <16ms for 60fps
-  static const double frameRenderMs = 16.0;
+  static const double frameRenderMs = 16;
 
   /// Jank rate should be <1% of frames
-  static const double jankRatePercent = 1.0;
+  static const double jankRatePercent = 1;
 
   /// Form submission should complete in <1000ms
   static const int formSubmissionMs = 1000;

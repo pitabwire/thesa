@@ -51,7 +51,7 @@ class _InvoiceFormPluginState extends State<InvoiceFormPlugin> {
   String _status = 'draft';
 
   final List<_LineItem> _lineItems = [
-    _LineItem(description: '', quantity: 1, unitPrice: 0.0),
+    _LineItem(description: '', quantity: 1, unitPrice: 0),
   ];
 
   @override
@@ -83,7 +83,7 @@ class _InvoiceFormPluginState extends State<InvoiceFormPlugin> {
             Text(
               'Custom invoice form with line items',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha:0.7),
               ),
             ),
             const SizedBox(height: AppSpacing.space24),
@@ -149,7 +149,7 @@ class _InvoiceFormPluginState extends State<InvoiceFormPlugin> {
                 const SizedBox(width: AppSpacing.space16),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _status,
+                    initialValue: _status,
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       border: OutlineInputBorder(),
@@ -186,7 +186,7 @@ class _InvoiceFormPluginState extends State<InvoiceFormPlugin> {
                   _lineItems.add(_LineItem(
                     description: '',
                     quantity: 1,
-                    unitPrice: 0.0,
+                    unitPrice: 0,
                   ));
                 });
               },
@@ -350,7 +350,7 @@ class _InvoiceFormPluginState extends State<InvoiceFormPlugin> {
 
   double _calculateTotal() {
     return _lineItems.fold(
-      0.0,
+      0,
       (sum, item) => sum + (item.quantity * item.unitPrice),
     );
   }

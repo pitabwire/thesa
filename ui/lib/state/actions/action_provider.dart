@@ -116,7 +116,7 @@ class Action extends _$Action {
       );
 
       // Extract error details
-      String message = 'Action failed';
+      var message = 'Action failed';
       Map<String, String>? fieldErrors;
 
       if (e is AppError) {

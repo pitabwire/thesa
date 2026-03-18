@@ -14,7 +14,7 @@ import '../../widgets/shared/shared.dart';
 class AppSidebar extends ConsumerWidget {
   const AppSidebar({super.key});
 
-  static const double width = 256.0;
+  static const double width = 256;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -183,7 +183,7 @@ class AppSidebar extends ConsumerWidget {
         ],
       ),
       selected: isSelected,
-      selectedTileColor: theme.colorScheme.primary.withOpacity(0.12),
+      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppBorderRadius.medium),
       ),
@@ -242,7 +242,9 @@ class AppSidebar extends ConsumerWidget {
 
   /// Get badge color
   Color _getBadgeColor(String? colorName, ThemeData theme) {
-    if (colorName == null) return theme.colorScheme.primary;
+    if (colorName == null) {
+      return theme.colorScheme.primary;
+    }
 
     final isDark = theme.brightness == Brightness.dark;
     return AppColors.getStatusColor(colorName, isDark: isDark);

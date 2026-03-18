@@ -4,6 +4,7 @@ library;
 import '../models/telemetry_event.dart';
 
 /// Base interface for telemetry exporters
+// ignore: one_member_abstracts
 abstract class TelemetryExporter {
   /// Export a batch of events
   Future<void> export(List<TelemetryEvent> events);

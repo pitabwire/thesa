@@ -27,7 +27,7 @@ class Navigation extends _$Navigation {
     try {
       final result = await cacheCoordinator.getNavigation(
         'main',
-        fetchFromNetwork: () => bffClient.getNavigation(),
+        fetchFromNetwork: bffClient.getNavigation,
       );
 
       final data = result.data;
@@ -53,7 +53,7 @@ class Navigation extends _$Navigation {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final bffClient = ref.read(bffClientProvider);
-      return await bffClient.getNavigation();
+      return bffClient.getNavigation();
     });
   }
 

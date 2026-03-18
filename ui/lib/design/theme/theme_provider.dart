@@ -106,6 +106,6 @@ Brightness currentBrightness(Ref ref, BuildContext context) {
       }
     },
     loading: () => MediaQuery.platformBrightnessOf(context),
-    error: (_, __) => Brightness.light,
+    error: (_, _) => Brightness.light,
   );
 }

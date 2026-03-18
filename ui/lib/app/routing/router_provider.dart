@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../state/auth/auth_provider.dart';
-import '../../state/auth/auth_state.dart';
 import '../../state/state.dart';
 import '../pages/login_page.dart';
 import 'dynamic_route_builder.dart';
@@ -22,11 +20,6 @@ GoRouter router(Ref ref) {
   // Determine if user is authenticated
   final isLoggedIn = authAsync.maybeWhen(
     data: (auth) => auth.maybeMap(loggedIn: (_) => true, orElse: () => false),
-    orElse: () => false,
-  );
-
-  final isLoggingIn = authAsync.maybeWhen(
-    data: (auth) => auth.maybeMap(loggingIn: (_) => true, orElse: () => false),
     orElse: () => false,
   );
 

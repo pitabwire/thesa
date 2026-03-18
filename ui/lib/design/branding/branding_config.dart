@@ -48,6 +48,9 @@ abstract class BrandingConfig with _$BrandingConfig {
     @Default(true) bool showBrandingInSidebar,
   }) = _BrandingConfig;
 
+  factory BrandingConfig.fromJson(Map<String, dynamic> json) =>
+      _$BrandingConfigFromJson(json);
+
   const BrandingConfig._();
 
   /// Get primary color from hex string
@@ -63,9 +66,6 @@ abstract class BrandingConfig with _$BrandingConfig {
     final hexCode = hex.replaceAll('#', '');
     return Color(int.parse('FF$hexCode', radix: 16));
   }
-
-  factory BrandingConfig.fromJson(Map<String, dynamic> json) =>
-      _$BrandingConfigFromJson(json);
 
   /// Default branding (Thesa UI defaults)
   static const BrandingConfig defaultBranding = BrandingConfig();

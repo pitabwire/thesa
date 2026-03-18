@@ -47,7 +47,7 @@ class OtelExporter implements TelemetryExporter {
       final otlpPayload = await _convertToOtlp(events);
 
       // Send to collector
-      await _dio.post(
+      await _dio.post<dynamic>(
         endpoint,
         data: otlpPayload,
         options: Options(
@@ -116,23 +116,29 @@ class OtelExporter implements TelemetryExporter {
 
     // Add platform-specific attributes
     if (Platform.isAndroid) {
-      attributes.add(_stringAttribute('device.type', 'android'));
-      attributes.add(_stringAttribute('os.type', 'android'));
+      attributes
+        ..add(_stringAttribute('device.type', 'android'))
+        ..add(_stringAttribute('os.type', 'android'));
     } else if (Platform.isIOS) {
-      attributes.add(_stringAttribute('device.type', 'ios'));
-      attributes.add(_stringAttribute('os.type', 'ios'));
+      attributes
+        ..add(_stringAttribute('device.type', 'ios'))
+        ..add(_stringAttribute('os.type', 'ios'));
     } else if (Platform.isLinux) {
-      attributes.add(_stringAttribute('device.type', 'desktop'));
-      attributes.add(_stringAttribute('os.type', 'linux'));
+      attributes
+        ..add(_stringAttribute('device.type', 'desktop'))
+        ..add(_stringAttribute('os.type', 'linux'));
     } else if (Platform.isMacOS) {
-      attributes.add(_stringAttribute('device.type', 'desktop'));
-      attributes.add(_stringAttribute('os.type', 'macos'));
+      attributes
+        ..add(_stringAttribute('device.type', 'desktop'))
+        ..add(_stringAttribute('os.type', 'macos'));
     } else if (Platform.isWindows) {
-      attributes.add(_stringAttribute('device.type', 'desktop'));
-      attributes.add(_stringAttribute('os.type', 'windows'));
+      attributes
+        ..add(_stringAttribute('device.type', 'desktop'))
+        ..add(_stringAttribute('os.type', 'windows'));
     } else {
-      attributes.add(_stringAttribute('device.type', 'web'));
-      attributes.add(_stringAttribute('os.type', 'web'));
+      attributes
+        ..add(_stringAttribute('device.type', 'web'))
+        ..add(_stringAttribute('os.type', 'web'));
     }
 
     return attributes;
@@ -170,7 +176,7 @@ class OtelExporter implements TelemetryExporter {
   /// Build span attributes from event
   List<Map<String, dynamic>> _buildSpanAttributes(TelemetryEvent event) {
     return switch (event) {
-      PageRenderEvent e => [
+      final PageRenderEvent e => [
           _stringAttribute('page.id', e.pageId),
           _intAttribute('page.render_time_ms', e.renderTimeMs),
           _intAttribute('page.component_count', e.componentCount),
@@ -179,7 +185,7 @@ class OtelExporter implements TelemetryExporter {
             _intAttribute('cache.age_ms', e.cacheAgeMs!),
           _boolAttribute('cache.stale', e.stale),
         ],
-      ApiRequestEvent e => [
+      final ApiRequestEvent e => [
           _stringAttribute('http.endpoint', e.endpoint),
           _stringAttribute('http.method', e.method),
           _intAttribute('http.duration_ms', e.durationMs),
@@ -188,13 +194,13 @@ class OtelExporter implements TelemetryExporter {
           _boolAttribute('http.etag_hit', e.etagHit),
           _intAttribute('http.retry_count', e.retryCount),
         ],
-      WorkflowTransitionEvent e => [
+      final WorkflowTransitionEvent e => [
           _stringAttribute('workflow.id', e.workflowId),
           _stringAttribute('workflow.from_step', e.fromStep),
           _stringAttribute('workflow.to_step', e.toStep),
           _intAttribute('workflow.duration_ms', e.durationMs),
         ],
-      UiErrorEvent e => [
+      final UiErrorEvent e => [
           _stringAttribute('error.type', e.errorType),
           _stringAttribute('component.type', e.componentType),
           _stringAttribute('component.id', e.componentId),
@@ -203,7 +209,7 @@ class OtelExporter implements TelemetryExporter {
           if (e.stackTrace != null)
             _stringAttribute('error.stack_trace', e.stackTrace!),
         ],
-      RenderFailureEvent e => [
+      final RenderFailureEvent e => [
           _stringAttribute('component.id', e.componentId),
           _stringAttribute('descriptor.type', e.descriptorType),
           _stringAttribute('error.message', e.errorMessage),
@@ -211,30 +217,30 @@ class OtelExporter implements TelemetryExporter {
           if (e.stackTrace != null)
             _stringAttribute('error.stack_trace', e.stackTrace!),
         ],
-      CacheHitEvent e => [
+      final CacheHitEvent e => [
           _stringAttribute('cache.type', e.cacheType),
           _stringAttribute('cache.key', e.key),
           _intAttribute('cache.age_ms', e.ageMs),
           _boolAttribute('cache.stale', e.stale),
         ],
-      CacheMissEvent e => [
+      final CacheMissEvent e => [
           _stringAttribute('cache.type', e.cacheType),
           _stringAttribute('cache.key', e.key),
         ],
-      AuthRefreshEvent e => [
+      final AuthRefreshEvent e => [
           _boolAttribute('auth.success', e.success),
           _intAttribute('auth.duration_ms', e.durationMs),
           _stringAttribute('auth.triggered_by', e.triggeredBy),
           if (e.errorMessage != null)
             _stringAttribute('error.message', e.errorMessage!),
         ],
-      FrameTimingEvent e => [
+      final FrameTimingEvent e => [
           _stringAttribute('page.id', e.pageId),
           _doubleAttribute('frame.time_ms', e.frameTimeMs),
           _boolAttribute('frame.is_jank', e.isJank),
           _intAttribute('frame.widget_build_count', e.widgetBuildCount),
         ],
-      ActionExecutionEvent e => [
+      final ActionExecutionEvent e => [
           _stringAttribute('action.id', e.actionId),
           _stringAttribute('action.type', e.actionType),
           _stringAttribute('page.id', e.pageId),
@@ -243,7 +249,7 @@ class OtelExporter implements TelemetryExporter {
           if (e.errorMessage != null)
             _stringAttribute('error.message', e.errorMessage!),
         ],
-      FormSubmissionEvent e => [
+      final FormSubmissionEvent e => [
           _stringAttribute('form.schema_id', e.schemaId),
           _stringAttribute('page.id', e.pageId),
           _boolAttribute('form.success', e.success),
@@ -252,7 +258,7 @@ class OtelExporter implements TelemetryExporter {
           if (e.errorMessage != null)
             _stringAttribute('error.message', e.errorMessage!),
         ],
-      TableInteractionEvent e => [
+      final TableInteractionEvent e => [
           _stringAttribute('table.id', e.tableId),
           _stringAttribute('table.interaction_type', e.interactionType),
           _stringAttribute('page.id', e.pageId),

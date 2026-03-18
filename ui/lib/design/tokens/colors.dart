@@ -125,6 +125,6 @@ class AppColors {
     final luminance = bgColor.computeLuminance();
     return luminance > 0.5
         ? (isDark ? darkOnSurface : lightOnSurface)
-        : Color(0xFFFFFFFF);
+        : const Color(0xFFFFFFFF);
   }
 }

@@ -25,13 +25,13 @@ class AppSkeletonLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceVariant,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       highlightColor: Theme.of(context).colorScheme.surface,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
@@ -117,7 +117,7 @@ class ListItemSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const TextLineSkeleton(height: 16),
+                const TextLineSkeleton(),
                 const SizedBox(height: AppSpacing.space4),
                 TextLineSkeleton(
                   width: MediaQuery.of(context).size.width * 0.6,
@@ -151,12 +151,12 @@ class TableRowSkeleton extends StatelessWidget {
       child: Row(
         children: List.generate(
           columnCount,
-          (index) => Expanded(
+          (index) => const Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
+              padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.space8,
               ),
-              child: const TextLineSkeleton(height: 16),
+              child: TextLineSkeleton(),
             ),
           ),
         ),
@@ -204,9 +204,9 @@ class PageContentSkeleton extends StatelessWidget {
           const SizedBox(height: AppSpacing.space24),
           ...List.generate(
             3,
-            (index) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.space16),
-              child: const CardSkeleton(height: 150),
+            (index) => const Padding(
+              padding: EdgeInsets.only(bottom: AppSpacing.space16),
+              child: CardSkeleton(height: 150),
             ),
           ),
         ],

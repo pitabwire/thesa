@@ -25,7 +25,7 @@ class AccessibilityUtils {
 
   /// Get font scale factor
   static double getFontScale(BuildContext context) {
-    return MediaQuery.textScalerOf(context).scale(1.0);
+    return MediaQuery.textScalerOf(context).scale(1);
   }
 
   /// Check if large text is enabled (scale >= 1.3)
@@ -59,14 +59,21 @@ class AccessibilityUtils {
   /// Announce message to screen readers
   ///
   /// Creates a live region announcement.
-  static void announce(BuildContext context, String message) {
-    // Use SemanticsService to announce
-    SemanticsService.announce(message, TextDirection.ltr);
+  static Future<void> announce(
+    BuildContext context,
+    String message,
+  ) async {
+    final view = View.of(context);
+    await SemanticsService.sendAnnouncement(
+      view,
+      message,
+      TextDirection.ltr,
+    );
   }
 }
 
 /// Minimum touch target size constant
-const double kMinimumTouchTarget = 48.0;
+const double kMinimumTouchTarget = 48;
 
 /// WCAG AA contrast ratio thresholds
 class ContrastRatios {
@@ -76,10 +83,10 @@ class ContrastRatios {
   static const double normalText = 4.5;
 
   /// Minimum contrast for large text (3:1)
-  static const double largeText = 3.0;
+  static const double largeText = 3;
 
   /// Minimum contrast for UI components (3:1)
-  static const double uiComponents = 3.0;
+  static const double uiComponents = 3;
 }
 
 /// Calculate luminance of a color

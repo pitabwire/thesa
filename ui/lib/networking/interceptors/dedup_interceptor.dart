@@ -16,7 +16,7 @@ class DeduplicationInterceptor extends Interceptor {
   final _logger = Logger('DeduplicationInterceptor');
 
   // Map of in-flight requests
-  final Map<String, Completer<Response>> _inFlightRequests = {};
+  final Map<String, Completer<Response<dynamic>>> _inFlightRequests = {};
 
   @override
   Future<void> onRequest(
@@ -48,13 +48,13 @@ class DeduplicationInterceptor extends Interceptor {
     }
 
     // This is a new request - add it to the in-flight map
-    _inFlightRequests[key] = Completer<Response>();
+    _inFlightRequests[key] = Completer<Response<dynamic>>();
 
     handler.next(options);
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
     final key = _buildRequestKey(response.requestOptions);
 
     // Complete the completer for this request

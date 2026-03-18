@@ -88,7 +88,7 @@ class AppBadgedWidget extends StatelessWidget {
   const AppBadgedWidget({
     required this.child,
     required this.badge,
-    this.offset = const Offset(0, 0),
+    this.offset = Offset.zero,
     super.key,
   });
 

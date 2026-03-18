@@ -82,7 +82,9 @@ class AuthPlatformWeb implements AuthPlatform {
 
   @override
   Future<TokenResponse?> getRedirectResult() async {
-    if (_client == null) return null;
+    if (_client == null) {
+      return null;
+    }
 
     final uri = Uri.parse(web.window.location.href);
     final code = uri.queryParameters['code'];
@@ -96,7 +98,9 @@ class AuthPlatformWeb implements AuthPlatform {
       throw Exception('Authentication failed: ${errorDescription ?? error}');
     }
 
-    if (code == null || state == null) return null;
+    if (code == null || state == null) {
+      return null;
+    }
 
     final storedState = web.window.localStorage.getItem(_stateKey);
     final storedCodeVerifier = web.window.localStorage.getItem(

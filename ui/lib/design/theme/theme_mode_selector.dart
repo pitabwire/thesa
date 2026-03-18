@@ -25,38 +25,32 @@ class ThemeModeSelector extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
-          RadioListTile<ThemeMode>(
-            title: const Text('Light'),
-            subtitle: const Text('Always use light theme'),
-            value: ThemeMode.light,
+          RadioGroup<ThemeMode>(
             groupValue: themeMode,
             onChanged: (mode) {
               if (mode != null) {
                 ref.read(themeModeProvider.notifier).setThemeMode(mode);
               }
             },
-          ),
-          RadioListTile<ThemeMode>(
-            title: const Text('Dark'),
-            subtitle: const Text('Always use dark theme'),
-            value: ThemeMode.dark,
-            groupValue: themeMode,
-            onChanged: (mode) {
-              if (mode != null) {
-                ref.read(themeModeProvider.notifier).setThemeMode(mode);
-              }
-            },
-          ),
-          RadioListTile<ThemeMode>(
-            title: const Text('System'),
-            subtitle: const Text('Follow system preference'),
-            value: ThemeMode.system,
-            groupValue: themeMode,
-            onChanged: (mode) {
-              if (mode != null) {
-                ref.read(themeModeProvider.notifier).setThemeMode(mode);
-              }
-            },
+            child: const Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: Text('Light'),
+                  subtitle: Text('Always use light theme'),
+                  value: ThemeMode.light,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text('Dark'),
+                  subtitle: Text('Always use dark theme'),
+                  value: ThemeMode.dark,
+                ),
+                RadioListTile<ThemeMode>(
+                  title: Text('System'),
+                  subtitle: Text('Follow system preference'),
+                  value: ThemeMode.system,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -92,7 +86,7 @@ class ThemeToggleButton extends ConsumerWidget {
         icon: Icon(Icons.brightness_auto),
         onPressed: null,
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }

@@ -18,7 +18,9 @@ class DynamicRouteBuilder {
 
     // Process each top-level navigation item
     for (final item in items) {
-      if (!item.permission.allowed) continue;
+      if (!item.permission.allowed) {
+        continue;
+      }
 
       // Add route if item has a pageId
       if (item.pageId != null && item.path != null) {
@@ -28,7 +30,9 @@ class DynamicRouteBuilder {
       // Add child routes
       if (item.children != null) {
         for (final child in item.children!) {
-          if (!child.permission.allowed) continue;
+          if (!child.permission.allowed) {
+            continue;
+          }
           if (child.pageId != null && child.path != null) {
             routes.add(_buildRoute(child));
           }

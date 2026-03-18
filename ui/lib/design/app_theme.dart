@@ -144,14 +144,14 @@ class AppTheme {
           vertical: AppSpacing.space12,
         ),
         hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.lightOnSurface.withOpacity(0.6),
+          color: AppColors.lightOnSurface.withValues(alpha:0.6),
         ),
       ),
 
       // Chip theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.lightSurface,
-        selectedColor: AppColors.lightPrimary.withOpacity(0.12),
+        selectedColor: AppColors.lightPrimary.withValues(alpha:0.12),
         labelStyle: AppTypography.labelMedium,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.space12,
@@ -200,7 +200,7 @@ class AppTheme {
           color: AppColors.lightOnSurface,
         ),
         bodySmall: AppTypography.bodySmall.copyWith(
-          color: AppColors.lightOnSurface.withOpacity(0.6),
+          color: AppColors.lightOnSurface.withValues(alpha:0.6),
         ),
         labelLarge: AppTypography.labelLarge.copyWith(
           color: AppColors.lightOnSurface,
@@ -209,7 +209,7 @@ class AppTheme {
           color: AppColors.lightOnSurface,
         ),
         labelSmall: AppTypography.labelSmall.copyWith(
-          color: AppColors.lightOnSurface.withOpacity(0.6),
+          color: AppColors.lightOnSurface.withValues(alpha:0.6),
         ),
       ),
 
@@ -356,14 +356,14 @@ class AppTheme {
           vertical: AppSpacing.space12,
         ),
         hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.darkOnSurface.withOpacity(0.6),
+          color: AppColors.darkOnSurface.withValues(alpha:0.6),
         ),
       ),
 
       // Chip theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkSurface,
-        selectedColor: AppColors.darkPrimary.withOpacity(0.24),
+        selectedColor: AppColors.darkPrimary.withValues(alpha:0.24),
         labelStyle: AppTypography.labelMedium,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.space12,
@@ -412,7 +412,7 @@ class AppTheme {
           color: AppColors.darkOnSurface,
         ),
         bodySmall: AppTypography.bodySmall.copyWith(
-          color: AppColors.darkOnSurface.withOpacity(0.6),
+          color: AppColors.darkOnSurface.withValues(alpha:0.6),
         ),
         labelLarge: AppTypography.labelLarge.copyWith(
           color: AppColors.darkOnSurface,
@@ -421,7 +421,7 @@ class AppTheme {
           color: AppColors.darkOnSurface,
         ),
         labelSmall: AppTypography.labelSmall.copyWith(
-          color: AppColors.darkOnSurface.withOpacity(0.6),
+          color: AppColors.darkOnSurface.withValues(alpha:0.6),
         ),
       ),
 

@@ -178,7 +178,7 @@ class AppConfirmDialog {
   }) async {
     var confirmed = false;
 
-    await AppDialog.show(
+    await AppDialog.show<void>(
       context: context,
       title: title,
       body: Text(message),
@@ -202,7 +202,6 @@ class AppConfirmDialog {
       title: 'Delete $itemName?',
       message: 'This action cannot be undone.',
       confirmLabel: 'Delete',
-      cancelLabel: 'Cancel',
       isDestructive: true,
     );
   }

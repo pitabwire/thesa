@@ -103,7 +103,7 @@ class _DesktopAuthenticator {
           try {
             final credential = await flow.callback({
               'code': code,
-              if (state != null) 'state': state,
+              'state': ?state,
             });
             if (!completer.isCompleted) {
               completer.complete(credential);
@@ -159,9 +159,13 @@ class _MobileAuthenticator {
 
     try {
       _linkSubscription = _appLinks.uriLinkStream.listen((Uri uri) async {
-        if (_cancelled) return;
+        if (_cancelled) {
+          return;
+        }
 
-        if (uri.scheme != _customScheme || uri.host != _customHost) return;
+        if (uri.scheme != _customScheme || uri.host != _customHost) {
+          return;
+        }
 
         final error = uri.queryParameters['error'];
         if (error != null) {
@@ -185,7 +189,7 @@ class _MobileAuthenticator {
         try {
           final credential = await flow.callback({
             'code': code,
-            if (state != null) 'state': state,
+            'state': ?state,
           });
           if (!completer.isCompleted) {
             completer.complete(credential);
@@ -382,7 +386,9 @@ class AuthPlatformIO implements AuthPlatform {
             e.toString().contains('Failed host lookup') ||
             e.toString().contains('Connection refused') ||
             e is TimeoutException;
-        if (!isNetworkError || attempt == maxAttempts) rethrow;
+        if (!isNetworkError || attempt == maxAttempts) {
+          rethrow;
+        }
         _log.warning(
           'Network error on attempt $attempt/$maxAttempts, '
           'retrying in ${delay.inSeconds}s',

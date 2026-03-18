@@ -12,13 +12,13 @@ class AppConfig {
 
   /// BFF base URL for all API requests.
   static String get bffBaseUrl =>
-      const String.fromEnvironment('BFF_BASE_URL', defaultValue: '').isNotEmpty
+      const String.fromEnvironment('BFF_BASE_URL').isNotEmpty
       ? const String.fromEnvironment('BFF_BASE_URL')
       : dotenv.get('BFF_BASE_URL', fallback: 'http://localhost:8080');
 
   /// OIDC issuer URL (Ory Hydra public endpoint).
   static String get oidcIssuer =>
-      const String.fromEnvironment('OIDC_ISSUER', defaultValue: '').isNotEmpty
+      const String.fromEnvironment('OIDC_ISSUER').isNotEmpty
       ? const String.fromEnvironment('OIDC_ISSUER')
       : dotenv.get('OIDC_ISSUER', fallback: 'https://oauth2.stawi.org');
 
@@ -26,7 +26,6 @@ class AppConfig {
   static String get oidcClientId =>
       const String.fromEnvironment(
         'OIDC_CLIENT_ID',
-        defaultValue: '',
       ).isNotEmpty
       ? const String.fromEnvironment('OIDC_CLIENT_ID')
       : dotenv.get('OIDC_CLIENT_ID', fallback: 'thesa-ui');
@@ -34,7 +33,7 @@ class AppConfig {
   /// OIDC scopes to request.
   static List<String> get oidcScopes {
     final raw =
-        const String.fromEnvironment('OIDC_SCOPES', defaultValue: '').isNotEmpty
+        const String.fromEnvironment('OIDC_SCOPES').isNotEmpty
         ? const String.fromEnvironment('OIDC_SCOPES')
         : dotenv.get(
             'OIDC_SCOPES',

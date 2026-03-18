@@ -76,7 +76,9 @@ class AppAvatar extends StatelessWidget {
 
   /// Generate initials from name
   static String getInitials(String name) {
-    if (name.isEmpty) return '?';
+    if (name.isEmpty) {
+      return '?';
+    }
 
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length == 1) {
@@ -98,7 +100,7 @@ class AppAvatarGroup extends StatelessWidget {
   });
 
   /// List of avatar data
-  final List<_AvatarData> avatars;
+  final List<AvatarData> avatars;
 
   /// Maximum visible avatars
   final int maxVisible;
@@ -125,7 +127,7 @@ class AppAvatarGroup extends StatelessWidget {
           for (var i = 0; i < visibleCount; i++)
             Positioned(
               left: i * (diameter * 0.7),
-              child: Container(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -144,7 +146,7 @@ class AppAvatarGroup extends StatelessWidget {
           if (remainingCount > 0)
             Positioned(
               left: visibleCount * (diameter * 0.7),
-              child: Container(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -155,7 +157,7 @@ class AppAvatarGroup extends StatelessWidget {
                 child: CircleAvatar(
                   radius: diameter / 2,
                   backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      Theme.of(context).colorScheme.primary.withValues(alpha:0.2),
                   child: Text(
                     '+$remainingCount',
                     style: TextStyle(
@@ -174,12 +176,13 @@ class AppAvatarGroup extends StatelessWidget {
 }
 
 /// Avatar data model
-class _AvatarData {
-  const _AvatarData({
-    this.imageUrl,
-    this.initials,
-  });
+class AvatarData {
+  /// Create avatar data
+  const AvatarData({this.imageUrl, this.initials});
 
+  /// URL for the avatar image
   final String? imageUrl;
+
+  /// Initials to display when no image
   final String? initials;
 }

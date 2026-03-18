@@ -115,11 +115,19 @@ enum ErrorSeverity {
 extension AppErrorMessages on AppError {
   /// Get user-friendly error message
   String get userMessage => when(
-        network: (msg, code, endpoint, _, __) {
-          if (code == 401) return 'Your session has expired. Please log in again.';
-          if (code == 403) return 'You don\'t have permission to perform this action.';
-          if (code == 404) return 'The requested resource was not found.';
-          if (code == 500) return 'Server error. Please try again later.';
+        network: (msg, code, endpoint, _, _) {
+          if (code == 401) {
+            return 'Your session has expired. Please log in again.';
+          }
+          if (code == 403) {
+            return 'You don\'t have permission to perform this action.';
+          }
+          if (code == 404) {
+            return 'The requested resource was not found.';
+          }
+          if (code == 500) {
+            return 'Server error. Please try again later.';
+          }
           if (msg.toLowerCase().contains('timeout')) {
             return 'Request timed out. Please check your connection and try again.';
           }
@@ -128,48 +136,48 @@ extension AppErrorMessages on AppError {
           }
           return 'Network error: $msg';
         },
-        permission: (msg, resource, action, _, __) =>
+        permission: (msg, resource, action, _, _) =>
             'You don\'t have permission to $action ${resource ?? "this resource"}.',
-        parse: (msg, field, _, __) => 'Invalid data received from server.',
-        cache: (msg, operation, _, __) =>
+        parse: (msg, field, _, _) => 'Invalid data received from server.',
+        cache: (msg, operation, _, _) =>
             'Local storage error. Please try again.',
-        validation: (msg, fieldErrors, _, __) => msg,
-        notFound: (msg, resourceType, resourceId, _, __) =>
+        validation: (msg, fieldErrors, _, _) => msg,
+        notFound: (msg, resourceType, resourceId, _, _) =>
             '${resourceType ?? "Resource"} not found.',
-        config: (msg, configKey, _, __) =>
+        config: (msg, configKey, _, _) =>
             'Configuration error. Please contact support.',
-        rendering: (msg, componentType, componentId, _, __) =>
+        rendering: (msg, componentType, componentId, _, _) =>
             'Error displaying this component.',
-        workflow: (msg, workflowId, stepId, _, __) => 'Workflow error: $msg',
-        unknown: (msg, _, __) => 'An unexpected error occurred: $msg',
+        workflow: (msg, workflowId, stepId, _, _) => 'Workflow error: $msg',
+        unknown: (msg, _, _) => 'An unexpected error occurred: $msg',
       );
 
   /// Get severity level for this error
   ErrorSeverity get severity => when(
-        network: (_, code, __, ___, ____) =>
+        network: (_, code, _, _, _) =>
             code == 500 ? ErrorSeverity.critical : ErrorSeverity.error,
-        permission: (_, __, ___, ____, _____) => ErrorSeverity.warning,
-        parse: (_, __, ___, ____) => ErrorSeverity.error,
-        cache: (_, __, ___, ____) => ErrorSeverity.warning,
-        validation: (_, __, ___, ____) => ErrorSeverity.info,
-        notFound: (_, __, ___, ____, _____) => ErrorSeverity.warning,
-        config: (_, __, ___, ____) => ErrorSeverity.critical,
-        rendering: (_, __, ___, ____, _____) => ErrorSeverity.error,
-        workflow: (_, __, ___, ____, _____) => ErrorSeverity.warning,
-        unknown: (_, __, ___) => ErrorSeverity.error,
+        permission: (_, _, _, _, _) => ErrorSeverity.warning,
+        parse: (_, _, _, _) => ErrorSeverity.error,
+        cache: (_, _, _, _) => ErrorSeverity.warning,
+        validation: (_, _, _, _) => ErrorSeverity.info,
+        notFound: (_, _, _, _, _) => ErrorSeverity.warning,
+        config: (_, _, _, _) => ErrorSeverity.critical,
+        rendering: (_, _, _, _, _) => ErrorSeverity.error,
+        workflow: (_, _, _, _, _) => ErrorSeverity.warning,
+        unknown: (_, _, _) => ErrorSeverity.error,
       );
 
   /// Whether this error should be retried
   bool get isRetryable => when(
-        network: (_, code, __, ___, ____) => code != 400 && code != 404,
-        permission: (_, __, ___, ____, _____) => false,
-        parse: (_, __, ___, ____) => false,
-        cache: (_, __, ___, ____) => true,
-        validation: (_, __, ___, ____) => false,
-        notFound: (_, __, ___, ____, _____) => false,
-        config: (_, __, ___, ____) => false,
-        rendering: (_, __, ___, ____, _____) => false,
-        workflow: (_, __, ___, ____, _____) => false,
-        unknown: (_, __, ___) => false,
+        network: (_, code, _, _, _) => code != 400 && code != 404,
+        permission: (_, _, _, _, _) => false,
+        parse: (_, _, _, _) => false,
+        cache: (_, _, _, _) => true,
+        validation: (_, _, _, _) => false,
+        notFound: (_, _, _, _, _) => false,
+        config: (_, _, _, _) => false,
+        rendering: (_, _, _, _, _) => false,
+        workflow: (_, _, _, _, _) => false,
+        unknown: (_, _, _) => false,
       );
 }

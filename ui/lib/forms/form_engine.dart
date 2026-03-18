@@ -3,7 +3,6 @@
 /// Manages form state, validation, and submission using reactive_forms.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../core/core.dart';
@@ -197,12 +196,12 @@ class FormEngine {
 
     if (rule.notEmpty) {
       return fieldValue != null &&
-          (fieldValue is String ? fieldValue.isNotEmpty : true);
+          (fieldValue is! String || fieldValue.isNotEmpty);
     }
 
     if (rule.empty) {
       return fieldValue == null ||
-          (fieldValue is String ? fieldValue.isEmpty : false);
+          (fieldValue is String && fieldValue.isEmpty);
     }
 
     return true;

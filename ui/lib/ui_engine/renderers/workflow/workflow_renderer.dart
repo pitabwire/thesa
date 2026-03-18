@@ -62,7 +62,7 @@ class WorkflowRenderer extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: i == 0
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.surfaceVariant,
+                          : Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     child: Center(
                       child: Text(

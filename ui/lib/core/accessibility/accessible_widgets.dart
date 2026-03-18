@@ -83,7 +83,7 @@ class AccessibleIconButton extends StatelessWidget {
           icon: Icon(icon),
           onPressed: onPressed,
           iconSize: 24,
-          constraints: BoxConstraints(
+          constraints: const BoxConstraints(
             minWidth: kMinimumTouchTarget,
             minHeight: kMinimumTouchTarget,
           ),
@@ -125,7 +125,7 @@ class AccessibleCheckbox extends StatelessWidget {
         child: InkWell(
           onTap: onChanged != null ? () => onChanged!(!value) : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

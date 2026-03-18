@@ -8,7 +8,6 @@ import '../../core/core.dart';
 import '../../design/design.dart';
 import '../../state/actions/action_provider.dart';
 import '../../ui_engine/component_renderer.dart';
-import '../../widgets/shared/shared.dart';
 
 /// Example dashboard page plugin
 ///
@@ -72,7 +71,7 @@ class DashboardPagePlugin extends ConsumerWidget {
                 gradient: LinearGradient(
                   colors: [
                     theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.7),
+                    theme.colorScheme.primary.withValues(alpha:0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppBorderRadius.large),
@@ -90,7 +89,7 @@ class DashboardPagePlugin extends ConsumerWidget {
                   Text(
                     descriptor.subtitle ?? 'Your enterprise dashboard',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onPrimary.withOpacity(0.9),
+                      color: theme.colorScheme.onPrimary.withValues(alpha:0.9),
                     ),
                   ),
                 ],
@@ -147,7 +146,7 @@ class DashboardPagePlugin extends ConsumerWidget {
   }
 
   void _showActionsMenu(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       builder: (context) => ListView(
         shrinkWrap: true,

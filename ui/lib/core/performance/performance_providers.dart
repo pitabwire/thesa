@@ -28,9 +28,7 @@ BackgroundRefreshCoordinator backgroundRefreshCoordinator(
 ) {
   final coordinator = BackgroundRefreshCoordinator(ref: ref);
 
-  ref.onDispose(() {
-    coordinator.dispose();
-  });
+  ref.onDispose(coordinator.dispose);
 
   return coordinator;
 }

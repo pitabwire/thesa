@@ -60,7 +60,9 @@ class TableController extends ChangeNotifier {
 
   /// Change page
   Future<void> goToPage(int page) async {
-    if (page == _state.currentPage) return;
+    if (page == _state.currentPage) {
+      return;
+    }
     _updateState(_state.copyWith(currentPage: page));
     await loadData();
   }
@@ -90,7 +92,7 @@ class TableController extends ChangeNotifier {
 
   /// Sort by column
   Future<void> sortBy(String column) async {
-    SortDirection direction = SortDirection.asc;
+    var direction = SortDirection.asc;
 
     // Toggle direction if clicking same column
     if (_state.sortColumn == column) {
@@ -175,10 +177,6 @@ class TableController extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 /// Request for fetching table data

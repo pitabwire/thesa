@@ -7,7 +7,6 @@ library;
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../cache/cache_policy.dart';
 import '../../core/core.dart';
 import '../core/dependencies_provider.dart';
 
@@ -42,7 +41,7 @@ class CapabilitiesNotifier extends _$CapabilitiesNotifier {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final bffClient = ref.read(bffClientProvider);
-      return await bffClient.getCapabilities();
+      return bffClient.getCapabilities();
     });
   }
 

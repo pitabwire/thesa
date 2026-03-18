@@ -37,7 +37,6 @@ class GridLayoutRenderer extends StatelessWidget {
           crossAxisCount: layoutConfig.columns ?? 2,
           crossAxisSpacing: layoutConfig.spacing,
           mainAxisSpacing: layoutConfig.spacing,
-          childAspectRatio: 1.0,
         ),
         itemCount: children.length,
         itemBuilder: (context, index) {

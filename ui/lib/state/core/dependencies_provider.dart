@@ -55,8 +55,8 @@ BffClient bffClient(Ref ref) {
 /// App database provider (singleton)
 @Riverpod(keepAlive: true)
 Future<AppDatabase> database(Ref ref) async {
-  final db = await createDatabase();
-  ref.onDispose(() => db.close());
+  final db = createDatabase();
+  ref.onDispose(db.close);
   return db;
 }
 

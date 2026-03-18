@@ -79,7 +79,6 @@ class DioFactory {
         LogInterceptor(
           requestBody: true,
           responseBody: true,
-          error: true,
           requestHeader: false,
           responseHeader: false,
         ),

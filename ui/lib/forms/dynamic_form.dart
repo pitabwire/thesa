@@ -139,7 +139,6 @@ class _DynamicFormState extends State<DynamicForm> {
               label: widget.submitButtonText ?? _getSubmitButtonText(),
               onPressed: form.valid && !_isSubmitting ? _handleSubmit : null,
               isLoading: _isSubmitting,
-              variant: AppButtonVariant.primary,
             );
           },
         ),

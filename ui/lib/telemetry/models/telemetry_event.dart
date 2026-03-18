@@ -17,9 +17,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required int renderTimeMs,
     required int componentCount,
     required bool fromCache,
-    int? cacheAgeMs,
-    required bool stale,
-    required DateTime timestamp,
+    required bool stale, required DateTime timestamp, int? cacheAgeMs,
   }) = PageRenderEvent;
 
   /// API request timing event
@@ -50,8 +48,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required String componentId,
     required String pageId,
     required String errorMessage,
-    String? stackTrace,
-    required DateTime timestamp,
+    required DateTime timestamp, String? stackTrace,
   }) = UiErrorEvent;
 
   /// Render failure event
@@ -60,8 +57,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required String descriptorType,
     required String errorMessage,
     required String pageId,
-    String? stackTrace,
-    required DateTime timestamp,
+    required DateTime timestamp, String? stackTrace,
   }) = RenderFailureEvent;
 
   /// Cache hit event
@@ -85,8 +81,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required bool success,
     required int durationMs,
     required String triggeredBy,
-    String? errorMessage,
-    required DateTime timestamp,
+    required DateTime timestamp, String? errorMessage,
   }) = AuthRefreshEvent;
 
   /// Frame timing event (performance)
@@ -105,8 +100,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required String pageId,
     required bool success,
     required int durationMs,
-    String? errorMessage,
-    required DateTime timestamp,
+    required DateTime timestamp, String? errorMessage,
   }) = ActionExecutionEvent;
 
   /// Form submission event
@@ -116,8 +110,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required bool success,
     required int durationMs,
     required int fieldCount,
-    String? errorMessage,
-    required DateTime timestamp,
+    required DateTime timestamp, String? errorMessage,
   }) = FormSubmissionEvent;
 
   /// Table interaction event
@@ -125,8 +118,7 @@ sealed class TelemetryEvent with _$TelemetryEvent {
     required String tableId,
     required String interactionType, // sort, filter, paginate, bulk_action
     required String pageId,
-    int? rowCount,
-    required DateTime timestamp,
+    required DateTime timestamp, int? rowCount,
   }) = TableInteractionEvent;
 
   factory TelemetryEvent.fromJson(Map<String, dynamic> json) =>

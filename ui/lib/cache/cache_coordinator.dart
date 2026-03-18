@@ -7,6 +7,7 @@
 /// 4. If empty → fetch from network
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -71,7 +72,7 @@ class CacheCoordinator {
     );
 
     // Fire background refresh (don't await)
-    _refreshNavigationInBackground(id, fetchFromNetwork);
+    unawaited(_refreshNavigationInBackground(id, fetchFromNetwork));
 
     return result;
   }
@@ -110,7 +111,7 @@ class CacheCoordinator {
 
     _logger.info('Page cache hit (stale): $pageId');
 
-    _refreshPageInBackground(pageId, fetchFromNetwork);
+    unawaited(_refreshPageInBackground(pageId, fetchFromNetwork));
 
     return CacheResult(
       state: CacheState.stale,
@@ -155,7 +156,7 @@ class CacheCoordinator {
 
     _logger.info('Schema cache hit (stale): $schemaId');
 
-    _refreshSchemaInBackground(schemaId, fetchFromNetwork);
+    unawaited(_refreshSchemaInBackground(schemaId, fetchFromNetwork));
 
     return CacheResult(
       state: CacheState.stale,

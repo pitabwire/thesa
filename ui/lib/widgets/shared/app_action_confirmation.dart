@@ -73,10 +73,10 @@ class ActionConfirmationDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.space12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.error.withOpacity(0.1),
+                color: theme.colorScheme.error.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(AppBorderRadius.medium),
                 border: Border.all(
-                  color: theme.colorScheme.error.withOpacity(0.3),
+                  color: theme.colorScheme.error.withValues(alpha:0.3),
                 ),
               ),
               child: Row(
@@ -108,7 +108,7 @@ class ActionConfirmationDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.space12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.error.withOpacity(0.1),
+                color: theme.colorScheme.error.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(AppBorderRadius.medium),
               ),
               child: Row(

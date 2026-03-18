@@ -43,7 +43,7 @@ class PluggableForm extends ConsumerWidget {
       return builder(
         schema,
         ref,
-        (data) async => await onSubmit(data),
+        (data) async => onSubmit(data),
       );
     }
 

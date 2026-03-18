@@ -30,6 +30,6 @@ Future<bool> isOnline(Ref ref) async {
   return connectivityStream.when(
     data: (isOnline) => isOnline,
     loading: () => true, // Assume online while checking
-    error: (_, __) => false,
+    error: (_, _) => false,
   );
 }

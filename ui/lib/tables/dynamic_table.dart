@@ -105,7 +105,6 @@ class _DynamicTableState extends State<DynamicTable> {
   }
 
   Widget _buildDataTable(BuildContext context) {
-    final state = widget.controller.state;
     final config = widget.controller.tableConfig;
 
     return DataTable2(
@@ -114,11 +113,10 @@ class _DynamicTableState extends State<DynamicTable> {
       minWidth: 600,
       isHorizontalScrollBarVisible: true,
       isVerticalScrollBarVisible: true,
-      fixedTopRows: 1,
       columns: _buildColumns(context),
       rows: _buildRows(context),
-      headingRowColor: MaterialStateProperty.all(
-        Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+      headingRowColor: WidgetStateProperty.all(
+        Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       headingRowHeight: 56,
       dataRowHeight: config.rowHeight,
@@ -128,7 +126,6 @@ class _DynamicTableState extends State<DynamicTable> {
 
   List<DataColumn2> _buildColumns(BuildContext context) {
     final config = widget.controller.tableConfig;
-    final state = widget.controller.state;
     final columns = <DataColumn2>[];
 
     for (final column in config.columns) {
@@ -154,8 +151,8 @@ class _DynamicTableState extends State<DynamicTable> {
     // Add row actions column if configured
     if (config.rowActions != null && config.rowActions!.isNotEmpty) {
       columns.add(
-        DataColumn2(
-          label: const Text('Actions'),
+        const DataColumn2(
+          label: Text('Actions'),
           size: ColumnSize.S,
           fixedWidth: 100,
         ),
@@ -169,13 +166,23 @@ class _DynamicTableState extends State<DynamicTable> {
     if (column.width != null) {
       if (column.width is String) {
         final widthStr = column.width.toString().toLowerCase();
-        if (widthStr == 'l') return ColumnSize.L;
-        if (widthStr == 'm') return ColumnSize.M;
-        if (widthStr == 's') return ColumnSize.S;
+        if (widthStr == 'l') {
+          return ColumnSize.L;
+        }
+        if (widthStr == 'm') {
+          return ColumnSize.M;
+        }
+        if (widthStr == 's') {
+          return ColumnSize.S;
+        }
       } else if (column.width is int) {
         final widthNum = column.width as int;
-        if (widthNum > 200) return ColumnSize.L;
-        if (widthNum > 100) return ColumnSize.M;
+        if (widthNum > 200) {
+          return ColumnSize.L;
+        }
+        if (widthNum > 100) {
+          return ColumnSize.M;
+        }
         return ColumnSize.S;
       }
     }
@@ -273,7 +280,9 @@ class _DynamicTableState extends State<DynamicTable> {
   }
 
   String _formatValue(dynamic value, String? format) {
-    if (value == null) return '-';
+    if (value == null) {
+      return '-';
+    }
 
     // TODO: Implement formatting based on format hint
     // (currency, date, number, etc.)
@@ -307,7 +316,9 @@ class _DynamicTableState extends State<DynamicTable> {
   }
 
   IconData _getActionIcon(String? icon) {
-    if (icon == null) return Icons.more_vert;
+    if (icon == null) {
+      return Icons.more_vert;
+    }
 
     switch (icon.toLowerCase()) {
       case 'edit':
@@ -381,7 +392,7 @@ class _DynamicTableState extends State<DynamicTable> {
         children: [
           // Page size selector
           if (pagination.showPageSize) ...[
-            Text(
+            const Text(
               'Rows per page:',
               style: AppTypography.bodySmall,
             ),

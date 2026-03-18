@@ -62,10 +62,10 @@ class BffClient {
     final response = await _dio.get<Map<String, dynamic>>(
       '/ui/resources/$resourceType',
       queryParameters: {
-        if (page != null) 'page': page,
-        if (pageSize != null) 'page_size': pageSize,
-        if (sortField != null) 'sort_field': sortField,
-        if (sortDirection != null) 'sort_direction': sortDirection,
+        'page': ?page,
+        'page_size': ?pageSize,
+        'sort_field': ?sortField,
+        'sort_direction': ?sortDirection,
         if (filters != null) ...filters,
       },
     );
@@ -132,9 +132,9 @@ class BffClient {
     final response = await _dio.post<Map<String, dynamic>>(
       '/ui/commands/$commandId',
       data: {
-        if (input != null) 'input': input,
-        if (routeParams != null) 'route_params': routeParams,
-        if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
+        'input': ?input,
+        'route_params': ?routeParams,
+        'idempotency_key': ?idempotencyKey,
       },
     );
     return response.data!;
@@ -170,10 +170,10 @@ class BffClient {
     final response = await _dio.get<Map<String, dynamic>>(
       '/ui/pages/$pageId/data',
       queryParameters: {
-        if (page != null) 'page': page,
-        if (pageSize != null) 'page_size': pageSize,
-        if (sort != null) 'sort': sort,
-        if (sortDir != null) 'sort_dir': sortDir,
+        'page': ?page,
+        'page_size': ?pageSize,
+        'sort': ?sort,
+        'sort_dir': ?sortDir,
         if (filters != null) ...filters,
       },
     );
@@ -190,7 +190,7 @@ class BffClient {
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/ui/resources/$resourceType/search',
-      queryParameters: {'q': query, if (limit != null) 'limit': limit},
+      queryParameters: {'q': query, 'limit': ?limit},
     );
     return response.data!;
   }

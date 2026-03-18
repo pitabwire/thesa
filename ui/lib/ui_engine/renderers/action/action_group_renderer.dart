@@ -41,7 +41,6 @@ class ActionGroupRenderer extends StatelessWidget {
           );
         },
         variant: _parseButtonVariant(action.ui?.color),
-        size: AppButtonSize.medium,
       );
     }).toList();
 

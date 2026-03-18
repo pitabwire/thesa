@@ -37,7 +37,7 @@ class MapComponentPlugin extends StatelessWidget {
     // Extract configuration
     final center = config['center'] as Map<String, dynamic>?;
     final zoom = (config['zoom'] as num?)?.toDouble() ?? 12.0;
-    final markers = config['markers'] as List? ?? [];
+    final markers = (config['markers'] as List?)?.cast<Map<String, dynamic>>() ?? <Map<String, dynamic>>[];
 
     final lat = (center?['lat'] as num?)?.toDouble() ?? 0.0;
     final lng = (center?['lng'] as num?)?.toDouble() ?? 0.0;
@@ -67,9 +67,9 @@ class MapComponentPlugin extends StatelessWidget {
 
             // Map placeholder (would be actual map in production)
             Expanded(
-              child: Container(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppBorderRadius.medium),
                   border: Border.all(
                     color: theme.colorScheme.outline,
@@ -81,7 +81,7 @@ class MapComponentPlugin extends StatelessWidget {
                     CustomPaint(
                       size: Size.infinite,
                       painter: _MapGridPainter(
-                        color: theme.colorScheme.outline.withOpacity(0.3),
+                        color: theme.colorScheme.outline.withValues(alpha:0.3),
                       ),
                     ),
 
@@ -108,7 +108,7 @@ class MapComponentPlugin extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppBorderRadius.small),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha:0.1),
                               blurRadius: 4,
                             ),
                           ],

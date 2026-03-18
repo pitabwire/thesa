@@ -60,7 +60,7 @@ class RetryInterceptor extends Interceptor {
 
     try {
       // Retry the request
-      final response = await dio.fetch(err.requestOptions);
+      final response = await dio.fetch<dynamic>(err.requestOptions);
       return handler.resolve(response);
     } on DioException catch (e) {
       // If retry fails, pass the new error to the next handler
@@ -85,7 +85,9 @@ class RetryInterceptor extends Interceptor {
 
     // Check HTTP status code
     final statusCode = err.response?.statusCode;
-    if (statusCode == null) return false;
+    if (statusCode == null) {
+      return false;
+    }
 
     // Retry on server errors
     if (statusCode >= 500 && statusCode < 600) {
