@@ -72,6 +72,9 @@ dependencies:
   # Web platform support
   web: ^1.1.0
 
+  # Shimmer effect for loading skeletons
+  shimmer: ^3.0.0
+
   # UI Utilities
   intl: ^0.20.1
   cached_network_image: ^3.4.1

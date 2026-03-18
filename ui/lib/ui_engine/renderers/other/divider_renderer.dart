@@ -21,7 +21,7 @@ class DividerRenderer extends StatelessWidget {
     final spacing = (component.config['spacing'] as num?)?.toDouble() ??
         AppSpacing.space16;
     final thickness = (component.config['thickness'] as num?)?.toDouble() ?? 1.0;
-    final label = component.config['label'] as String? ?? component.ui?.label;
+    final label = component.config['label'] as String? ?? component.ui?.tooltip;
 
     if (type == 'vertical') {
       return Container(

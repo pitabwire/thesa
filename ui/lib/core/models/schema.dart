@@ -16,7 +16,7 @@ part 'schema.g.dart';
 
 /// Schema definition for a data structure
 @freezed
-class Schema with _$Schema {
+abstract class Schema with _$Schema {
   const factory Schema({
     /// Unique identifier for this schema
     required String schemaId,
@@ -45,7 +45,7 @@ class Schema with _$Schema {
 
 /// A single field definition within a schema
 @freezed
-class SchemaField with _$SchemaField {
+abstract class SchemaField with _$SchemaField {
   const factory SchemaField({
     /// Field name (key in the data object)
     required String name,
@@ -178,7 +178,7 @@ enum FieldType {
 
 /// Validation rules for a field
 @freezed
-class ValidationRules with _$ValidationRules {
+abstract class ValidationRules with _$ValidationRules {
   const factory ValidationRules({
     /// Minimum length (for strings)
     int? minLength,
@@ -220,7 +220,7 @@ class ValidationRules with _$ValidationRules {
 
 /// Conditional visibility rule
 @freezed
-class VisibilityRule with _$VisibilityRule {
+abstract class VisibilityRule with _$VisibilityRule {
   const factory VisibilityRule({
     /// Field name to watch
     required String field,
@@ -253,7 +253,7 @@ class VisibilityRule with _$VisibilityRule {
 
 /// Option for enum fields
 @freezed
-class FieldOption with _$FieldOption {
+abstract class FieldOption with _$FieldOption {
   const factory FieldOption({
     /// Value stored in the data
     required String value,
@@ -280,7 +280,7 @@ class FieldOption with _$FieldOption {
 
 /// Schema composition (for combining schemas)
 @freezed
-class SchemaComposition with _$SchemaComposition {
+abstract class SchemaComposition with _$SchemaComposition {
   const factory SchemaComposition({
     /// Merge all of these schemas
     List<Schema>? allOf,

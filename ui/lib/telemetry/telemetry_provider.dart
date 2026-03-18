@@ -11,7 +11,7 @@ part 'telemetry_provider.g.dart';
 
 /// Telemetry configuration provider
 @Riverpod(keepAlive: true)
-TelemetryConfig telemetryConfig(TelemetryConfigRef ref) {
+TelemetryConfig telemetryConfig(Ref ref) {
   // Load from environment or config
   const endpoint = String.fromEnvironment(
     'OTEL_ENDPOINT',
@@ -34,7 +34,7 @@ TelemetryConfig telemetryConfig(TelemetryConfigRef ref) {
 
 /// Telemetry service provider
 @Riverpod(keepAlive: true)
-TelemetryService telemetryService(TelemetryServiceRef ref) {
+TelemetryService telemetryService(Ref ref) {
   final config = ref.watch(telemetryConfigProvider);
 
   final exporter = OtelExporter(
@@ -56,7 +56,7 @@ TelemetryService telemetryService(TelemetryServiceRef ref) {
 
 /// Performance monitor provider
 @Riverpod(keepAlive: true)
-PerformanceMonitor performanceMonitor(PerformanceMonitorRef ref) {
+PerformanceMonitor performanceMonitor(Ref ref) {
   final telemetryService = ref.watch(telemetryServiceProvider);
 
   final monitor = PerformanceMonitor(

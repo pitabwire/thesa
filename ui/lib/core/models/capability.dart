@@ -14,7 +14,7 @@ part 'capability.g.dart';
 
 /// Complete set of capabilities for the current context
 @freezed
-class Capabilities with _$Capabilities {
+abstract class Capabilities with _$Capabilities {
   const factory Capabilities({
     /// Map of capability keys to their values
     @Default({}) Map<String, CapabilityValue> capabilities,
@@ -41,7 +41,7 @@ class Capabilities with _$Capabilities {
 
 /// A single capability value
 @freezed
-class CapabilityValue with _$CapabilityValue {
+abstract class CapabilityValue with _$CapabilityValue {
   const factory CapabilityValue({
     /// Whether this capability is enabled
     required bool enabled,
@@ -59,7 +59,7 @@ class CapabilityValue with _$CapabilityValue {
 
 /// User-specific capabilities
 @freezed
-class UserCapabilities with _$UserCapabilities {
+abstract class UserCapabilities with _$UserCapabilities {
   const factory UserCapabilities({
     /// User roles
     @Default([]) List<String> roles,
@@ -80,7 +80,7 @@ class UserCapabilities with _$UserCapabilities {
 
 /// Tenant/organization capabilities
 @freezed
-class TenantCapabilities with _$TenantCapabilities {
+abstract class TenantCapabilities with _$TenantCapabilities {
   const factory TenantCapabilities({
     /// Tenant ID
     String? tenantId,
@@ -107,7 +107,7 @@ class TenantCapabilities with _$TenantCapabilities {
 
 /// Application-level capabilities
 @freezed
-class AppCapabilities with _$AppCapabilities {
+abstract class AppCapabilities with _$AppCapabilities {
   const factory AppCapabilities({
     /// App version
     String? version,

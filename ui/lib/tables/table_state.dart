@@ -12,7 +12,7 @@ part 'table_state.g.dart';
 
 /// Table state
 @freezed
-class TableState with _$TableState {
+abstract class TableState with _$TableState {
   const factory TableState({
     /// Current data rows
     @Default([]) List<Map<String, dynamic>> rows,

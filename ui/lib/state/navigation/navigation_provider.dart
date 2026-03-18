@@ -30,12 +30,17 @@ class Navigation extends _$Navigation {
         fetchFromNetwork: () => bffClient.getNavigation(),
       );
 
+      final data = result.data;
+      if (data == null) {
+        throw StateError('Navigation data was null');
+      }
+
       _logger.info(
         'Navigation loaded: ${result.state.name} '
-        '(${result.data.items.length} items)',
+        '(${data.items.length} items)',
       );
 
-      return result.data;
+      return data;
     } catch (e, stack) {
       _logger.severe('Failed to load navigation', e, stack);
       rethrow;
@@ -54,7 +59,7 @@ class Navigation extends _$Navigation {
 
   /// Get visible navigation items (filtered by permissions)
   List<NavigationItem> get visibleItems {
-    return state.valueOrNull?.items
+    return state.value?.items
             .where((item) => item.permission.allowed)
             .toList() ??
         [];

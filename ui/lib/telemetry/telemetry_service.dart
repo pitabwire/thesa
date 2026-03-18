@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 import 'exporters/telemetry_exporter.dart';
 import 'models/telemetry_event.dart';
@@ -50,7 +50,7 @@ class TelemetryService {
 
   final TelemetryConfig config;
   final TelemetryExporter exporter;
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('TelemetryService');
 
   final List<TelemetryEvent> _buffer = [];
   Timer? _flushTimer;
@@ -111,10 +111,10 @@ class TelemetryService {
 
       _logger.info('Flushed ${events.length} telemetry events');
     } catch (error, stack) {
-      _logger.error(
+      _logger.severe(
         'Failed to flush telemetry events',
-        error: error,
-        stackTrace: stack,
+        error,
+        stack,
       );
       // Don't re-add events to buffer to avoid infinite growth
     } finally {

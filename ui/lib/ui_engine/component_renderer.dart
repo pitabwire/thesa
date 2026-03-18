@@ -166,9 +166,7 @@ class ErrorBoundary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ErrorWidget.withDetails(
-      message: 'Error rendering $componentType ($componentId)',
-      error: child,
-    );
+    // Simply render the child; errors are caught by the Flutter framework
+    return child;
   }
 }

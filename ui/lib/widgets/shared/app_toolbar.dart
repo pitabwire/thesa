@@ -48,8 +48,8 @@ class AppToolbar extends StatelessWidget {
                 child: AppButton(
                   label: action.label,
                   onPressed: () => onActionPressed?.call(action),
-                  variant: _getVariant(action.style),
-                  icon: action.icon != null ? _parseIcon(action.icon!) : null,
+                  variant: _getVariant(action.ui?.color),
+                  icon: action.ui?.icon != null ? _parseIcon(action.ui!.icon!) : null,
                   size: AppButtonSize.small,
                 ),
               );

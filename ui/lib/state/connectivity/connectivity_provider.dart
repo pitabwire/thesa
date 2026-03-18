@@ -10,7 +10,7 @@ part 'connectivity_provider.g.dart';
 
 /// Stream of connectivity status
 @Riverpod(keepAlive: true)
-Stream<bool> connectivity(ConnectivityRef ref) async* {
+Stream<bool> connectivity(Ref ref) async* {
   final connectivity = Connectivity();
 
   // Emit initial connectivity state
@@ -25,7 +25,7 @@ Stream<bool> connectivity(ConnectivityRef ref) async* {
 
 /// Current connectivity status (sync)
 @Riverpod(keepAlive: true)
-Future<bool> isOnline(IsOnlineRef ref) async {
+Future<bool> isOnline(Ref ref) async {
   final connectivityStream = ref.watch(connectivityProvider);
   return connectivityStream.when(
     data: (isOnline) => isOnline,

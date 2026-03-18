@@ -11,7 +11,7 @@ part 'permission.g.dart';
 
 /// Permission check result embedded in BFF responses
 @freezed
-class Permission with _$Permission {
+abstract class Permission with _$Permission {
   const factory Permission({
     /// Whether the action/component/page is allowed for the current user
     required bool allowed,

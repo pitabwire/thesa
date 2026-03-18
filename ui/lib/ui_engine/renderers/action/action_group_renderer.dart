@@ -40,7 +40,7 @@ class ActionGroupRenderer extends StatelessWidget {
             SnackBar(content: Text('Action: ${action.label}')),
           );
         },
-        variant: _parseButtonVariant(action.style),
+        variant: _parseButtonVariant(action.ui?.color),
         size: AppButtonSize.medium,
       );
     }).toList();

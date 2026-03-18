@@ -20,7 +20,7 @@ class ImageRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = component.config['url'] as String?;
     final alt = component.config['alt'] as String? ??
-        component.ui?.label ??
+        component.ui?.tooltip ??
         'Image';
     final width = (component.config['width'] as num?)?.toDouble();
     final height = (component.config['height'] as num?)?.toDouble();

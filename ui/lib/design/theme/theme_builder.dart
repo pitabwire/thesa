@@ -41,7 +41,7 @@ class ThemeBuilder {
       // Apply font family
       fontFamily: branding.fontFamily,
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -118,7 +118,7 @@ class ThemeBuilder {
       // Apply font family
       fontFamily: branding.fontFamily,
       // Card theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

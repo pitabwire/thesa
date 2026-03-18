@@ -88,7 +88,7 @@ class DashboardPagePlugin extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.space8),
                   Text(
-                    descriptor.description ?? 'Your enterprise dashboard',
+                    descriptor.subtitle ?? 'Your enterprise dashboard',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onPrimary.withOpacity(0.9),
                     ),
@@ -155,8 +155,8 @@ class DashboardPagePlugin extends ConsumerWidget {
             .where((action) => action.permission.allowed)
             .map((action) {
           return ListTile(
-            leading: action.icon != null
-                ? Icon(_parseIcon(action.icon!))
+            leading: action.ui?.icon != null
+                ? Icon(_parseIcon(action.ui!.icon!))
                 : const Icon(Icons.touch_app),
             title: Text(action.label),
             onTap: () {

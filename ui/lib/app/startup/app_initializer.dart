@@ -1,7 +1,7 @@
 /// App initialization and startup optimization.
 library;
 
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:riverpod/riverpod.dart';
 
 /// App initializer for optimized startup sequence
@@ -19,7 +19,7 @@ class AppInitializer {
   });
 
   final Ref ref;
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('AppInitializer');
 
   /// Initialize app with parallel loading
   ///

@@ -19,7 +19,7 @@ class BadgeRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = component.config['label'] as String? ??
         component.config['text'] as String? ??
-        component.ui?.label ??
+        component.ui?.tooltip ??
         '';
     final variant = component.config['variant'] as String? ??
         component.config['status'] as String? ??
@@ -31,36 +31,36 @@ class BadgeRenderer extends StatelessWidget {
 
     return AppBadge(
       label: label,
-      variant: _parseVariant(variant),
+      color: _parseVariantColor(variant),
     );
   }
 
-  AppBadgeVariant _parseVariant(String variant) {
+  Color? _parseVariantColor(String variant) {
     switch (variant.toLowerCase()) {
       case 'success':
       case 'completed':
       case 'active':
-        return AppBadgeVariant.success;
+        return Colors.green;
 
       case 'warning':
       case 'pending':
       case 'in_progress':
-        return AppBadgeVariant.warning;
+        return Colors.orange;
 
       case 'error':
       case 'failed':
       case 'cancelled':
       case 'danger':
-        return AppBadgeVariant.error;
+        return Colors.red;
 
       case 'info':
       case 'draft':
-        return AppBadgeVariant.info;
+        return Colors.blue;
 
       case 'default':
       case 'neutral':
       default:
-        return AppBadgeVariant.neutral;
+        return null;
     }
   }
 }

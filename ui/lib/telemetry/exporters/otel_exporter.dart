@@ -4,7 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../models/telemetry_event.dart';
@@ -28,7 +28,7 @@ class OtelExporter implements TelemetryExporter {
   final String serviceName;
 
   final Dio _dio;
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('OtelExporter');
 
   /// Cached package info for resource attributes
   PackageInfo? _packageInfo;
@@ -64,17 +64,17 @@ class OtelExporter implements TelemetryExporter {
       // Log but don't throw - we don't want telemetry failures to break the app
       if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout) {
-        _logger.debug('OpenTelemetry collector unreachable - buffering events');
+        _logger.fine('OpenTelemetry collector unreachable - buffering events');
       } else {
         _logger.warning(
           'Failed to export telemetry: ${error.message}',
         );
       }
     } catch (error, stack) {
-      _logger.error(
+      _logger.severe(
         'Unexpected error exporting telemetry',
-        error: error,
-        stackTrace: stack,
+        error,
+        stack,
       );
     }
   }
@@ -140,20 +140,20 @@ class OtelExporter implements TelemetryExporter {
 
   /// Convert a telemetry event to an OpenTelemetry span
   Map<String, dynamic> _eventToSpan(TelemetryEvent event) {
-    final timestamp = event.when(
-      pageRender: (event) => event.timestamp,
-      apiRequest: (event) => event.timestamp,
-      workflowTransition: (event) => event.timestamp,
-      uiError: (event) => event.timestamp,
-      renderFailure: (event) => event.timestamp,
-      cacheHit: (event) => event.timestamp,
-      cacheMiss: (event) => event.timestamp,
-      authRefresh: (event) => event.timestamp,
-      frameTiming: (event) => event.timestamp,
-      actionExecution: (event) => event.timestamp,
-      formSubmission: (event) => event.timestamp,
-      tableInteraction: (event) => event.timestamp,
-    );
+    final timestamp = switch (event) {
+      PageRenderEvent(:final timestamp) => timestamp,
+      ApiRequestEvent(:final timestamp) => timestamp,
+      WorkflowTransitionEvent(:final timestamp) => timestamp,
+      UiErrorEvent(:final timestamp) => timestamp,
+      RenderFailureEvent(:final timestamp) => timestamp,
+      CacheHitEvent(:final timestamp) => timestamp,
+      CacheMissEvent(:final timestamp) => timestamp,
+      AuthRefreshEvent(:final timestamp) => timestamp,
+      FrameTimingEvent(:final timestamp) => timestamp,
+      ActionExecutionEvent(:final timestamp) => timestamp,
+      FormSubmissionEvent(:final timestamp) => timestamp,
+      TableInteractionEvent(:final timestamp) => timestamp,
+    };
 
     final startTimeNano = timestamp.microsecondsSinceEpoch * 1000;
 
@@ -169,131 +169,125 @@ class OtelExporter implements TelemetryExporter {
 
   /// Build span attributes from event
   List<Map<String, dynamic>> _buildSpanAttributes(TelemetryEvent event) {
-    return event.when(
-      pageRender: (event) => [
-        _stringAttribute('page.id', event.pageId),
-        _intAttribute('page.render_time_ms', event.renderTimeMs),
-        _intAttribute('page.component_count', event.componentCount),
-        _boolAttribute('cache.from_cache', event.fromCache),
-        if (event.cacheAgeMs != null)
-          _intAttribute('cache.age_ms', event.cacheAgeMs!),
-        _boolAttribute('cache.stale', event.stale),
-      ],
-      apiRequest: (event) => [
-        _stringAttribute('http.endpoint', event.endpoint),
-        _stringAttribute('http.method', event.method),
-        _intAttribute('http.duration_ms', event.durationMs),
-        _intAttribute('http.status_code', event.statusCode),
-        _boolAttribute('http.cached', event.cached),
-        _boolAttribute('http.etag_hit', event.etagHit),
-        _intAttribute('http.retry_count', event.retryCount),
-      ],
-      workflowTransition: (event) => [
-        _stringAttribute('workflow.id', event.workflowId),
-        _stringAttribute('workflow.from_step', event.fromStep),
-        _stringAttribute('workflow.to_step', event.toStep),
-        _intAttribute('workflow.duration_ms', event.durationMs),
-      ],
-      uiError: (event) => [
-        _stringAttribute('error.type', event.errorType),
-        _stringAttribute('component.type', event.componentType),
-        _stringAttribute('component.id', event.componentId),
-        _stringAttribute('page.id', event.pageId),
-        _stringAttribute('error.message', event.errorMessage),
-        if (event.stackTrace != null)
-          _stringAttribute('error.stack_trace', event.stackTrace!),
-      ],
-      renderFailure: (event) => [
-        _stringAttribute('component.id', event.componentId),
-        _stringAttribute('descriptor.type', event.descriptorType),
-        _stringAttribute('error.message', event.errorMessage),
-        _stringAttribute('page.id', event.pageId),
-        if (event.stackTrace != null)
-          _stringAttribute('error.stack_trace', event.stackTrace!),
-      ],
-      cacheHit: (event) => [
-        _stringAttribute('cache.type', event.cacheType),
-        _stringAttribute('cache.key', event.key),
-        _intAttribute('cache.age_ms', event.ageMs),
-        _boolAttribute('cache.stale', event.stale),
-      ],
-      cacheMiss: (event) => [
-        _stringAttribute('cache.type', event.cacheType),
-        _stringAttribute('cache.key', event.key),
-      ],
-      authRefresh: (event) => [
-        _boolAttribute('auth.success', event.success),
-        _intAttribute('auth.duration_ms', event.durationMs),
-        _stringAttribute('auth.triggered_by', event.triggeredBy),
-        if (event.errorMessage != null)
-          _stringAttribute('error.message', event.errorMessage!),
-      ],
-      frameTiming: (event) => [
-        _stringAttribute('page.id', event.pageId),
-        _doubleAttribute('frame.time_ms', event.frameTimeMs),
-        _boolAttribute('frame.is_jank', event.isJank),
-        _intAttribute('frame.widget_build_count', event.widgetBuildCount),
-      ],
-      actionExecution: (event) => [
-        _stringAttribute('action.id', event.actionId),
-        _stringAttribute('action.type', event.actionType),
-        _stringAttribute('page.id', event.pageId),
-        _boolAttribute('action.success', event.success),
-        _intAttribute('action.duration_ms', event.durationMs),
-        if (event.errorMessage != null)
-          _stringAttribute('error.message', event.errorMessage!),
-      ],
-      formSubmission: (event) => [
-        _stringAttribute('form.schema_id', event.schemaId),
-        _stringAttribute('page.id', event.pageId),
-        _boolAttribute('form.success', event.success),
-        _intAttribute('form.duration_ms', event.durationMs),
-        _intAttribute('form.field_count', event.fieldCount),
-        if (event.errorMessage != null)
-          _stringAttribute('error.message', event.errorMessage!),
-      ],
-      tableInteraction: (event) => [
-        _stringAttribute('table.id', event.tableId),
-        _stringAttribute('table.interaction_type', event.interactionType),
-        _stringAttribute('page.id', event.pageId),
-        if (event.rowCount != null)
-          _intAttribute('table.row_count', event.rowCount!),
-      ],
-    );
+    return switch (event) {
+      PageRenderEvent e => [
+          _stringAttribute('page.id', e.pageId),
+          _intAttribute('page.render_time_ms', e.renderTimeMs),
+          _intAttribute('page.component_count', e.componentCount),
+          _boolAttribute('cache.from_cache', e.fromCache),
+          if (e.cacheAgeMs != null)
+            _intAttribute('cache.age_ms', e.cacheAgeMs!),
+          _boolAttribute('cache.stale', e.stale),
+        ],
+      ApiRequestEvent e => [
+          _stringAttribute('http.endpoint', e.endpoint),
+          _stringAttribute('http.method', e.method),
+          _intAttribute('http.duration_ms', e.durationMs),
+          _intAttribute('http.status_code', e.statusCode),
+          _boolAttribute('http.cached', e.cached),
+          _boolAttribute('http.etag_hit', e.etagHit),
+          _intAttribute('http.retry_count', e.retryCount),
+        ],
+      WorkflowTransitionEvent e => [
+          _stringAttribute('workflow.id', e.workflowId),
+          _stringAttribute('workflow.from_step', e.fromStep),
+          _stringAttribute('workflow.to_step', e.toStep),
+          _intAttribute('workflow.duration_ms', e.durationMs),
+        ],
+      UiErrorEvent e => [
+          _stringAttribute('error.type', e.errorType),
+          _stringAttribute('component.type', e.componentType),
+          _stringAttribute('component.id', e.componentId),
+          _stringAttribute('page.id', e.pageId),
+          _stringAttribute('error.message', e.errorMessage),
+          if (e.stackTrace != null)
+            _stringAttribute('error.stack_trace', e.stackTrace!),
+        ],
+      RenderFailureEvent e => [
+          _stringAttribute('component.id', e.componentId),
+          _stringAttribute('descriptor.type', e.descriptorType),
+          _stringAttribute('error.message', e.errorMessage),
+          _stringAttribute('page.id', e.pageId),
+          if (e.stackTrace != null)
+            _stringAttribute('error.stack_trace', e.stackTrace!),
+        ],
+      CacheHitEvent e => [
+          _stringAttribute('cache.type', e.cacheType),
+          _stringAttribute('cache.key', e.key),
+          _intAttribute('cache.age_ms', e.ageMs),
+          _boolAttribute('cache.stale', e.stale),
+        ],
+      CacheMissEvent e => [
+          _stringAttribute('cache.type', e.cacheType),
+          _stringAttribute('cache.key', e.key),
+        ],
+      AuthRefreshEvent e => [
+          _boolAttribute('auth.success', e.success),
+          _intAttribute('auth.duration_ms', e.durationMs),
+          _stringAttribute('auth.triggered_by', e.triggeredBy),
+          if (e.errorMessage != null)
+            _stringAttribute('error.message', e.errorMessage!),
+        ],
+      FrameTimingEvent e => [
+          _stringAttribute('page.id', e.pageId),
+          _doubleAttribute('frame.time_ms', e.frameTimeMs),
+          _boolAttribute('frame.is_jank', e.isJank),
+          _intAttribute('frame.widget_build_count', e.widgetBuildCount),
+        ],
+      ActionExecutionEvent e => [
+          _stringAttribute('action.id', e.actionId),
+          _stringAttribute('action.type', e.actionType),
+          _stringAttribute('page.id', e.pageId),
+          _boolAttribute('action.success', e.success),
+          _intAttribute('action.duration_ms', e.durationMs),
+          if (e.errorMessage != null)
+            _stringAttribute('error.message', e.errorMessage!),
+        ],
+      FormSubmissionEvent e => [
+          _stringAttribute('form.schema_id', e.schemaId),
+          _stringAttribute('page.id', e.pageId),
+          _boolAttribute('form.success', e.success),
+          _intAttribute('form.duration_ms', e.durationMs),
+          _intAttribute('form.field_count', e.fieldCount),
+          if (e.errorMessage != null)
+            _stringAttribute('error.message', e.errorMessage!),
+        ],
+      TableInteractionEvent e => [
+          _stringAttribute('table.id', e.tableId),
+          _stringAttribute('table.interaction_type', e.interactionType),
+          _stringAttribute('page.id', e.pageId),
+          if (e.rowCount != null) _intAttribute('table.row_count', e.rowCount!),
+        ],
+    };
   }
 
   /// Check if event should include status
   bool _shouldIncludeStatus(TelemetryEvent event) {
-    return event.maybeWhen(
-      uiError: (_) => true,
-      renderFailure: (_) => true,
-      authRefresh: (event) => !event.success,
-      actionExecution: (event) => !event.success,
-      formSubmission: (event) => !event.success,
-      orElse: () => false,
-    );
+    return switch (event) {
+      UiErrorEvent() => true,
+      RenderFailureEvent() => true,
+      AuthRefreshEvent(:final success) => !success,
+      ActionExecutionEvent(:final success) => !success,
+      FormSubmissionEvent(:final success) => !success,
+      _ => false,
+    };
   }
 
   /// Build span status (for errors)
   Map<String, dynamic> _buildSpanStatus(TelemetryEvent event) {
     return {
       'code': 'STATUS_CODE_ERROR',
-      'message': event.when(
-        uiError: (event) => event.errorMessage,
-        renderFailure: (event) => event.errorMessage,
-        authRefresh: (event) => event.errorMessage ?? 'Auth refresh failed',
-        actionExecution: (event) =>
-            event.errorMessage ?? 'Action execution failed',
-        formSubmission: (event) =>
-            event.errorMessage ?? 'Form submission failed',
-        pageRender: (_) => '',
-        apiRequest: (_) => '',
-        workflowTransition: (_) => '',
-        cacheHit: (_) => '',
-        cacheMiss: (_) => '',
-        frameTiming: (_) => '',
-        tableInteraction: (_) => '',
-      ),
+      'message': switch (event) {
+        UiErrorEvent(:final errorMessage) => errorMessage,
+        RenderFailureEvent(:final errorMessage) => errorMessage,
+        AuthRefreshEvent(:final errorMessage) =>
+          errorMessage ?? 'Auth refresh failed',
+        ActionExecutionEvent(:final errorMessage) =>
+          errorMessage ?? 'Action execution failed',
+        FormSubmissionEvent(:final errorMessage) =>
+          errorMessage ?? 'Form submission failed',
+        _ => '',
+      },
     };
   }
 

@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:riverpod/riverpod.dart';
 
 /// Background refresh coordinator
@@ -38,7 +38,7 @@ class BackgroundRefreshCoordinator {
   /// Refresh interval for capabilities and navigation tree
   final Duration navigationRefreshInterval;
 
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('BackgroundRefreshCoordinator');
 
   Timer? _permissionsTimer;
   Timer? _pageTimer;

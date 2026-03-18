@@ -8,7 +8,7 @@ part 'action_state.g.dart';
 
 /// Action execution state
 @freezed
-class ActionState with _$ActionState {
+abstract class ActionState with _$ActionState {
   const factory ActionState.idle() = _Idle;
   const factory ActionState.confirming({
     required String actionId,

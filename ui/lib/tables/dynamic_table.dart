@@ -238,13 +238,13 @@ class _DynamicTableState extends State<DynamicTable> {
       case 'status_badge':
         return AppBadge(
           label: value?.toString() ?? '',
-          variant: _getBadgeVariant(value?.toString() ?? ''),
+          color: _getBadgeColor(value?.toString() ?? ''),
         );
 
       case 'avatar':
         return AppAvatar(
-          name: value?.toString() ?? '',
-          size: 32,
+          initials: value?.toString() ?? '',
+          size: AppAvatarSize.small,
         );
 
       default:
@@ -252,23 +252,23 @@ class _DynamicTableState extends State<DynamicTable> {
     }
   }
 
-  AppBadgeVariant _getBadgeVariant(String status) {
+  Color? _getBadgeColor(String status) {
     switch (status.toLowerCase()) {
       case 'active':
       case 'completed':
       case 'success':
-        return AppBadgeVariant.success;
+        return Colors.green;
       case 'pending':
       case 'in_progress':
-        return AppBadgeVariant.warning;
+        return Colors.orange;
       case 'failed':
       case 'error':
       case 'cancelled':
-        return AppBadgeVariant.error;
+        return Colors.red;
       case 'draft':
-        return AppBadgeVariant.info;
+        return Colors.blue;
       default:
-        return AppBadgeVariant.neutral;
+        return null;
     }
   }
 
@@ -295,7 +295,7 @@ class _DynamicTableState extends State<DynamicTable> {
       mainAxisSize: MainAxisSize.min,
       children: actions.map((action) {
         return IconButton(
-          icon: Icon(_getActionIcon(action.icon)),
+          icon: Icon(_getActionIcon(action.ui?.icon)),
           iconSize: 20,
           tooltip: action.label,
           onPressed: () {

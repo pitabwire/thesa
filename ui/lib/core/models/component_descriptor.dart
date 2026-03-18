@@ -16,7 +16,7 @@ part 'component_descriptor.g.dart';
 
 /// Describes a single UI component on a page
 @freezed
-class ComponentDescriptor with _$ComponentDescriptor {
+abstract class ComponentDescriptor with _$ComponentDescriptor {
   const factory ComponentDescriptor({
     /// Component type (determines which widget to use)
     required String type,
@@ -52,7 +52,7 @@ class ComponentDescriptor with _$ComponentDescriptor {
 
 /// Layout configuration for component arrangement
 @freezed
-class LayoutConfig with _$LayoutConfig {
+abstract class LayoutConfig with _$LayoutConfig {
   const factory LayoutConfig({
     /// Layout type
     required LayoutType type,
@@ -145,7 +145,7 @@ enum LayoutAlignment {
 
 /// Data table component configuration
 @freezed
-class DataTableConfig with _$DataTableConfig {
+abstract class DataTableConfig with _$DataTableConfig {
   const factory DataTableConfig({
     /// Table columns
     required List<TableColumn> columns,
@@ -190,7 +190,7 @@ class DataTableConfig with _$DataTableConfig {
 
 /// Table column definition
 @freezed
-class TableColumn with _$TableColumn {
+abstract class TableColumn with _$TableColumn {
   const factory TableColumn({
     /// Field name in the data
     required String field,
@@ -248,7 +248,7 @@ enum TableColumnAlignment {
 
 /// Pagination configuration
 @freezed
-class PaginationConfig with _$PaginationConfig {
+abstract class PaginationConfig with _$PaginationConfig {
   const factory PaginationConfig({
     /// Pagination type
     @Default(PaginationType.server) PaginationType type,
@@ -284,7 +284,7 @@ enum PaginationType {
 
 /// Sorting configuration
 @freezed
-class SortingConfig with _$SortingConfig {
+abstract class SortingConfig with _$SortingConfig {
   const factory SortingConfig({
     /// Default sort field
     String? defaultField,
@@ -311,7 +311,7 @@ enum SortDirection {
 
 /// Filter configuration
 @freezed
-class FilterConfig with _$FilterConfig {
+abstract class FilterConfig with _$FilterConfig {
   const factory FilterConfig({
     /// Available filters
     List<FilterDescriptor>? filters,
@@ -332,7 +332,7 @@ class FilterConfig with _$FilterConfig {
 
 /// Individual filter descriptor
 @freezed
-class FilterDescriptor with _$FilterDescriptor {
+abstract class FilterDescriptor with _$FilterDescriptor {
   const factory FilterDescriptor({
     /// Field to filter on
     required String field,

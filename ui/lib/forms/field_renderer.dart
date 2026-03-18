@@ -110,13 +110,14 @@ class FieldRenderer extends StatelessWidget {
   Widget _buildBooleanField(BuildContext context) {
     return ReactiveCheckbox(
       formControlName: formControlName,
-      title: Text(field.label ?? field.name),
     );
   }
 
   Widget _buildDateField(BuildContext context) {
     return ReactiveDatePicker<DateTime>(
       formControlName: formControlName,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
       builder: (context, picker, child) {
         return ReactiveTextField<DateTime>(
           formControlName: formControlName,
@@ -134,6 +135,8 @@ class FieldRenderer extends StatelessWidget {
   Widget _buildDateTimeField(BuildContext context) {
     return ReactiveDatePicker<DateTime>(
       formControlName: formControlName,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
       builder: (context, picker, child) {
         return ReactiveTextField<DateTime>(
           formControlName: formControlName,

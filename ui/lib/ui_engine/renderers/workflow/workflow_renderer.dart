@@ -27,7 +27,7 @@ class WorkflowRenderer extends StatelessWidget {
     final steps = component.config['steps'] as List<dynamic>? ?? [];
 
     return AppCard(
-      title: component.ui?.label ?? 'Workflow',
+      title: component.ui?.tooltip ?? 'Workflow',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -18,7 +18,7 @@ class ButtonRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = component.config['label'] as String? ??
-        component.ui?.label ??
+        component.ui?.tooltip ??
         'Button';
     final icon = component.config['icon'] as String?;
     final variant = _parseVariant(component.config['variant'] as String?);

@@ -19,7 +19,7 @@ class MetricRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     final value = component.config['value']?.toString() ?? '0';
     final label = component.config['label'] as String? ??
-        component.ui?.label ??
+        component.ui?.tooltip ??
         '';
     final delta = component.config['delta']?.toString();
     final trend = component.config['trend'] as String?; // 'up', 'down', 'neutral'
@@ -45,7 +45,7 @@ class MetricRenderer extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: AppTypography.displaySmall.copyWith(
+                  style: AppTypography.headlineMedium.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),

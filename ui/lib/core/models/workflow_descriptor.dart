@@ -18,7 +18,7 @@ part 'workflow_descriptor.g.dart';
 
 /// Complete workflow definition
 @freezed
-class WorkflowDescriptor with _$WorkflowDescriptor {
+abstract class WorkflowDescriptor with _$WorkflowDescriptor {
   const factory WorkflowDescriptor({
     /// Unique workflow identifier
     required String workflowId,
@@ -63,7 +63,7 @@ class WorkflowDescriptor with _$WorkflowDescriptor {
 
 /// A single step in a workflow
 @freezed
-class WorkflowStep with _$WorkflowStep {
+abstract class WorkflowStep with _$WorkflowStep {
   const factory WorkflowStep({
     /// Step identifier
     required String stepId,
@@ -129,7 +129,7 @@ enum WorkflowStepType {
 
 /// Validation rules for progressing to next step
 @freezed
-class StepValidation with _$StepValidation {
+abstract class StepValidation with _$StepValidation {
   const factory StepValidation({
     /// Required fields that must be filled
     List<String>? requiredFields,
@@ -147,7 +147,7 @@ class StepValidation with _$StepValidation {
 
 /// Condition for showing a step
 @freezed
-class StepCondition with _$StepCondition {
+abstract class StepCondition with _$StepCondition {
   const factory StepCondition({
     /// Field to check
     required String field,
@@ -168,7 +168,7 @@ class StepCondition with _$StepCondition {
 
 /// Workflow execution state
 @freezed
-class WorkflowState with _$WorkflowState {
+abstract class WorkflowState with _$WorkflowState {
   const factory WorkflowState({
     /// Workflow instance ID
     required String instanceId,

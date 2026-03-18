@@ -20,7 +20,7 @@ class CardRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = component.config['title'] as String? ?? component.ui?.label;
+    final title = component.config['title'] as String? ?? component.ui?.tooltip;
     final subtitle = component.config['subtitle'] as String?;
 
     // If card has children, render them as body content
@@ -40,7 +40,7 @@ class CardRenderer extends StatelessWidget {
     return AppCard(
       title: title,
       subtitle: subtitle,
-      body: body,
+      body: body ?? const SizedBox.shrink(),
       actions: _buildActions(context),
     );
   }
@@ -61,14 +61,14 @@ class CardRenderer extends StatelessWidget {
             SnackBar(content: Text('Action: ${action.label}')),
           );
         },
-        variant: _parseButtonVariant(action.style),
+        variant: _parseButtonVariant(action.ui?.color),
         size: AppButtonSize.small,
       );
     }).toList();
   }
 
-  AppButtonVariant _parseButtonVariant(String? style) {
-    switch (style?.toLowerCase()) {
+  AppButtonVariant _parseButtonVariant(String? color) {
+    switch (color?.toLowerCase()) {
       case 'primary':
         return AppButtonVariant.primary;
       case 'secondary':

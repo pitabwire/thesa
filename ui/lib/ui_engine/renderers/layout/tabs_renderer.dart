@@ -33,7 +33,7 @@ class TabsRenderer extends StatelessWidget {
             isScrollable: true,
             tabs: children.map((child) {
               return Tab(
-                text: child.ui?.label ?? child.type,
+                text: child.ui?.tooltip ?? child.type,
                 icon: child.ui?.icon != null ? Icon(_parseIcon(child.ui!.icon!)) : null,
               );
             }).toList(),

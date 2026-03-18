@@ -43,6 +43,18 @@ class ActionConfirmationDialog extends ConsumerWidget {
   final bool isDestructive;
   final Map<String, dynamic> payload;
 
+  bool _isSubmitting(ActionState state) =>
+      state == const ActionState.submitting();
+
+  bool _isSuccess(ActionState state) => state.whenOrNull(
+        success: (response, message, navigationUrl) => true,
+      ) ??
+      false;
+
+  String? _errorMessage(ActionState state) => state.whenOrNull(
+        error: (message, fieldErrors) => message,
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -91,7 +103,7 @@ class ActionConfirmationDialog extends ConsumerWidget {
             message,
             style: theme.textTheme.bodyMedium,
           ),
-          if (actionState is _Error) ...[
+          if (_errorMessage(actionState) case final errorMsg?) ...[
             const SizedBox(height: AppSpacing.space16),
             Container(
               padding: const EdgeInsets.all(AppSpacing.space12),
@@ -109,7 +121,7 @@ class ActionConfirmationDialog extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.space8),
                   Expanded(
                     child: Text(
-                      actionState.message,
+                      errorMsg,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                       ),
@@ -123,7 +135,7 @@ class ActionConfirmationDialog extends ConsumerWidget {
       ),
       actions: [
         TextButton(
-          onPressed: actionState is _Submitting
+          onPressed: _isSubmitting(actionState)
               ? null
               : () {
                   ref.read(actionProvider(actionId).notifier).cancelConfirmation();
@@ -135,7 +147,7 @@ class ActionConfirmationDialog extends ConsumerWidget {
           label: isDestructive ? 'Delete' : 'Confirm',
           icon: isDestructive ? Icons.delete : Icons.check,
           variant: isDestructive ? AppButtonVariant.destructive : AppButtonVariant.primary,
-          onPressed: actionState is _Submitting
+          onPressed: _isSubmitting(actionState)
               ? null
               : () async {
                   await ref
@@ -143,11 +155,11 @@ class ActionConfirmationDialog extends ConsumerWidget {
                       .execute(payload: payload);
 
                   final finalState = ref.read(actionProvider(actionId));
-                  if (finalState is _Success && context.mounted) {
+                  if (_isSuccess(finalState) && context.mounted) {
                     Navigator.of(context).pop(true);
                   }
                 },
-          isLoading: actionState is _Submitting,
+          isLoading: _isSubmitting(actionState),
         ),
       ],
     );

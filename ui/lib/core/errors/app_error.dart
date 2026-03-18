@@ -10,7 +10,7 @@ part 'app_error.freezed.dart';
 
 /// Base error type for all application errors
 @Freezed(toJson: false, fromJson: false)
-class AppError with _$AppError {
+abstract class AppError with _$AppError {
   /// Network error (HTTP, timeout, no connection)
   const factory AppError.network({
     required String message,

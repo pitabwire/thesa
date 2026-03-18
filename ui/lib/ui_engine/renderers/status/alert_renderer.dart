@@ -17,7 +17,7 @@ class AlertRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = component.config['title'] as String? ?? component.ui?.label;
+    final title = component.config['title'] as String? ?? component.ui?.tooltip;
     final message = component.config['message'] as String? ??
         component.config['text'] as String? ??
         '';

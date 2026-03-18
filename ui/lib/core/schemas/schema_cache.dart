@@ -1,7 +1,7 @@
 /// Schema caching for memoization within a session.
 library;
 
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 import '../core.dart';
 
@@ -16,7 +16,7 @@ import '../core.dart';
 class SchemaCache {
   SchemaCache();
 
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('SchemaCache');
 
   /// Cache of resolved schemas keyed by schema ID
   final Map<String, _CachedSchema> _cache = {};

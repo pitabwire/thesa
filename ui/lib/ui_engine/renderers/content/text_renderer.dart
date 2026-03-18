@@ -18,7 +18,7 @@ class TextRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = component.config['text'] as String? ??
-        component.ui?.label ??
+        component.ui?.tooltip ??
         '';
 
     if (text.isEmpty) {
@@ -50,13 +50,13 @@ class TextRenderer extends StatelessWidget {
           case 1:
             return AppTypography.displayLarge;
           case 2:
-            return AppTypography.displayMedium;
-          case 3:
-            return AppTypography.displaySmall;
-          case 4:
             return AppTypography.headlineMedium;
+          case 3:
+            return AppTypography.titleLarge;
+          case 4:
+            return AppTypography.titleMedium;
           case 5:
-            return AppTypography.headlineSmall;
+            return AppTypography.bodyLarge;
           default:
             return AppTypography.titleLarge;
         }
@@ -75,21 +75,21 @@ class TextRenderer extends StatelessWidget {
       case 'display_large':
         return AppTypography.displayLarge;
       case 'display_medium':
-        return AppTypography.displayMedium;
+        return AppTypography.displayLarge;
       case 'display_small':
-        return AppTypography.displaySmall;
+        return AppTypography.headlineMedium;
       case 'headline_large':
-        return AppTypography.headlineLarge;
+        return AppTypography.headlineMedium;
       case 'headline_medium':
         return AppTypography.headlineMedium;
       case 'headline_small':
-        return AppTypography.headlineSmall;
+        return AppTypography.titleLarge;
       case 'title_large':
         return AppTypography.titleLarge;
       case 'title_medium':
         return AppTypography.titleMedium;
       case 'title_small':
-        return AppTypography.titleSmall;
+        return AppTypography.titleMedium;
       case 'body_large':
         return AppTypography.bodyLarge;
       case 'body_medium':

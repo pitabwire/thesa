@@ -45,7 +45,7 @@ class DataTableRenderer extends StatelessWidget {
     // TODO: Load actual data from BFF
     // For now, show placeholder with column headers
     return AppCard(
-      title: component.ui?.label ?? 'Data Table',
+      title: component.ui?.tooltip ?? 'Data Table',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

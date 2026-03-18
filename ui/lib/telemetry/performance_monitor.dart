@@ -4,7 +4,7 @@ library;
 import 'dart:ui';
 
 import 'package:flutter/scheduler.dart';
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 import 'models/telemetry_event.dart';
 import 'telemetry_service.dart';
@@ -30,7 +30,7 @@ class PerformanceMonitor {
   /// Whether to record all frames or only janks
   final bool recordAllFrames;
 
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('PerformanceMonitor');
 
   String? _currentPageId;
   int _widgetBuildCount = 0;

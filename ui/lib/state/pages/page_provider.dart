@@ -30,12 +30,17 @@ class Page extends _$Page {
         fetchFromNetwork: () => bffClient.getPage(pageId),
       );
 
+      final data = result.data;
+      if (data == null) {
+        throw StateError('Page data was null for: $pageId');
+      }
+
       _logger.info(
         'Page loaded: ${result.state.name} '
-        '(${result.data.components.length} components)',
+        '(${data.components.length} components)',
       );
 
-      return result.data;
+      return data;
     } catch (e, stack) {
       _logger.severe('Failed to load page: $pageId', e, stack);
       rethrow;
@@ -50,7 +55,7 @@ class Page extends _$Page {
 
   /// Get visible components (filtered by permissions)
   List<ComponentDescriptor> get visibleComponents {
-    return state.valueOrNull?.components
+    return state.value?.components
             .where((component) => component.permission.allowed)
             .toList() ??
         [];
@@ -58,7 +63,7 @@ class Page extends _$Page {
 
   /// Get page actions (filtered by permissions)
   List<ActionDescriptor> get visibleActions {
-    return state.valueOrNull?.actions
+    return state.value?.actions
             .where((action) => action.permission.allowed)
             .toList() ??
         [];

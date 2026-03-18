@@ -19,7 +19,7 @@ class ProgressRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = component.config['type'] as String? ?? 'linear';
     final value = (component.config['value'] as num?)?.toDouble();
-    final label = component.config['label'] as String? ?? component.ui?.label;
+    final label = component.config['label'] as String? ?? component.ui?.tooltip;
     final showPercentage = component.config['showPercentage'] as bool? ?? true;
 
     if (type == 'circular') {

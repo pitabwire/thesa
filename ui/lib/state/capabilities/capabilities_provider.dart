@@ -48,9 +48,9 @@ class CapabilitiesNotifier extends _$CapabilitiesNotifier {
 
   /// Check if a feature is enabled
   bool isFeatureEnabled(String feature) {
-    return state.valueOrNull?.capabilities[feature]?.enabled ?? false;
+    return state.value?.capabilities[feature]?.enabled ?? false;
   }
 
   /// Get global version for cache invalidation
-  String? get globalVersion => state.valueOrNull?.version;
+  String? get globalVersion => state.value?.version;
 }

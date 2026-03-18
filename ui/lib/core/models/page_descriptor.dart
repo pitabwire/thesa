@@ -19,7 +19,7 @@ part 'page_descriptor.g.dart';
 
 /// Complete description of a page and its contents
 @freezed
-class PageDescriptor with _$PageDescriptor {
+abstract class PageDescriptor with _$PageDescriptor {
   const factory PageDescriptor({
     /// Unique identifier for this page
     required String pageId,
@@ -73,7 +73,7 @@ class PageDescriptor with _$PageDescriptor {
 
 /// Breadcrumb navigation item
 @freezed
-class BreadcrumbItem with _$BreadcrumbItem {
+abstract class BreadcrumbItem with _$BreadcrumbItem {
   const factory BreadcrumbItem({
     /// Label text
     required String label,
@@ -112,7 +112,7 @@ enum PageType {
 
 /// Auto-refresh configuration
 @freezed
-class RefreshConfig with _$RefreshConfig {
+abstract class RefreshConfig with _$RefreshConfig {
   const factory RefreshConfig({
     /// Whether auto-refresh is enabled
     @Default(false) bool enabled,

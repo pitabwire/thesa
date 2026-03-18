@@ -27,7 +27,7 @@ class FormRenderer extends StatelessWidget {
     final resource = component.resource;
 
     return AppCard(
-      title: component.ui?.label ?? 'Form',
+      title: component.ui?.tooltip ?? 'Form',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

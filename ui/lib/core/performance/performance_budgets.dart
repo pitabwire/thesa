@@ -1,7 +1,7 @@
 /// Performance budget constants and monitoring.
 library;
 
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 import '../../telemetry/models/telemetry_event.dart';
 import '../../telemetry/telemetry_service.dart';
@@ -44,7 +44,7 @@ class PerformanceBudgetMonitor {
   });
 
   final TelemetryService telemetryService;
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('PerformanceBudgetMonitor');
 
   /// Check and log if page render exceeded budget
   void checkPageRenderBudget({

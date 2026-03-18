@@ -6,6 +6,9 @@ library;
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:drift/drift.dart';
+
+import '../../cache/database/app_database.dart';
 import '../../core/core.dart';
 import '../core/dependencies_provider.dart';
 
@@ -37,9 +40,7 @@ class Workflow extends _$Workflow {
         // Parse the workflow descriptor from data field
         // Note: data is stored as JSON string in the database
         final descriptor = WorkflowDescriptor.fromJson(
-          Map<String, dynamic>.from(
-            Map<String, dynamic>.from(persistedState.data as Object),
-          ),
+          Map<String, dynamic>.from(persistedState.data as Map),
         );
 
         return descriptor.copyWith(currentStep: persistedState.currentStep);
@@ -64,7 +65,7 @@ class Workflow extends _$Workflow {
 
   /// Advance to next step
   Future<void> nextStep(Map<String, dynamic> stepData) async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null) return;
 
     _logger.info('Advancing workflow to next step: $instanceId');
@@ -103,7 +104,7 @@ class Workflow extends _$Workflow {
 
   /// Go back to previous step
   Future<void> previousStep() async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null || current.currentStep == 0) return;
 
     _logger.info('Going back to previous step: $instanceId');
@@ -125,7 +126,7 @@ class Workflow extends _$Workflow {
 
   /// Complete workflow
   Future<void> complete() async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null) return;
 
     _logger.info('Completing workflow: $instanceId');
@@ -143,7 +144,7 @@ class Workflow extends _$Workflow {
       );
 
       // Mark as completed in database
-      await database.workflowDao.markCompleted(instanceId);
+      await database.workflowDao.completeWorkflow(instanceId);
 
       _logger.info('Workflow completed: $instanceId');
     } catch (e, stack) {
@@ -159,7 +160,7 @@ class Workflow extends _$Workflow {
     final database = await ref.read(databaseProvider.future);
 
     try {
-      await database.workflowDao.markCancelled(instanceId);
+      await database.workflowDao.cancelWorkflow(instanceId);
       _logger.info('Workflow cancelled: $instanceId');
     } catch (e, stack) {
       _logger.severe('Failed to cancel workflow', e, stack);
@@ -174,11 +175,16 @@ class Workflow extends _$Workflow {
     int currentStep,
   ) async {
     final database = await ref.read(databaseProvider.future);
-    await database.workflowDao.saveWorkflowState(
-      instanceId: instanceId,
-      workflowId: descriptor.workflowId,
-      payload: descriptor.toJson(),
-      currentStep: currentStep,
+    await database.workflowDao.saveWorkflow(
+      WorkflowStateCompanion(
+        instanceId: Value(instanceId),
+        workflowId: Value(descriptor.workflowId),
+        data: Value(descriptor.toJson().toString()),
+        currentStep: Value(currentStep),
+        status: const Value('in_progress'),
+        startedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 }

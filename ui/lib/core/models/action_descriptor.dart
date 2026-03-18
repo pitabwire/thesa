@@ -16,7 +16,7 @@ part 'action_descriptor.g.dart';
 
 /// Describes an action that the user can trigger
 @freezed
-class ActionDescriptor with _$ActionDescriptor {
+abstract class ActionDescriptor with _$ActionDescriptor {
   const factory ActionDescriptor({
     /// Unique identifier for this action
     required String actionId,

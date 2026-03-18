@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/core.dart';
 import '../plugins/plugin_provider.dart';
 import 'dynamic_form.dart';
+import 'form_engine.dart';
 
 /// Form wrapper that supports plugin-based schema renderers
 ///
@@ -37,8 +38,8 @@ class PluggableForm extends ConsumerWidget {
     final pluginRegistry = ref.watch(pluginRegistryProvider);
 
     // Check plugin registry for custom schema renderer
-    if (pluginRegistry.hasSchemaRenderer(schema.id)) {
-      final builder = pluginRegistry.getSchemaRenderer(schema.id)!;
+    if (pluginRegistry.hasSchemaRenderer(schema.schemaId)) {
+      final builder = pluginRegistry.getSchemaRenderer(schema.schemaId)!;
       return builder(
         schema,
         ref,

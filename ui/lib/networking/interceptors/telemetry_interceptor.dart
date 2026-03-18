@@ -2,7 +2,7 @@
 library;
 
 import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 import '../../telemetry/models/telemetry_event.dart';
 import '../../telemetry/telemetry_service.dart';
@@ -16,7 +16,7 @@ class TelemetryInterceptor extends Interceptor {
   });
 
   final TelemetryService telemetryService;
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('TelemetryInterceptor');
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -33,7 +33,7 @@ class TelemetryInterceptor extends Interceptor {
       method: response.requestOptions.method,
       statusCode: response.statusCode ?? 0,
       startTime: response.requestOptions.extra['telemetry_start_time'],
-      retryCount: response.requestOptions.extra['telemetry_retry_count'] ?? 0,
+      retryCount: (response.requestOptions.extra['telemetry_retry_count'] as int?) ?? 0,
       etagHit: response.statusCode == 304,
       cached: response.statusCode == 304,
     );
@@ -47,7 +47,7 @@ class TelemetryInterceptor extends Interceptor {
       method: err.requestOptions.method,
       statusCode: err.response?.statusCode ?? 0,
       startTime: err.requestOptions.extra['telemetry_start_time'],
-      retryCount: err.requestOptions.extra['telemetry_retry_count'] ?? 0,
+      retryCount: (err.requestOptions.extra['telemetry_retry_count'] as int?) ?? 0,
       etagHit: false,
       cached: false,
     );

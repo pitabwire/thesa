@@ -110,7 +110,7 @@ class ListItemSkeleton extends StatelessWidget {
           const AppSkeletonLoader(
             width: 40,
             height: 40,
-            borderRadius: AppBorderRadius.full,
+            borderRadius: AppBorderRadius.pill,
           ),
           const SizedBox(width: AppSpacing.space12),
           Expanded(

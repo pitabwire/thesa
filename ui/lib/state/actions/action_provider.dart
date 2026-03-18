@@ -32,11 +32,9 @@ class Action extends _$Action {
     _logger.info('Requesting execution for action: $actionId');
 
     // If action requires confirmation, transition to confirming state
-    if (descriptor.confirmation != null) {
-      final confirmation = descriptor.confirmation!;
-
+    if (descriptor.confirmationMessage != null) {
       // Interpolate variables in confirmation message
-      var message = confirmation.message;
+      var message = descriptor.confirmationMessage!;
       payload.forEach((key, value) {
         message = message.replaceAll('{$key}', value.toString());
       });
@@ -44,7 +42,7 @@ class Action extends _$Action {
       state = ActionState.confirming(
         actionId: actionId,
         message: message,
-        isDestructive: confirmation.style == ConfirmationStyle.destructive,
+        isDestructive: false,
         payload: payload,
       );
       return;
@@ -123,8 +121,10 @@ class Action extends _$Action {
 
       if (e is AppError) {
         message = e.message;
-        if (e is ValidationError) {
-          fieldErrors = e.fieldErrors;
+        if (e is ValidationError && e.fieldErrors != null) {
+          fieldErrors = e.fieldErrors!.map(
+            (key, value) => MapEntry(key, value.join(', ')),
+          );
         }
       } else {
         message = e.toString();

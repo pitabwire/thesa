@@ -16,6 +16,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
 
 import '../../state/auth/auth_provider.dart';
+import '../../state/auth/oidc_service.dart';
 import '../../telemetry/models/telemetry_event.dart';
 import '../../telemetry/telemetry_service.dart';
 

@@ -10,7 +10,7 @@ part 'ui_metadata.g.dart';
 
 /// Display hints for UI elements
 @freezed
-class UiMetadata with _$UiMetadata {
+abstract class UiMetadata with _$UiMetadata {
   const factory UiMetadata({
     /// Icon identifier (Material Icons name or custom icon key)
     String? icon,

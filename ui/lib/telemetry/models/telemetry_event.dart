@@ -151,33 +151,33 @@ enum EventType {
 
 /// Extension to get event type from event
 extension TelemetryEventType on TelemetryEvent {
-  EventType get eventType => when(
-        pageRender: (_) => EventType.pageRender,
-        apiRequest: (_) => EventType.apiRequest,
-        workflowTransition: (_) => EventType.workflowTransition,
-        uiError: (_) => EventType.uiError,
-        renderFailure: (_) => EventType.renderFailure,
-        cacheHit: (_) => EventType.cacheHit,
-        cacheMiss: (_) => EventType.cacheMiss,
-        authRefresh: (_) => EventType.authRefresh,
-        frameTiming: (_) => EventType.frameTiming,
-        actionExecution: (_) => EventType.actionExecution,
-        formSubmission: (_) => EventType.formSubmission,
-        tableInteraction: (_) => EventType.tableInteraction,
-      );
+  EventType get eventType => switch (this) {
+        PageRenderEvent() => EventType.pageRender,
+        ApiRequestEvent() => EventType.apiRequest,
+        WorkflowTransitionEvent() => EventType.workflowTransition,
+        UiErrorEvent() => EventType.uiError,
+        RenderFailureEvent() => EventType.renderFailure,
+        CacheHitEvent() => EventType.cacheHit,
+        CacheMissEvent() => EventType.cacheMiss,
+        AuthRefreshEvent() => EventType.authRefresh,
+        FrameTimingEvent() => EventType.frameTiming,
+        ActionExecutionEvent() => EventType.actionExecution,
+        FormSubmissionEvent() => EventType.formSubmission,
+        TableInteractionEvent() => EventType.tableInteraction,
+      };
 
-  String get eventName => when(
-        pageRender: (_) => 'page.render',
-        apiRequest: (_) => 'api.request',
-        workflowTransition: (_) => 'workflow.transition',
-        uiError: (_) => 'ui.error',
-        renderFailure: (_) => 'render.failure',
-        cacheHit: (_) => 'cache.hit',
-        cacheMiss: (_) => 'cache.miss',
-        authRefresh: (_) => 'auth.refresh',
-        frameTiming: (_) => 'frame.timing',
-        actionExecution: (_) => 'action.execution',
-        formSubmission: (_) => 'form.submission',
-        tableInteraction: (_) => 'table.interaction',
-      );
+  String get eventName => switch (this) {
+        PageRenderEvent() => 'page.render',
+        ApiRequestEvent() => 'api.request',
+        WorkflowTransitionEvent() => 'workflow.transition',
+        UiErrorEvent() => 'ui.error',
+        RenderFailureEvent() => 'render.failure',
+        CacheHitEvent() => 'cache.hit',
+        CacheMissEvent() => 'cache.miss',
+        AuthRefreshEvent() => 'auth.refresh',
+        FrameTimingEvent() => 'frame.timing',
+        ActionExecutionEvent() => 'action.execution',
+        FormSubmissionEvent() => 'form.submission',
+        TableInteractionEvent() => 'table.interaction',
+      };
 }

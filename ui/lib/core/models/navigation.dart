@@ -15,7 +15,7 @@ part 'navigation.g.dart';
 
 /// Complete navigation tree from BFF
 @freezed
-class NavigationTree with _$NavigationTree {
+abstract class NavigationTree with _$NavigationTree {
   const factory NavigationTree({
     /// Navigation items
     required List<NavigationItem> items,
@@ -33,7 +33,7 @@ class NavigationTree with _$NavigationTree {
 
 /// Single navigation item (can have nested children)
 @freezed
-class NavigationItem with _$NavigationItem {
+abstract class NavigationItem with _$NavigationItem {
   const factory NavigationItem({
     /// Unique identifier
     required String id,

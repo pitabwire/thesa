@@ -30,12 +30,17 @@ class SchemaData extends _$SchemaData {
         fetchFromNetwork: () => bffClient.getSchema(schemaId),
       );
 
+      final data = result.data;
+      if (data == null) {
+        throw StateError('Schema data was null for: $schemaId');
+      }
+
       _logger.info(
         'Schema loaded: ${result.state.name} '
-        '(${result.data.fields.length} fields)',
+        '(${data.fields.length} fields)',
       );
 
-      return result.data;
+      return data;
     } catch (e, stack) {
       _logger.severe('Failed to load schema: $schemaId', e, stack);
       rethrow;
@@ -46,11 +51,5 @@ class SchemaData extends _$SchemaData {
   Future<void> refresh() async {
     _logger.info('Refreshing schema: $schemaId');
     ref.invalidateSelf();
-  }
-
-  @override
-  void dispose() {
-    _logger.fine('Disposing schema provider: $schemaId');
-    super.dispose();
   }
 }

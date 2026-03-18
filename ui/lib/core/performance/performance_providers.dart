@@ -12,7 +12,7 @@ part 'performance_providers.g.dart';
 /// Performance budget monitor provider
 @Riverpod(keepAlive: true)
 PerformanceBudgetMonitor performanceBudgetMonitor(
-  PerformanceBudgetMonitorRef ref,
+  Ref ref,
 ) {
   final telemetryService = ref.watch(telemetryServiceProvider);
 
@@ -24,7 +24,7 @@ PerformanceBudgetMonitor performanceBudgetMonitor(
 /// Background refresh coordinator provider
 @Riverpod(keepAlive: true)
 BackgroundRefreshCoordinator backgroundRefreshCoordinator(
-  BackgroundRefreshCoordinatorRef ref,
+  Ref ref,
 ) {
   final coordinator = BackgroundRefreshCoordinator(ref: ref);
 

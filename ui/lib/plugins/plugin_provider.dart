@@ -9,6 +9,6 @@ part 'plugin_provider.g.dart';
 
 /// Global plugin registry provider
 @Riverpod(keepAlive: true)
-PluginRegistry pluginRegistry(PluginRegistryRef ref) {
+PluginRegistry pluginRegistry(Ref ref) {
   return PluginRegistry();
 }

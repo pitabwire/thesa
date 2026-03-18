@@ -21,7 +21,7 @@ part 'branding_config.g.dart';
 /// - Spacing scale
 /// - Typography scale
 @freezed
-class BrandingConfig with _$BrandingConfig {
+abstract class BrandingConfig with _$BrandingConfig {
   const factory BrandingConfig({
     /// Primary brand color hex (e.g., '#1565C0')
     String? primaryColorHex,

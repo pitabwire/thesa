@@ -2,7 +2,7 @@
 library;
 
 import 'package:dio/dio.dart';
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 
 /// Manages cancel tokens for page and data requests
 ///
@@ -11,7 +11,7 @@ import 'package:logger/logger.dart';
 class CancelTokenManager {
   CancelTokenManager();
 
-  final Logger _logger = Logger();
+  final Logger _logger = Logger('CancelTokenManager');
 
   /// Active cancel tokens keyed by request identifier
   final Map<String, CancelToken> _tokens = {};

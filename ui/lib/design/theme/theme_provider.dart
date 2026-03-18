@@ -20,7 +20,7 @@ const String _themeModeKey = 'theme_mode';
 /// - Remote branding endpoint
 /// - Environment variables
 @Riverpod(keepAlive: true)
-Future<BrandingConfig> brandingConfig(BrandingConfigRef ref) async {
+Future<BrandingConfig> brandingConfig(Ref ref) async {
   // TODO: Load branding from config file or endpoint
   // For now, return default branding
   return BrandingConfig.defaultBranding;
@@ -75,14 +75,14 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
 
 /// Light theme provider
 @Riverpod(keepAlive: true)
-Future<ThemeData> lightTheme(LightThemeRef ref) async {
+Future<ThemeData> lightTheme(Ref ref) async {
   final branding = await ref.watch(brandingConfigProvider.future);
   return ThemeBuilder.buildLightTheme(branding: branding);
 }
 
 /// Dark theme provider
 @Riverpod(keepAlive: true)
-Future<ThemeData> darkTheme(DarkThemeRef ref) async {
+Future<ThemeData> darkTheme(Ref ref) async {
   final branding = await ref.watch(brandingConfigProvider.future);
   return ThemeBuilder.buildDarkTheme(branding: branding);
 }
@@ -91,8 +91,8 @@ Future<ThemeData> darkTheme(DarkThemeRef ref) async {
 ///
 /// Determines actual brightness based on theme mode and system preference.
 @riverpod
-Brightness currentBrightness(CurrentBrightnessRef ref, BuildContext context) {
-  final themeModeAsync = ref.watch(themeModeNotifierProvider);
+Brightness currentBrightness(Ref ref, BuildContext context) {
+  final themeModeAsync = ref.watch(themeModeProvider);
 
   return themeModeAsync.when(
     data: (themeMode) {

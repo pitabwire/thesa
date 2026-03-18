@@ -14,9 +14,9 @@ class ThemeModeSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeModeAsync = ref.watch(themeModeNotifierProvider);
+    final themeModeAsync = ref.watch(themeModeProvider);
 
-    return themeModeAsync.when(
+    return themeModeAsync.when<Widget>(
       data: (themeMode) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -32,7 +32,7 @@ class ThemeModeSelector extends ConsumerWidget {
             groupValue: themeMode,
             onChanged: (mode) {
               if (mode != null) {
-                ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
+                ref.read(themeModeProvider.notifier).setThemeMode(mode);
               }
             },
           ),
@@ -43,7 +43,7 @@ class ThemeModeSelector extends ConsumerWidget {
             groupValue: themeMode,
             onChanged: (mode) {
               if (mode != null) {
-                ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
+                ref.read(themeModeProvider.notifier).setThemeMode(mode);
               }
             },
           ),
@@ -54,7 +54,7 @@ class ThemeModeSelector extends ConsumerWidget {
             groupValue: themeMode,
             onChanged: (mode) {
               if (mode != null) {
-                ref.read(themeModeNotifierProvider.notifier).setThemeMode(mode);
+                ref.read(themeModeProvider.notifier).setThemeMode(mode);
               }
             },
           ),
@@ -74,9 +74,9 @@ class ThemeToggleButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeModeAsync = ref.watch(themeModeNotifierProvider);
+    final themeModeAsync = ref.watch(themeModeProvider);
 
-    return themeModeAsync.when(
+    return themeModeAsync.when<Widget>(
       data: (themeMode) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -84,7 +84,7 @@ class ThemeToggleButton extends ConsumerWidget {
           icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
           tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
           onPressed: () {
-            ref.read(themeModeNotifierProvider.notifier).toggleTheme();
+            ref.read(themeModeProvider.notifier).toggleTheme();
           },
         );
       },
