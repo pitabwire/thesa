@@ -118,3 +118,4 @@ ui/web/sqlite3.wasm
 
 # Documentation
 .dartdoc/
+WORK_STATE.md
