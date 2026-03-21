@@ -1,11 +1,7 @@
 package transport
 
 import (
-	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -118,37 +114,5 @@ func NewRouter(deps Dependencies) chi.Router {
 		r.Get("/ui/download/{fileId}", handleDownload(filesSvc))
 	})
 
-	// Serve frontend static files if UI directory is configured.
-	if deps.Config.UI.Dir != "" {
-		spaHandler := spaFileServer(deps.Config.UI.Dir)
-		r.NotFound(spaHandler.ServeHTTP)
-	}
-
 	return r
-}
-
-// spaFileServer returns an http.Handler that serves static files from dir.
-// For paths that don't match an existing file, it serves index.html to support
-// client-side (SPA) routing.
-func spaFileServer(dir string) http.Handler {
-	fsys := os.DirFS(dir)
-	fileServer := http.FileServer(http.FS(fsys))
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Clean the path and strip leading slash for fs.Stat.
-		path := strings.TrimPrefix(filepath.Clean(r.URL.Path), "/")
-		if path == "" {
-			path = "."
-		}
-
-		// Check if the file exists. If it does, serve it directly.
-		if f, err := fs.Stat(fsys, path); err == nil && !f.IsDir() {
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-
-		// For any path that doesn't match a file, serve index.html (SPA fallback).
-		r.URL.Path = "/"
-		fileServer.ServeHTTP(w, r)
-	})
 }

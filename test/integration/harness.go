@@ -38,14 +38,13 @@ type TestHarness struct {
 	issuer *tokenIssuer
 
 	// Internal components exposed for advanced test scenarios.
-	Registry         *definition.Registry
-	OAIndex          *openapi.Index
-	InvokerRegistry  *invoker.Registry
-	WorkflowStore    *workflow.MemoryWorkflowStore
-	WorkflowEngine   *workflow.Engine
-	IdempotencyStore *command.MemoryIdempotencyStore
-	CommandExecutor  *command.CommandExecutor
-	CapResolver      model.CapabilityResolver
+	Registry        *definition.Registry
+	OAIndex         *openapi.Index
+	InvokerRegistry *invoker.Registry
+	WorkflowStore   *workflow.MemoryWorkflowStore
+	WorkflowEngine  *workflow.Engine
+	CommandExecutor *command.CommandExecutor
+	CapResolver     model.CapabilityResolver
 
 	backends map[string]*MockBackend
 	cfg      *config.Config
@@ -55,16 +54,15 @@ type TestHarness struct {
 type HarnessOption func(*harnessConfig)
 
 type harnessConfig struct {
-	definitionDirs     []string
-	specSources        []specSourceConfig
-	policyFile         string
-	workflowEnabled    bool
-	idempotencyEnabled bool
-	handlerTimeout     time.Duration
-	sdkHandlers        map[string]invoker.SDKHandler
-	serviceTimeout     time.Duration
-	circuitBreaker     *config.CircuitBreakerConfig
-	retry              *config.RetryConfig
+	definitionDirs  []string
+	specSources     []specSourceConfig
+	policyFile      string
+	workflowEnabled bool
+	handlerTimeout  time.Duration
+	sdkHandlers     map[string]invoker.SDKHandler
+	serviceTimeout  time.Duration
+	circuitBreaker  *config.CircuitBreakerConfig
+	retry           *config.RetryConfig
 }
 
 type specSourceConfig struct {
@@ -101,13 +99,6 @@ func WithPolicyFile(path string) HarnessOption {
 func WithWorkflows() HarnessOption {
 	return func(c *harnessConfig) {
 		c.workflowEnabled = true
-	}
-}
-
-// WithIdempotency enables idempotency checking with an in-memory store.
-func WithIdempotency() HarnessOption {
-	return func(c *harnessConfig) {
-		c.idempotencyEnabled = true
 	}
 }
 
@@ -239,7 +230,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 
 	// Step 6: Build in-memory stores.
 	h.WorkflowStore = workflow.NewMemoryWorkflowStore()
-	h.IdempotencyStore = command.NewMemoryIdempotencyStore()
 
 	// Step 7: Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
@@ -275,11 +265,7 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 	h.InvokerRegistry.Register(invoker.NewSDKOperationInvoker(sdkHandlers))
 
 	// Step 8: Build providers.
-	var cmdOpts []command.CommandExecutorOption
-	if hc.idempotencyEnabled {
-		cmdOpts = append(cmdOpts, command.WithIdempotencyStore(h.IdempotencyStore))
-	}
-	h.CommandExecutor = command.NewCommandExecutor(h.Registry, h.InvokerRegistry, h.OAIndex, cmdOpts...)
+	h.CommandExecutor = command.NewCommandExecutor(h.Registry, h.InvokerRegistry, h.OAIndex)
 
 	if hc.workflowEnabled {
 		h.WorkflowEngine = workflow.NewEngine(h.Registry, h.WorkflowStore, h.InvokerRegistry, h.CapResolver)

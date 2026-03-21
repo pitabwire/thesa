@@ -432,49 +432,6 @@ func TestHandleCommand_notFound(t *testing.T) {
 	}
 }
 
-func TestHandleCommand_idempotencyKeyFromHeader(t *testing.T) {
-	inv := &fakeInvoker{
-		result: model.InvocationResult{
-			StatusCode: 200,
-			Body:       map[string]any{},
-		},
-	}
-
-	reg := newRegistry(model.DomainDefinition{
-		Domain: "orders",
-		Commands: []model.CommandDefinition{
-			{
-				ID: "orders.create",
-				Operation: model.OperationBinding{
-					Type:        "openapi",
-					ServiceID:   "orders-svc",
-					OperationID: "createOrder",
-				},
-				Output: model.OutputMapping{SuccessMessage: "OK"},
-			},
-		},
-	})
-
-	executor := command.NewCommandExecutor(reg, newTestInvokerRegistry(inv), nil)
-	handler := handleCommand(executor)
-
-	body, _ := json.Marshal(model.CommandInput{Input: map[string]any{"name": "test"}})
-
-	r := chi.NewRouter()
-	r.Use(contextMiddleware(testRequestContext(), testCaps()))
-	r.Post("/ui/commands/{commandId}", handler)
-
-	req := httptest.NewRequest("POST", "/ui/commands/orders.create", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Idempotency-Key", "idem-123")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if w.Code != 200 {
-		t.Fatalf("status = %d, want 200", w.Code)
-	}
-}
-
 func TestHandleCommand_noRequestContext(t *testing.T) {
 	executor := command.NewCommandExecutor(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), nil)
 	handler := handleCommand(executor)

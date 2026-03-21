@@ -144,7 +144,6 @@ func TestHandleReady_withOptionalChecks_allHealthy(t *testing.T) {
 		OpenAPILoaded:     func() bool { return true },
 		WorkflowStore:     &mockHealthChecker{},
 		PolicyEngine:      &mockHealthChecker{},
-		IdempotencyStore:  &mockHealthChecker{},
 	}
 
 	handler := HandleReady(checks)
@@ -160,9 +159,9 @@ func TestHandleReady_withOptionalChecks_allHealthy(t *testing.T) {
 	if resp.Status != "ready" {
 		t.Errorf("status = %q, want ready", resp.Status)
 	}
-	// Should have 5 checks total.
-	if len(resp.Checks) != 5 {
-		t.Errorf("checks count = %d, want 5", len(resp.Checks))
+	// Should have 4 checks total (definitions, openapi, workflow, policy).
+	if len(resp.Checks) != 4 {
+		t.Errorf("checks count = %d, want 4", len(resp.Checks))
 	}
 	for name, check := range resp.Checks {
 		if check.Status != "ok" {
@@ -215,28 +214,6 @@ func TestHandleReady_policyEngineDown(t *testing.T) {
 	json.NewDecoder(rec.Body).Decode(&resp)
 	if resp.Checks["policy_engine"].Status != "error" {
 		t.Errorf("policy_engine = %q, want error", resp.Checks["policy_engine"].Status)
-	}
-}
-
-func TestHandleReady_idempotencyStoreDown(t *testing.T) {
-	checks := ReadinessChecks{
-		DefinitionsLoaded: func() bool { return true },
-		OpenAPILoaded:     func() bool { return true },
-		IdempotencyStore:  &mockHealthChecker{err: errors.New("redis timeout")},
-	}
-
-	handler := HandleReady(checks)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ui/ready", nil))
-
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, want 503", rec.Code)
-	}
-
-	var resp ReadinessResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
-	if resp.Checks["idempotency_store"].Status != "error" {
-		t.Errorf("idempotency_store = %q, want error", resp.Checks["idempotency_store"].Status)
 	}
 }
 
@@ -305,9 +282,6 @@ func TestHandleReady_withoutOptionalChecks(t *testing.T) {
 	}
 	if _, ok := resp.Checks["policy_engine"]; ok {
 		t.Error("policy_engine should not be in checks when nil")
-	}
-	if _, ok := resp.Checks["idempotency_store"]; ok {
-		t.Error("idempotency_store should not be in checks when nil")
 	}
 }
 

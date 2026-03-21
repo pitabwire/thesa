@@ -2,9 +2,6 @@ package command
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -37,24 +34,18 @@ type CommandEvent struct {
 	Error      string        `json:"error,omitempty"`
 }
 
-// CommandExecutor implements the full 10-step command execution pipeline.
+// CommandExecutor implements the command execution pipeline.
 type CommandExecutor struct {
 	registry    *definition.Registry
 	invokers    *invoker.Registry
 	index       *openapiIndex.Index
 	mapper      *InputMapper
-	idempotency IdempotencyStore
 	rateLimiter RateLimiter
 	observers   []CommandObserver
 }
 
 // CommandExecutorOption configures optional dependencies.
 type CommandExecutorOption func(*CommandExecutor)
-
-// WithIdempotencyStore sets the idempotency store.
-func WithIdempotencyStore(store IdempotencyStore) CommandExecutorOption {
-	return func(e *CommandExecutor) { e.idempotency = store }
-}
 
 // WithRateLimiter sets the rate limiter.
 func WithRateLimiter(limiter RateLimiter) CommandExecutorOption {
@@ -110,21 +101,7 @@ func (e *CommandExecutor) Execute(
 		)
 	}
 
-	// Step 3: Check idempotency.
-	if cmdDef.Idempotency != nil && input.IdempotencyKey != "" && e.idempotency != nil {
-		idemKey := FormatIdempotencyKey(commandID, input.IdempotencyKey)
-		hash := hashInput(input)
-
-		cachedResult, found, err := e.idempotency.Check(ctx, idemKey, hash)
-		if err != nil {
-			return model.CommandResponse{}, err // Conflict (409).
-		}
-		if found && cachedResult != nil {
-			return *cachedResult, nil // Return cached result.
-		}
-	}
-
-	// Step 4: Check rate limit.
+	// Step 3: Check rate limit.
 	if cmdDef.RateLimit != nil && e.rateLimiter != nil {
 		scope := cmdDef.RateLimit.Scope
 		if !e.rateLimiter.Allow(ctx, commandID, scope, rctx) {
@@ -162,18 +139,10 @@ func (e *CommandExecutor) Execute(
 		return model.CommandResponse{}, err
 	}
 
-	// Step 8: Handle response.
+	// Step 7: Handle response.
 	resp := e.handleResponse(result, cmdDef)
 
-	// Step 3 (continued): Store idempotency result.
-	if cmdDef.Idempotency != nil && input.IdempotencyKey != "" && e.idempotency != nil && resp.Success {
-		idemKey := FormatIdempotencyKey(commandID, input.IdempotencyKey)
-		hash := hashInput(input)
-		ttl := parseIdempotencyTTL(cmdDef.Idempotency.TTL)
-		_ = e.idempotency.Store(ctx, idemKey, hash, resp, ttl) // Best-effort.
-	}
-
-	// Steps 9-10: Notify observers (metrics, audit).
+	// Step 8: Notify observers (metrics, audit).
 	statusCode := result.StatusCode
 	e.notifyObservers(ctx, rctx, commandID, resp.Success, statusCode, time.Since(start), "")
 
@@ -343,22 +312,6 @@ func (e *CommandExecutor) notifyObservers(
 }
 
 // --- helpers ---
-
-// hashInput produces a deterministic hash of a CommandInput for idempotency comparison.
-func hashInput(input model.CommandInput) string {
-	data, _ := json.Marshal(input.Input)
-	h := sha256.Sum256(data)
-	return hex.EncodeToString(h[:])
-}
-
-// parseIdempotencyTTL parses a TTL string like "1h", "30m", "24h".
-func parseIdempotencyTTL(ttl string) time.Duration {
-	d, err := time.ParseDuration(ttl)
-	if err != nil {
-		return 24 * time.Hour // Default: 24 hours.
-	}
-	return d
-}
 
 // applyOutputMapping extracts and renames fields from the response body.
 func applyOutputMapping(body map[string]any, output model.OutputMapping) map[string]any {

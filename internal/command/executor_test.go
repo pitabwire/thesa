@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/invoker"
@@ -280,104 +279,7 @@ func TestExecutor_noCapabilitiesRequired(t *testing.T) {
 	}
 }
 
-// --- Step 3: Idempotency ---
-
-func TestExecutor_idempotency_returnsCached(t *testing.T) {
-	store := NewMemoryIdempotencyStore()
-
-	// Pre-populate cached result.
-	input := model.CommandInput{
-		Input:          map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams:    map[string]string{"id": "ord-123"},
-		IdempotencyKey: "idem-key-1",
-	}
-	hash := hashInput(input)
-	cachedResp := model.CommandResponse{Success: true, Message: "Cached result"}
-	_ = store.Store(context.Background(), FormatIdempotencyKey("orders.cancel", "idem-key-1"), hash, cachedResp, 1*time.Hour)
-
-	// Backend should NOT be called.
-	invoked := false
-	e := newTestExecutor(func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error) {
-		invoked = true
-		return model.InvocationResult{}, nil
-	}, WithIdempotencyStore(store))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	resp, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-	if err != nil {
-		t.Fatalf("Execute error: %v", err)
-	}
-	if invoked {
-		t.Error("backend was invoked, should return cached result")
-	}
-	if resp.Message != "Cached result" {
-		t.Errorf("Message = %q, want Cached result", resp.Message)
-	}
-}
-
-func TestExecutor_idempotency_conflict(t *testing.T) {
-	store := NewMemoryIdempotencyStore()
-
-	// Store a result with one hash.
-	_ = store.Store(context.Background(), FormatIdempotencyKey("orders.cancel", "idem-key-1"), "different-hash", model.CommandResponse{Success: true}, 1*time.Hour)
-
-	e := newTestExecutor(nil, WithIdempotencyStore(store))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:          map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams:    map[string]string{"id": "ord-123"},
-		IdempotencyKey: "idem-key-1",
-	}
-
-	_, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-	if err == nil {
-		t.Fatal("expected conflict error")
-	}
-	envErr, ok := err.(*model.ErrorEnvelope)
-	if !ok {
-		t.Fatalf("error type = %T", err)
-	}
-	if envErr.Code != model.ErrConflict {
-		t.Errorf("code = %s, want %s", envErr.Code, model.ErrConflict)
-	}
-}
-
-func TestExecutor_idempotency_storesOnSuccess(t *testing.T) {
-	store := NewMemoryIdempotencyStore()
-
-	e := newTestExecutor(func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error) {
-		return model.InvocationResult{
-			StatusCode: 200,
-			Body: map[string]any{
-				"id":     "ord-123",
-				"status": "cancelled",
-			},
-		}, nil
-	}, WithIdempotencyStore(store))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:          map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams:    map[string]string{"id": "ord-123"},
-		IdempotencyKey: "idem-key-2",
-	}
-
-	resp, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-	if err != nil {
-		t.Fatalf("Execute error: %v", err)
-	}
-	if !resp.Success {
-		t.Error("Success = false")
-	}
-
-	// Verify result was stored.
-	if store.Len() != 1 {
-		t.Errorf("store.Len() = %d, want 1", store.Len())
-	}
-}
-
-// --- Step 4: Rate limiting ---
+// --- Step 3: Rate limiting ---
 
 func TestExecutor_rateLimited(t *testing.T) {
 	e := newTestExecutor(nil, WithRateLimiter(&mockRateLimiter{allow: false}))
@@ -836,45 +738,6 @@ func TestExecutor_Validate_forbidden(t *testing.T) {
 }
 
 // --- Helper function tests ---
-
-func TestHashInput(t *testing.T) {
-	input1 := model.CommandInput{Input: map[string]any{"name": "Alice"}}
-	input2 := model.CommandInput{Input: map[string]any{"name": "Bob"}}
-	input3 := model.CommandInput{Input: map[string]any{"name": "Alice"}}
-
-	h1 := hashInput(input1)
-	h2 := hashInput(input2)
-	h3 := hashInput(input3)
-
-	if h1 == h2 {
-		t.Error("different inputs should have different hashes")
-	}
-	if h1 != h3 {
-		t.Error("same inputs should have same hash")
-	}
-	if len(h1) != 64 { // SHA-256 hex.
-		t.Errorf("hash length = %d, want 64", len(h1))
-	}
-}
-
-func TestParseIdempotencyTTL(t *testing.T) {
-	tests := []struct {
-		input string
-		want  time.Duration
-	}{
-		{"1h", 1 * time.Hour},
-		{"30m", 30 * time.Minute},
-		{"24h", 24 * time.Hour},
-		{"invalid", 24 * time.Hour}, // Default.
-		{"", 24 * time.Hour},        // Default.
-	}
-	for _, tt := range tests {
-		got := parseIdempotencyTTL(tt.input)
-		if got != tt.want {
-			t.Errorf("parseIdempotencyTTL(%q) = %v, want %v", tt.input, got, tt.want)
-		}
-	}
-}
 
 func TestApplyOutputMapping(t *testing.T) {
 	body := map[string]any{

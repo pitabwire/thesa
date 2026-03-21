@@ -26,11 +26,6 @@ func handleCommand(executor *command.CommandExecutor) http.HandlerFunc {
 			return
 		}
 
-		// Allow idempotency key from header as fallback.
-		if input.IdempotencyKey == "" {
-			input.IdempotencyKey = r.Header.Get("X-Idempotency-Key")
-		}
-
 		resp, err := executor.Execute(r.Context(), rctx, caps, commandID, input)
 		if err != nil {
 			WriteError(w, err)

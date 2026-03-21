@@ -20,18 +20,9 @@ type Config struct {
 	Services      map[string]ServiceConfig `yaml:"services"`
 	Capability    CapabilityConfig         `yaml:"capability"`
 	Workflow      WorkflowConfig           `yaml:"workflow"`
-	Idempotency   IdempotencyConfig        `yaml:"idempotency"`
 	Search        SearchConfig             `yaml:"search"`
 	Lookup        LookupCacheConfig        `yaml:"lookup"`
 	Observability ObservabilityConfig      `yaml:"observability"`
-	UI            UIConfig                 `yaml:"ui"`
-}
-
-// UIConfig describes the static file serving settings for the frontend.
-type UIConfig struct {
-	// Dir is the path to the directory containing the built frontend assets.
-	// When empty, no static file serving is configured.
-	Dir string `yaml:"dir"`
 }
 
 // ServerConfig describes HTTP server settings.
@@ -161,20 +152,6 @@ type WorkflowStoreConfig struct {
 	MaxOpenConns    int           `yaml:"max_open_conns"`
 	MaxIdleConns    int           `yaml:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `yaml:"conn_max_lifetime"`
-}
-
-// IdempotencyConfig describes idempotency store settings.
-type IdempotencyConfig struct {
-	Enabled bool                   `yaml:"enabled"`
-	Store   IdempotencyStoreConfig `yaml:"store"`
-}
-
-// IdempotencyStoreConfig describes idempotency persistence settings.
-type IdempotencyStoreConfig struct {
-	Driver     string        `yaml:"driver"`
-	AddrEnv    string        `yaml:"addr_env"`
-	DB         int           `yaml:"db"`
-	DefaultTTL time.Duration `yaml:"default_ttl"`
 }
 
 // SearchConfig describes search settings.

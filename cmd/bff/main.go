@@ -118,21 +118,14 @@ func run() int {
 		return 1
 	}
 
-	// Step 8: Initialize idempotency store (optional).
-	idempotencyStore, idempotencyCloser := buildIdempotencyStore(cfg.Idempotency, logger)
-
-	// Step 9-10: Build invoker registry.
+	// Step 8: Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
 	invokerReg := invoker.NewRegistry()
 	invokerReg.Register(invoker.NewOpenAPIOperationInvoker(oaIndex, cfg.Services))
 	invokerReg.Register(invoker.NewSDKOperationInvoker(sdkHandlers))
 
-	// Step 11: Build providers.
-	var cmdOpts []command.CommandExecutorOption
-	if idempotencyStore != nil {
-		cmdOpts = append(cmdOpts, command.WithIdempotencyStore(idempotencyStore))
-	}
-	cmdExecutor := command.NewCommandExecutor(registry, invokerReg, oaIndex, cmdOpts...)
+	// Step 9: Build providers.
+	cmdExecutor := command.NewCommandExecutor(registry, invokerReg, oaIndex)
 
 	var wfEngine *workflow.Engine
 	if cfg.Workflow.Enabled && wfStore != nil {
@@ -264,9 +257,6 @@ func run() int {
 	if wfStoreCloser != nil {
 		wfStoreCloser()
 	}
-	if idempotencyCloser != nil {
-		idempotencyCloser()
-	}
 
 	// Flush telemetry.
 	if err := tracingShutdown(shutdownCtx); err != nil {
@@ -357,22 +347,6 @@ func buildWorkflowStore(ctx context.Context, cfg config.WorkflowConfig, logger *
 		return store, pool.Close, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported workflow store driver: %q", cfg.Store.Driver)
-	}
-}
-
-// buildIdempotencyStore creates the idempotency store based on config.
-func buildIdempotencyStore(cfg config.IdempotencyConfig, logger *zap.Logger) (command.IdempotencyStore, func()) {
-	if !cfg.Enabled {
-		return nil, nil
-	}
-
-	switch cfg.Store.Driver {
-	case "memory":
-		logger.Info("using in-memory idempotency store")
-		return command.NewMemoryIdempotencyStore(), nil
-	default:
-		logger.Info("using in-memory idempotency store (redis not yet supported)")
-		return command.NewMemoryIdempotencyStore(), nil
 	}
 }
 

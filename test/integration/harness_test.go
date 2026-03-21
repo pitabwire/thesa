@@ -9,7 +9,7 @@ import (
 )
 
 func TestHarness_Startup(t *testing.T) {
-	h := NewTestHarness(t, WithWorkflows(), WithIdempotency())
+	h := NewTestHarness(t, WithWorkflows())
 
 	// Verify the server is running.
 	resp := h.GET("/ui/health", "")
