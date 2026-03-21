@@ -127,11 +127,6 @@ func loadTestIndex(t *testing.T, baseURL string) *openapi.Index {
 func defaultServiceConfig() config.ServiceConfig {
 	return config.ServiceConfig{
 		Timeout: 5 * time.Second,
-		CircuitBreaker: config.CircuitBreakerConfig{
-			FailureThreshold: 5,
-			SuccessThreshold: 2,
-			Timeout:          30 * time.Second,
-		},
 		Retry: config.RetryConfig{
 			MaxAttempts:    1,
 			IdempotentOnly: true,
@@ -650,136 +645,6 @@ func TestOpenAPIOperationInvoker_Invoke_serviceNotConfigured(t *testing.T) {
 	}
 }
 
-// --- Circuit breaker ---
-
-func TestOpenAPIOperationInvoker_Invoke_circuitBreakerRejectsWhenOpen(t *testing.T) {
-	var callCount atomic.Int32
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount.Add(1)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"server error"}`))
-	}))
-	defer server.Close()
-
-	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 2
-	inv := newTestInvoker(t, server.URL, cfg)
-
-	binding := model.OperationBinding{Type: "openapi", ServiceID: "test-svc", OperationID: "listUsers"}
-
-	// Trip the circuit breaker with server errors.
-	for i := 0; i < 2; i++ {
-		inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	}
-
-	// Next call should be rejected by the circuit breaker without hitting the server.
-	countBefore := callCount.Load()
-	_, err := inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	if err == nil {
-		t.Fatal("expected error when circuit breaker is open")
-	}
-	envErr, ok := err.(*model.ErrorEnvelope)
-	if !ok {
-		t.Fatalf("error type = %T, want *model.ErrorEnvelope", err)
-	}
-	if envErr.Code != model.ErrBackendUnavailable {
-		t.Errorf("error code = %s, want %s", envErr.Code, model.ErrBackendUnavailable)
-	}
-	if callCount.Load() != countBefore {
-		t.Error("server was called despite open circuit breaker")
-	}
-}
-
-func TestOpenAPIOperationInvoker_Invoke_serverErrorsRecordFailures(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadGateway)
-	}))
-	defer server.Close()
-
-	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 3
-	inv := newTestInvoker(t, server.URL, cfg)
-
-	binding := model.OperationBinding{Type: "openapi", ServiceID: "test-svc", OperationID: "listUsers"}
-	svc := inv.clients["test-svc"]
-
-	// After 2 failures, still closed.
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	if s := svc.breaker.State(); s != BreakerClosed {
-		t.Errorf("state after 2 failures = %v, want Closed", s)
-	}
-
-	// 3rd failure trips the breaker.
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	if s := svc.breaker.State(); s != BreakerOpen {
-		t.Errorf("state after 3 failures = %v, want Open", s)
-	}
-}
-
-func TestOpenAPIOperationInvoker_Invoke_clientErrorsDoNotTripBreaker(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{"error": "not found"})
-	}))
-	defer server.Close()
-
-	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 2
-	inv := newTestInvoker(t, server.URL, cfg)
-
-	binding := model.OperationBinding{Type: "openapi", ServiceID: "test-svc", OperationID: "listUsers"}
-	svc := inv.clients["test-svc"]
-
-	// Many 4xx errors should not trip the breaker.
-	for i := 0; i < 5; i++ {
-		inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	}
-	if s := svc.breaker.State(); s != BreakerClosed {
-		t.Errorf("state after 5 client errors = %v, want Closed", s)
-	}
-}
-
-func TestOpenAPIOperationInvoker_Invoke_successResetsBreaker(t *testing.T) {
-	var respondWithError atomic.Bool
-	respondWithError.Store(true)
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if respondWithError.Load() {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
-	}))
-	defer server.Close()
-
-	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 3
-	inv := newTestInvoker(t, server.URL, cfg)
-
-	binding := model.OperationBinding{Type: "openapi", ServiceID: "test-svc", OperationID: "listUsers"}
-	svc := inv.clients["test-svc"]
-
-	// Record 2 failures.
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-
-	// Switch to success, which resets failure count.
-	respondWithError.Store(false)
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-
-	// 2 more failures should NOT trip (count was reset).
-	respondWithError.Store(true)
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-	inv.Invoke(context.Background(), nil, binding, model.InvocationInput{})
-
-	if s := svc.breaker.State(); s != BreakerClosed {
-		t.Errorf("state = %v, want Closed (failures reset by success)", s)
-	}
-}
-
 // --- Retry logic ---
 
 func TestOpenAPIOperationInvoker_Invoke_retriesOnServerError(t *testing.T) {
@@ -796,7 +661,6 @@ func TestOpenAPIOperationInvoker_Invoke_retriesOnServerError(t *testing.T) {
 	defer server.Close()
 
 	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 10 // Don't trip during retries.
 	cfg.Retry = config.RetryConfig{
 		MaxAttempts:       3,
 		BackoffInitial:    1 * time.Millisecond,
@@ -832,7 +696,7 @@ func TestOpenAPIOperationInvoker_Invoke_noRetryPOSTWhenIdempotentOnly(t *testing
 	defer server.Close()
 
 	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 10
+
 	cfg.Retry = config.RetryConfig{
 		MaxAttempts:       3,
 		BackoffInitial:    1 * time.Millisecond,
@@ -875,7 +739,7 @@ func TestOpenAPIOperationInvoker_Invoke_retryPOSTWhenNotIdempotentOnly(t *testin
 	defer server.Close()
 
 	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 10
+
 	cfg.Retry = config.RetryConfig{
 		MaxAttempts:       3,
 		BackoffInitial:    1 * time.Millisecond,
@@ -909,7 +773,7 @@ func TestOpenAPIOperationInvoker_Invoke_retryExhaustedReturnsLastResult(t *testi
 	defer server.Close()
 
 	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 10
+
 	cfg.Retry = config.RetryConfig{
 		MaxAttempts:       3,
 		BackoffInitial:    1 * time.Millisecond,
@@ -993,7 +857,7 @@ func TestOpenAPIOperationInvoker_Invoke_contextCancelDuringRetryBackoff(t *testi
 	defer server.Close()
 
 	cfg := defaultServiceConfig()
-	cfg.CircuitBreaker.FailureThreshold = 10
+
 	cfg.Retry = config.RetryConfig{
 		MaxAttempts:       5,
 		BackoffInitial:    500 * time.Millisecond, // Long backoff.
@@ -1249,7 +1113,7 @@ func TestIsRetryableError(t *testing.T) {
 	if isRetryableError(nil) {
 		t.Error("isRetryableError(nil) = true")
 	}
-	// ErrorEnvelope (circuit breaker open) is not retryable.
+	// ErrorEnvelope errors are not retryable.
 	if isRetryableError(model.NewBackendUnavailableError()) {
 		t.Error("isRetryableError(ErrorEnvelope) = true, want false")
 	}

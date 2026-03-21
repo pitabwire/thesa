@@ -3,8 +3,6 @@ package transport
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/metadata"
 	"github.com/pitabwire/thesa/model"
 )
@@ -17,7 +15,7 @@ func handleGetForm(forms *metadata.FormProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		formID := chi.URLParam(r, "formId")
+		formID := r.PathValue("formId")
 
 		desc, err := forms.GetForm(r.Context(), rctx, caps, formID)
 		if err != nil {
@@ -36,7 +34,7 @@ func handleGetFormData(forms *metadata.FormProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		formID := chi.URLParam(r, "formId")
+		formID := r.PathValue("formId")
 
 		// Collect all query params as the params map for path/route param forwarding.
 		params := make(map[string]string)

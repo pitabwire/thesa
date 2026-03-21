@@ -47,8 +47,8 @@ func TestLoad_valid(t *testing.T) {
 	if svc.Timeout != 10*time.Second {
 		t.Errorf("orders-svc.Timeout = %v, want 10s", svc.Timeout)
 	}
-	if svc.CircuitBreaker.FailureThreshold != 5 {
-		t.Errorf("orders-svc.CircuitBreaker.FailureThreshold = %d, want 5", svc.CircuitBreaker.FailureThreshold)
+	if svc.Retry.MaxAttempts != 3 {
+		t.Errorf("orders-svc.Retry.MaxAttempts = %d, want 3", svc.Retry.MaxAttempts)
 	}
 }
 

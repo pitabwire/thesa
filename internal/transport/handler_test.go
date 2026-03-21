@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/definition"
@@ -48,26 +47,21 @@ func testCaps() model.CapabilitySet {
 	}
 }
 
-// makeRouterRequest creates a chi-routed request with URL params and context injected.
+// makeRouterRequest creates a stdlib mux-routed request with URL params and context injected.
 func makeRouterRequest(method, pattern, path string, body []byte, handler http.HandlerFunc, rctx *model.RequestContext, caps model.CapabilitySet) *httptest.ResponseRecorder {
-	r := chi.NewRouter()
-	r.Use(contextMiddleware(rctx, caps))
-	switch method {
-	case "GET":
-		r.Get(pattern, handler)
-	case "POST":
-		r.Post(pattern, handler)
-	}
+	mux := http.NewServeMux()
+	mux.Handle(method+" "+pattern, contextMiddleware(rctx, caps)(handler))
 
-	var req *http.Request
+	var bodyReader io.Reader
 	if body != nil {
-		req = httptest.NewRequest(method, path, bytes.NewReader(body))
+		bodyReader = bytes.NewReader(body)
+	}
+	req := httptest.NewRequest(method, path, bodyReader)
+	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
-	} else {
-		req = httptest.NewRequest(method, path, nil)
 	}
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	mux.ServeHTTP(w, req)
 	return w
 }
 
@@ -143,10 +137,10 @@ func TestHandleNavigation_noRequestContext(t *testing.T) {
 	menu := metadata.NewMenuProvider(newRegistry(), nil)
 	handler := handleNavigation(menu)
 
-	r := chi.NewRouter()
-	r.Get("/ui/navigation", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ui/navigation", handler)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/navigation", nil))
+	mux.ServeHTTP(w, httptest.NewRequest("GET", "/ui/navigation", nil))
 
 	if w.Code != 401 {
 		t.Errorf("status = %d, want 401", w.Code)
@@ -352,10 +346,10 @@ func TestHandleGetForm_noRequestContext(t *testing.T) {
 	forms := metadata.NewFormProvider(reg, nil, actions)
 	handler := handleGetForm(forms)
 
-	r := chi.NewRouter()
-	r.Get("/ui/forms/{formId}", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ui/forms/{formId}", handler)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/forms/test", nil))
+	mux.ServeHTTP(w, httptest.NewRequest("GET", "/ui/forms/test", nil))
 	if w.Code != 401 {
 		t.Errorf("status = %d, want 401", w.Code)
 	}
@@ -434,13 +428,13 @@ func TestHandleCommand_noRequestContext(t *testing.T) {
 	executor := command.NewCommandExecutor(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), nil)
 	handler := handleCommand(executor)
 
-	r := chi.NewRouter()
-	r.Post("/ui/commands/{commandId}", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /ui/commands/{commandId}", handler)
 	body, _ := json.Marshal(model.CommandInput{Input: map[string]any{}})
 	req := httptest.NewRequest("POST", "/ui/commands/test", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	mux.ServeHTTP(w, req)
 
 	if w.Code != 401 {
 		t.Errorf("status = %d, want 401", w.Code)
@@ -510,10 +504,10 @@ func TestHandleSearch_noRequestContext(t *testing.T) {
 	provider := search.NewSearchProvider(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), 3*time.Second, 50)
 	handler := handleSearch(provider)
 
-	r := chi.NewRouter()
-	r.Get("/ui/search", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ui/search", handler)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/search?q=test", nil))
+	mux.ServeHTTP(w, httptest.NewRequest("GET", "/ui/search?q=test", nil))
 
 	if w.Code != 401 {
 		t.Errorf("status = %d, want 401", w.Code)
@@ -576,10 +570,10 @@ func TestHandleLookup_noRequestContext(t *testing.T) {
 	provider := search.NewLookupProvider(newRegistry(), newTestInvokerRegistry(&fakeInvoker{}), 5*time.Minute, 100)
 	handler := handleLookup(provider)
 
-	r := chi.NewRouter()
-	r.Get("/ui/lookups/{lookupId}", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /ui/lookups/{lookupId}", handler)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/lookups/test", nil))
+	mux.ServeHTTP(w, httptest.NewRequest("GET", "/ui/lookups/test", nil))
 
 	if w.Code != 401 {
 		t.Errorf("status = %d, want 401", w.Code)

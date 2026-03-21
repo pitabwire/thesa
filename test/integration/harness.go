@@ -57,7 +57,6 @@ type harnessConfig struct {
 	handlerTimeout time.Duration
 	sdkHandlers    map[string]invoker.SDKHandler
 	serviceTimeout time.Duration
-	circuitBreaker *config.CircuitBreakerConfig
 	retry          *config.RetryConfig
 }
 
@@ -102,13 +101,6 @@ func WithHandlerTimeout(d time.Duration) HarnessOption {
 func WithServiceTimeout(d time.Duration) HarnessOption {
 	return func(c *harnessConfig) {
 		c.serviceTimeout = d
-	}
-}
-
-// WithCircuitBreaker configures the circuit breaker for backend services.
-func WithCircuitBreaker(cb config.CircuitBreakerConfig) HarnessOption {
-	return func(c *harnessConfig) {
-		c.circuitBreaker = &cb
 	}
 }
 
@@ -237,9 +229,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 		}
 		if hc.serviceTimeout > 0 {
 			svcCfg.Timeout = hc.serviceTimeout
-		}
-		if hc.circuitBreaker != nil {
-			svcCfg.CircuitBreaker = *hc.circuitBreaker
 		}
 		if hc.retry != nil {
 			svcCfg.Retry = *hc.retry

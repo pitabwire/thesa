@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/model"
@@ -24,7 +22,7 @@ func handleAction(
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		actionID := chi.URLParam(r, "actionId")
+		actionID := r.PathValue("actionId")
 
 		var body struct {
 			Input map[string]any `json:"input"`

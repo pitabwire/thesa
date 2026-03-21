@@ -3,8 +3,6 @@ package transport
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/internal/definition"
@@ -32,73 +30,85 @@ type Dependencies struct {
 	AppVersion         string
 }
 
-// NewRouter creates a chi.Router with the full middleware pipeline and all
+// chainMiddleware returns a function that wraps an http.Handler with the
+// given middleware chain, applied in order (first middleware is outermost).
+func chainMiddleware(middlewares ...func(http.Handler) http.Handler) func(http.Handler) http.Handler {
+	return func(final http.Handler) http.Handler {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			final = middlewares[i](final)
+		}
+		return final
+	}
+}
+
+// NewRouter creates an http.Handler with the full middleware pipeline and all
 // route registrations. Health, readiness, and metrics endpoints bypass the
 // authentication middleware.
-func NewRouter(deps Dependencies) chi.Router {
-	r := chi.NewRouter()
-
-	// Global middleware (layers 1-4): applied to all routes including health.
-	r.Use(Recovery)
-	r.Use(CORS(deps.Config.Server.CORS))
-	r.Use(RequestID)
-	r.Use(SecurityHeaders)
+func NewRouter(deps Dependencies) http.Handler {
+	mux := http.NewServeMux()
 
 	// Public routes — bypass authentication.
 	if deps.HealthHandler != nil {
-		r.Get("/ui/health", deps.HealthHandler)
+		mux.HandleFunc("GET /ui/health", deps.HealthHandler)
 	}
 	if deps.ReadyHandler != nil {
-		r.Get("/ui/ready", deps.ReadyHandler)
+		mux.HandleFunc("GET /ui/ready", deps.ReadyHandler)
 	}
 
-	// Authenticated routes — full middleware chain (layers 5-10).
+	// Auth middleware chain for authenticated routes (layers 5-10).
 	auth := deps.Authenticate
 	if auth == nil {
 		auth = func(next http.Handler) http.Handler { return next }
 	}
 
-	r.Group(func(r chi.Router) {
-		r.Use(auth)
-		r.Use(BuildRequestContextMiddleware(deps.Config.Identity.ClaimPaths))
-		r.Use(ResolveCapabilities(deps.CapabilityResolver))
-		r.Use(HandlerTimeout(deps.Config.Server.HandlerTimeout))
-		r.Use(RequestLogging)
-		r.Use(MetricsRecording)
+	authChain := chainMiddleware(
+		auth,
+		BuildRequestContextMiddleware(deps.Config.Identity.ClaimPaths),
+		ResolveCapabilities(deps.CapabilityResolver),
+		HandlerTimeout(deps.Config.Server.HandlerTimeout),
+		RequestLogging,
+		MetricsRecording,
+	)
 
-		// Capabilities
-		r.Get("/ui/capabilities", handleCapabilities(deps.CapabilityResolver, deps.AppVersion))
+	// Capabilities
+	mux.Handle("GET /ui/capabilities", authChain(handleCapabilities(deps.CapabilityResolver, deps.AppVersion)))
 
-		// Navigation & Pages
-		r.Get("/ui/navigation", handleNavigation(deps.MenuProvider))
-		r.Get("/ui/pages/{pageId}", handleGetPage(deps.PageProvider))
-		r.Get("/ui/pages/{pageId}/data", handleGetPageData(deps.PageProvider))
+	// Navigation & Pages
+	mux.Handle("GET /ui/navigation", authChain(handleNavigation(deps.MenuProvider)))
+	mux.Handle("GET /ui/pages/{pageId}", authChain(handleGetPage(deps.PageProvider)))
+	mux.Handle("GET /ui/pages/{pageId}/data", authChain(handleGetPageData(deps.PageProvider)))
 
-		// Forms
-		r.Get("/ui/forms/{formId}", handleGetForm(deps.FormProvider))
-		r.Get("/ui/forms/{formId}/data", handleGetFormData(deps.FormProvider))
+	// Forms
+	mux.Handle("GET /ui/forms/{formId}", authChain(handleGetForm(deps.FormProvider)))
+	mux.Handle("GET /ui/forms/{formId}/data", authChain(handleGetFormData(deps.FormProvider)))
 
-		// Schemas
-		r.Get("/ui/schemas/{schemaId}", handleGetSchema(deps.SchemaProvider))
+	// Schemas
+	mux.Handle("GET /ui/schemas/{schemaId}", authChain(handleGetSchema(deps.SchemaProvider)))
 
-		// Commands & Actions
-		r.Post("/ui/commands/{commandId}", handleCommand(deps.CommandExecutor))
-		r.Post("/ui/actions/{actionId}", handleAction(deps.Registry, deps.CommandExecutor))
+	// Commands & Actions
+	mux.Handle("POST /ui/commands/{commandId}", authChain(handleCommand(deps.CommandExecutor)))
+	mux.Handle("POST /ui/actions/{actionId}", authChain(handleAction(deps.Registry, deps.CommandExecutor)))
 
-		// Resources
-		r.Get("/ui/resources/{resourceType}/search", handleResourceSearch(deps.SearchProvider))
-		r.Get("/ui/resources/{resourceType}/{id}", handleGetResourceItem(deps.ResourceProvider))
-		r.Get("/ui/resources/{resourceType}", handleGetResource(deps.ResourceProvider))
+	// Resources
+	mux.Handle("GET /ui/resources/{resourceType}/search", authChain(handleResourceSearch(deps.SearchProvider)))
+	mux.Handle("GET /ui/resources/{resourceType}/{id}", authChain(handleGetResourceItem(deps.ResourceProvider)))
+	mux.Handle("GET /ui/resources/{resourceType}", authChain(handleGetResource(deps.ResourceProvider)))
 
-		// Search & Lookups
-		r.Get("/ui/search", handleSearch(deps.SearchProvider))
-		r.Get("/ui/lookups/{lookupId}", handleLookup(deps.LookupProvider))
+	// Search & Lookups
+	mux.Handle("GET /ui/search", authChain(handleSearch(deps.SearchProvider)))
+	mux.Handle("GET /ui/lookups/{lookupId}", authChain(handleLookup(deps.LookupProvider)))
 
-		// File operations (proxied to files-svc)
-		filesSvc := deps.Config.Services["files-svc"]
-		r.Post("/ui/upload", handleUpload(filesSvc))
-		r.Get("/ui/download/{fileId}", handleDownload(filesSvc))
-	})
+	// File operations (proxied to files-svc)
+	filesSvc := deps.Config.Services["files-svc"]
+	mux.Handle("POST /ui/upload", authChain(handleUpload(filesSvc)))
+	mux.Handle("GET /ui/download/{fileId}", authChain(handleDownload(filesSvc)))
 
-	return r
+	// Global middleware (layers 1-4): applied to all routes including health.
+	var handler http.Handler = mux
+	handler = SecurityHeaders(handler)
+	handler = RequestID(handler)
+	handler = CORS(deps.Config.Server.CORS)(handler)
+	handler = Recovery(handler)
+
+	return handler
 }

@@ -4,7 +4,6 @@ go 1.26
 
 require (
 	github.com/getkin/kin-openapi v0.133.0
-	github.com/go-chi/chi/v5 v5.2.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/pitabwire/frame v1.80.0
 	github.com/pitabwire/util v0.6.1

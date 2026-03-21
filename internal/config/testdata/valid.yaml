@@ -30,9 +30,10 @@ services:
     timeout: 10s
     auth:
       strategy: "forward_token"
-    circuit_breaker:
-      failure_threshold: 5
-      timeout: 30s
+    retry:
+      max_attempts: 3
+      backoff_initial: 100ms
+      backoff_max: 2s
 
 capability:
   evaluator: "static"

@@ -4,8 +4,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/model"
 )
@@ -81,7 +79,7 @@ func handleDownload(filesSvc config.ServiceConfig) http.HandlerFunc {
 			return
 		}
 
-		fileID := chi.URLParam(r, "fileId")
+		fileID := r.PathValue("fileId")
 		proxyURL := filesSvc.BaseURL + "/download/" + fileID
 
 		proxyReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, proxyURL, nil)

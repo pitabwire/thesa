@@ -3,8 +3,6 @@ package transport
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/model"
 )
@@ -16,7 +14,7 @@ func handleLookup(provider *search.LookupProvider) http.HandlerFunc {
 			WriteError(w, model.NewUnauthorizedError("missing request context"))
 			return
 		}
-		lookupID := chi.URLParam(r, "lookupId")
+		lookupID := r.PathValue("lookupId")
 		query := r.URL.Query().Get("q")
 
 		resp, err := provider.GetLookup(r.Context(), rctx, lookupID, query)

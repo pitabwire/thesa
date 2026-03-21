@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/metadata"
 	"github.com/pitabwire/thesa/model"
 )
@@ -18,7 +16,7 @@ func handleGetPage(pages *metadata.PageProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		pageID := chi.URLParam(r, "pageId")
+		pageID := r.PathValue("pageId")
 
 		desc, err := pages.GetPage(r.Context(), rctx, caps, pageID)
 		if err != nil {
@@ -37,7 +35,7 @@ func handleGetPageData(pages *metadata.PageProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		pageID := chi.URLParam(r, "pageId")
+		pageID := r.PathValue("pageId")
 
 		params := model.DataParams{
 			Page:     queryInt(r, "page", 1),

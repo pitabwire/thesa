@@ -3,8 +3,6 @@ package transport
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/metadata"
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/model"
@@ -20,7 +18,7 @@ func handleGetResource(provider *metadata.ResourceProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		resourceType := chi.URLParam(r, "resourceType")
+		resourceType := r.PathValue("resourceType")
 
 		params := model.DataParams{
 			Page:     queryInt(r, "page", 1),
@@ -56,8 +54,8 @@ func handleGetResourceItem(provider *metadata.ResourceProvider) http.HandlerFunc
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		resourceType := chi.URLParam(r, "resourceType")
-		id := chi.URLParam(r, "id")
+		resourceType := r.PathValue("resourceType")
+		id := r.PathValue("id")
 
 		item, err := provider.GetResourceItem(r.Context(), rctx, caps, resourceType, id)
 		if err != nil {
@@ -78,7 +76,7 @@ func handleResourceSearch(provider *search.SearchProvider) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		resourceType := chi.URLParam(r, "resourceType")
+		resourceType := r.PathValue("resourceType")
 
 		query := r.URL.Query().Get("q")
 		limit := queryInt(r, "limit", 20)
@@ -103,7 +101,7 @@ func handleResourceSearch(provider *search.SearchProvider) http.HandlerFunc {
 // table columns).
 func handleGetSchema(provider *metadata.SchemaProvider) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		schemaID := chi.URLParam(r, "schemaId")
+		schemaID := r.PathValue("schemaId")
 
 		schema, err := provider.GetSchema(schemaID)
 		if err != nil {

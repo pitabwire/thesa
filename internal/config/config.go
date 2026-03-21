@@ -76,12 +76,11 @@ type SpecSource struct {
 
 // ServiceConfig describes a backend service.
 type ServiceConfig struct {
-	BaseURL        string               `yaml:"base_url"`
-	Timeout        time.Duration        `yaml:"timeout"`
-	Auth           ServiceAuthConfig    `yaml:"auth"`
-	Pagination     PaginationConfig     `yaml:"pagination"`
-	CircuitBreaker CircuitBreakerConfig `yaml:"circuit_breaker"`
-	Retry          RetryConfig          `yaml:"retry"`
+	BaseURL    string            `yaml:"base_url"`
+	Timeout    time.Duration     `yaml:"timeout"`
+	Auth       ServiceAuthConfig `yaml:"auth"`
+	Pagination PaginationConfig  `yaml:"pagination"`
+	Retry      RetryConfig       `yaml:"retry"`
 }
 
 // ServiceAuthConfig describes authentication for backend calls.
@@ -99,15 +98,6 @@ type PaginationConfig struct {
 	SortParam    string `yaml:"sort_param"`
 	SortDirParam string `yaml:"sort_dir_param"`
 	CursorParam  string `yaml:"cursor_param"`
-}
-
-// CircuitBreakerConfig describes circuit breaker settings per service.
-type CircuitBreakerConfig struct {
-	FailureThreshold   int           `yaml:"failure_threshold"`
-	SuccessThreshold   int           `yaml:"success_threshold"`
-	Timeout            time.Duration `yaml:"timeout"`
-	ErrorRateThreshold float64       `yaml:"error_rate_threshold"`
-	ErrorRateWindow    time.Duration `yaml:"error_rate_window"`
 }
 
 // RetryConfig describes retry settings per service.

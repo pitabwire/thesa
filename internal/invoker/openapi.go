@@ -20,12 +20,11 @@ import (
 	"github.com/pitabwire/thesa/model"
 )
 
-// serviceClient holds the HTTP client, circuit breaker, and retry config
-// for a single backend service.
+// serviceClient holds the HTTP client and retry config for a single backend
+// service.
 type serviceClient struct {
-	cfg     config.ServiceConfig
-	client  *http.Client
-	breaker *CircuitBreaker
+	cfg    config.ServiceConfig
+	client *http.Client
 }
 
 // OpenAPIOperationInvoker dynamically builds and executes HTTP requests
@@ -35,25 +34,17 @@ type OpenAPIOperationInvoker struct {
 	clients map[string]*serviceClient
 }
 
-// NewOpenAPIOperationInvoker creates an invoker with a shared HTTP client,
-// per-service circuit breakers, and retry policies.
+// NewOpenAPIOperationInvoker creates an invoker with a shared HTTP client
+// and retry policies.
 func NewOpenAPIOperationInvoker(idx *openapi.Index, services map[string]config.ServiceConfig, httpClient *http.Client) *OpenAPIOperationInvoker {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 10 * time.Second}
 	}
 	clients := make(map[string]*serviceClient, len(services))
 	for id, svcCfg := range services {
-		cbCfg := svcCfg.CircuitBreaker
 		clients[id] = &serviceClient{
 			cfg:    svcCfg,
 			client: httpClient,
-			breaker: NewCircuitBreaker(
-				cbCfg.FailureThreshold,
-				cbCfg.SuccessThreshold,
-				cbCfg.Timeout,
-				cbCfg.ErrorRateThreshold,
-				cbCfg.ErrorRateWindow,
-			),
 		}
 	}
 	return &OpenAPIOperationInvoker{
@@ -68,7 +59,7 @@ func (inv *OpenAPIOperationInvoker) Supports(binding model.OperationBinding) boo
 }
 
 // Invoke looks up the operation in the OpenAPI index, builds an HTTP request,
-// and executes it with circuit breaker and retry support.
+// and executes it with retry support.
 func (inv *OpenAPIOperationInvoker) Invoke(
 	ctx context.Context,
 	rctx *model.RequestContext,
@@ -167,7 +158,7 @@ func (inv *OpenAPIOperationInvoker) executeWithRetry(
 	return lastResult, nil
 }
 
-// executeOnce performs a single HTTP request with circuit breaker protection.
+// executeOnce performs a single HTTP request.
 func (inv *OpenAPIOperationInvoker) executeOnce(
 	ctx context.Context,
 	svc *serviceClient,
@@ -175,10 +166,6 @@ func (inv *OpenAPIOperationInvoker) executeOnce(
 	headers http.Header,
 	bodyBytes []byte,
 ) (model.InvocationResult, error) {
-	if err := svc.breaker.Allow(); err != nil {
-		return model.InvocationResult{}, model.NewBackendUnavailableError()
-	}
-
 	var body io.Reader
 	if bodyBytes != nil {
 		body = bytes.NewReader(bodyBytes)
@@ -192,7 +179,6 @@ func (inv *OpenAPIOperationInvoker) executeOnce(
 
 	resp, err := svc.client.Do(req)
 	if err != nil {
-		svc.breaker.RecordFailure()
 		if isConnectionError(err) {
 			return model.InvocationResult{}, model.NewBackendUnavailableError()
 		}
@@ -205,16 +191,7 @@ func (inv *OpenAPIOperationInvoker) executeOnce(
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20)) // 10MB limit
 	if err != nil {
-		svc.breaker.RecordFailure()
 		return model.InvocationResult{}, fmt.Errorf("invoker: read response: %w", err)
-	}
-
-	// Record circuit breaker outcome.
-	if isServerError(resp.StatusCode) {
-		svc.breaker.RecordFailure()
-	} else if !isClientError(resp.StatusCode) {
-		// Only record success for 2xx/3xx; 4xx are not infrastructure failures.
-		svc.breaker.RecordSuccess()
 	}
 
 	result := model.InvocationResult{
@@ -337,7 +314,7 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Circuit breaker open errors are not retryable.
+	// Backend unavailable errors are not retryable.
 	if _, ok := err.(*model.ErrorEnvelope); ok {
 		return false
 	}

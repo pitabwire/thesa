@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/model"
 )
@@ -18,7 +16,7 @@ func handleCommand(executor *command.CommandExecutor) http.HandlerFunc {
 			return
 		}
 		caps := CapabilitiesFrom(r.Context())
-		commandID := chi.URLParam(r, "commandId")
+		commandID := r.PathValue("commandId")
 
 		var input model.CommandInput
 		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
