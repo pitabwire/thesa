@@ -25,8 +25,8 @@ server:
     max_age: 86400
 
 identity:
-  issuer: "https://oauth2.stawi.org"
-  audience: "thesa-bff"
+  issuer: "https://stawi.org"
+  audience: "d6qbqdkpf2t52mcunf3g"
   jwks_url: "https://oauth2.stawi.org/.well-known/jwks.json"
   jwks_cache_ttl: 1h
   algorithms:
