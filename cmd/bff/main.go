@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/pitabwire/thesa/internal/openapi"
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/internal/transport"
-	"github.com/pitabwire/thesa/internal/workflow"
 )
 
 // Build-time variables set via ldflags:
@@ -111,26 +109,14 @@ func run() int {
 		return 1
 	}
 
-	// Step 7: Initialize workflow store (optional).
-	wfStore, wfStoreCloser, err := buildWorkflowStore(ctx, cfg.Workflow, logger)
-	if err != nil {
-		logger.Fatal("workflow store initialization failed", zap.Error(err))
-		return 1
-	}
-
-	// Step 8: Build invoker registry.
+	// Step 7: Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
 	invokerReg := invoker.NewRegistry()
 	invokerReg.Register(invoker.NewOpenAPIOperationInvoker(oaIndex, cfg.Services))
 	invokerReg.Register(invoker.NewSDKOperationInvoker(sdkHandlers))
 
-	// Step 9: Build providers.
+	// Step 8: Build providers.
 	cmdExecutor := command.NewCommandExecutor(registry, invokerReg, oaIndex)
-
-	var wfEngine *workflow.Engine
-	if cfg.Workflow.Enabled && wfStore != nil {
-		wfEngine = workflow.NewEngine(registry, wfStore, invokerReg, capResolver)
-	}
 
 	actionProvider := metadata.NewActionProvider()
 	menuProvider := metadata.NewMenuProvider(registry, invokerReg)
@@ -149,10 +135,9 @@ func run() int {
 		cfg.Lookup.Cache.MaxEntries,
 	)
 
-	// Step 12: Build HTTP router.
+	// Step 9: Build HTTP router.
 	jwks := transport.NewJWKSClient(cfg.Identity.JWKSURL, cfg.Identity.JWKSCacheTTL)
 
-	// Build readiness checks using data known at startup.
 	specServiceIDs := make([]string, 0, len(specSources))
 	for _, s := range specSources {
 		specServiceIDs = append(specServiceIDs, s.ServiceID)
@@ -165,13 +150,8 @@ func run() int {
 					return true
 				}
 			}
-			return len(specServiceIDs) == 0 // OK if no specs configured
+			return len(specServiceIDs) == 0
 		},
-	}
-	if wfStore != nil {
-		if hc, ok := wfStore.(observability.HealthChecker); ok {
-			readinessChecks.WorkflowStore = hc
-		}
 	}
 
 	router := transport.NewRouter(transport.Dependencies{
@@ -185,7 +165,6 @@ func run() int {
 		SchemaProvider:     schemaProvider,
 		ResourceProvider:   resourceProvider,
 		CommandExecutor:    cmdExecutor,
-		WorkflowEngine:     wfEngine,
 		SearchProvider:     searchProvider,
 		LookupProvider:     lookupProvider,
 		HealthHandler:      observability.HandleHealth(),
@@ -194,7 +173,6 @@ func run() int {
 		AppVersion:         version,
 	})
 
-	// Wrap router with metrics middleware.
 	handler := metrics.MetricsMiddleware(observability.TracingMiddleware(router))
 
 	srv := &http.Server{
@@ -204,15 +182,7 @@ func run() int {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// Step 13: Start background tasks.
-	bgCtx, bgCancel := context.WithCancel(ctx)
-	defer bgCancel()
-
-	if cfg.Workflow.Enabled && wfEngine != nil {
-		go runWorkflowTimeoutProcessor(bgCtx, wfEngine, cfg.Workflow.TimeoutCheckInterval, logger)
-	}
-
-	// Step 14: Start HTTP server.
+	// Step 10: Start HTTP server.
 	logger.Info("server started",
 		zap.Int("port", cfg.Server.Port),
 		zap.String("version", version),
@@ -237,7 +207,7 @@ func run() int {
 		return 1
 	}
 
-	// Graceful shutdown sequence.
+	// Graceful shutdown.
 	shutdownTimeout := cfg.Server.ShutdownTimeout
 	if shutdownTimeout == 0 {
 		shutdownTimeout = 30 * time.Second
@@ -245,25 +215,15 @@ func run() int {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer shutdownCancel()
 
-	// Stop accepting new connections and drain in-flight requests.
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.Error("HTTP server shutdown error", zap.Error(err))
 	}
 
-	// Cancel background tasks.
-	bgCancel()
-
-	// Close stores.
-	if wfStoreCloser != nil {
-		wfStoreCloser()
-	}
-
-	// Flush telemetry.
 	if err := tracingShutdown(shutdownCtx); err != nil {
 		logger.Error("tracing shutdown error", zap.Error(err))
 	}
 
-	_ = metrics // metrics are scraped by Prometheus, no explicit flush needed.
+	_ = metrics
 
 	logger.Info("shutdown complete")
 	return 0
@@ -296,76 +256,5 @@ func buildCapabilityResolver(cfg config.CapabilityConfig) (*capability.Resolver,
 		return capability.NewResolver(evaluator, cfg.Cache.TTL), nil
 	default:
 		return nil, fmt.Errorf("unsupported capability evaluator: %q", cfg.Evaluator)
-	}
-}
-
-// buildWorkflowStore creates the workflow store based on config.
-// Returns nil store and closer if workflows are disabled.
-func buildWorkflowStore(ctx context.Context, cfg config.WorkflowConfig, logger *zap.Logger) (workflow.WorkflowStore, func(), error) {
-	if !cfg.Enabled {
-		return nil, nil, nil
-	}
-
-	switch cfg.Store.Driver {
-	case "memory":
-		logger.Info("using in-memory workflow store")
-		return workflow.NewMemoryWorkflowStore(), nil, nil
-	case "postgres", "":
-		dsn := os.Getenv(cfg.Store.DSNEnv)
-		if dsn == "" && cfg.Store.DSNEnv != "" {
-			return nil, nil, fmt.Errorf("workflow store: %s environment variable not set", cfg.Store.DSNEnv)
-		}
-		if dsn == "" {
-			logger.Warn("workflow store DSN not configured, using in-memory store")
-			return workflow.NewMemoryWorkflowStore(), nil, nil
-		}
-
-		poolCfg, err := pgxpool.ParseConfig(dsn)
-		if err != nil {
-			return nil, nil, fmt.Errorf("workflow store: parse DSN: %w", err)
-		}
-		poolCfg.MaxConns = int32(cfg.Store.MaxOpenConns)
-		poolCfg.MinConns = int32(cfg.Store.MaxIdleConns)
-		poolCfg.MaxConnLifetime = cfg.Store.ConnMaxLifetime
-
-		pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
-		if err != nil {
-			return nil, nil, fmt.Errorf("workflow store: connect: %w", err)
-		}
-
-		if err := pool.Ping(ctx); err != nil {
-			pool.Close()
-			return nil, nil, fmt.Errorf("workflow store: ping: %w", err)
-		}
-
-		store := workflow.NewPgWorkflowStore(pool)
-		if err := store.EnsureSchema(ctx); err != nil {
-			pool.Close()
-			return nil, nil, fmt.Errorf("workflow store: ensure schema: %w", err)
-		}
-		logger.Info("workflow store schema ensured")
-		return store, pool.Close, nil
-	default:
-		return nil, nil, fmt.Errorf("unsupported workflow store driver: %q", cfg.Store.Driver)
-	}
-}
-
-// runWorkflowTimeoutProcessor periodically processes expired workflow steps.
-func runWorkflowTimeoutProcessor(ctx context.Context, engine *workflow.Engine, interval time.Duration, logger *zap.Logger) {
-	if interval == 0 {
-		interval = 60 * time.Second
-	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := engine.ProcessTimeouts(ctx); err != nil {
-				logger.Error("workflow timeout processing failed", zap.Error(err))
-			}
-		}
 	}
 }

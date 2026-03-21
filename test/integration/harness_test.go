@@ -9,7 +9,7 @@ import (
 )
 
 func TestHarness_Startup(t *testing.T) {
-	h := NewTestHarness(t, WithWorkflows())
+	h := NewTestHarness(t)
 
 	// Verify the server is running.
 	resp := h.GET("/ui/health", "")
@@ -375,57 +375,6 @@ func TestHarness_LookupEndpoint(t *testing.T) {
 	h.AssertStatus(t, resp, http.StatusOK)
 
 	h.MockBackend("orders-svc").AssertCalled(t, "getOrderStatuses", 1)
-}
-
-func TestHarness_WorkflowStart(t *testing.T) {
-	// Register a no-op SDK handler for the notification step.
-	noop := &noopSDKHandler{name: "notifications.send"}
-	h := NewTestHarness(t, WithWorkflows(), WithSDKHandler("notifications.send", noop))
-	token := h.GenerateToken(ApproverClaims())
-
-	// The workflow start may invoke the confirmOrder operation if it auto-advances.
-	// For now, we just test that the start endpoint works.
-	resp := h.POST("/ui/workflows/orders.approval/start", map[string]any{
-		"order_id": "ord-1",
-	}, token)
-
-	// 201 Created or 200 OK depending on implementation.
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body := h.ReadBody(resp)
-		t.Fatalf("workflow start: status = %d\nbody: %s", resp.StatusCode, body)
-	}
-}
-
-func TestHarness_CrossTenantIsolation(t *testing.T) {
-	noop := &noopSDKHandler{name: "notifications.send"}
-	h := NewTestHarness(t, WithWorkflows(), WithSDKHandler("notifications.send", noop))
-
-	// Start a workflow as tenant "acme-corp".
-	acmeToken := h.GenerateToken(ApproverClaims())
-	resp := h.POST("/ui/workflows/orders.approval/start", map[string]any{
-		"order_id": "ord-1",
-	}, acmeToken)
-
-	var startBody map[string]any
-	h.ParseJSON(resp, &startBody)
-
-	instanceID, _ := startBody["id"].(string)
-	if instanceID == "" {
-		t.Fatal("expected workflow instance ID in response")
-	}
-
-	// Try to access from a different tenant.
-	evilClaims := TestClaims{
-		SubjectID: "evil-user",
-		TenantID:  "evil-corp",
-		Email:     "evil@evil.example.com",
-		Roles:     []string{"order_approver"},
-	}
-	evilToken := h.GenerateToken(evilClaims)
-
-	resp = h.GET("/ui/workflows/"+instanceID, evilToken)
-	// Should be 404 (not 403) to prevent ID enumeration.
-	h.AssertStatus(t, resp, http.StatusNotFound)
 }
 
 // noopSDKHandler is a no-op SDK handler for testing.

@@ -19,7 +19,6 @@ type Config struct {
 	Specs         SpecsConfig              `yaml:"specs"`
 	Services      map[string]ServiceConfig `yaml:"services"`
 	Capability    CapabilityConfig         `yaml:"capability"`
-	Workflow      WorkflowConfig           `yaml:"workflow"`
 	Search        SearchConfig             `yaml:"search"`
 	Lookup        LookupCacheConfig        `yaml:"lookup"`
 	Observability ObservabilityConfig      `yaml:"observability"`
@@ -138,22 +137,6 @@ type CacheConfig struct {
 	MaxEntries int           `yaml:"max_entries"`
 }
 
-// WorkflowConfig describes workflow engine settings.
-type WorkflowConfig struct {
-	Enabled              bool                `yaml:"enabled"`
-	Store                WorkflowStoreConfig `yaml:"store"`
-	TimeoutCheckInterval time.Duration       `yaml:"timeout_check_interval"`
-}
-
-// WorkflowStoreConfig describes workflow persistence settings.
-type WorkflowStoreConfig struct {
-	Driver          string        `yaml:"driver"`
-	DSNEnv          string        `yaml:"dsn_env"`
-	MaxOpenConns    int           `yaml:"max_open_conns"`
-	MaxIdleConns    int           `yaml:"max_idle_conns"`
-	ConnMaxLifetime time.Duration `yaml:"conn_max_lifetime"`
-}
-
 // SearchConfig describes search settings.
 type SearchConfig struct {
 	TimeoutPerProvider    time.Duration `yaml:"timeout_per_provider"`
@@ -225,14 +208,6 @@ func Defaults() *Config {
 			Cache: CacheConfig{
 				TTL:        5 * time.Minute,
 				MaxEntries: 10000,
-			},
-		},
-		Workflow: WorkflowConfig{
-			TimeoutCheckInterval: 60 * time.Second,
-			Store: WorkflowStoreConfig{
-				MaxOpenConns:    25,
-				MaxIdleConns:    5,
-				ConnMaxLifetime: 5 * time.Minute,
 			},
 		},
 		Search: SearchConfig{

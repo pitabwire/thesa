@@ -26,7 +26,6 @@ import (
 	"github.com/pitabwire/thesa/internal/openapi"
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/internal/transport"
-	"github.com/pitabwire/thesa/internal/workflow"
 	"github.com/pitabwire/thesa/model"
 )
 
@@ -41,8 +40,6 @@ type TestHarness struct {
 	Registry        *definition.Registry
 	OAIndex         *openapi.Index
 	InvokerRegistry *invoker.Registry
-	WorkflowStore   *workflow.MemoryWorkflowStore
-	WorkflowEngine  *workflow.Engine
 	CommandExecutor *command.CommandExecutor
 	CapResolver     model.CapabilityResolver
 
@@ -54,15 +51,14 @@ type TestHarness struct {
 type HarnessOption func(*harnessConfig)
 
 type harnessConfig struct {
-	definitionDirs  []string
-	specSources     []specSourceConfig
-	policyFile      string
-	workflowEnabled bool
-	handlerTimeout  time.Duration
-	sdkHandlers     map[string]invoker.SDKHandler
-	serviceTimeout  time.Duration
-	circuitBreaker  *config.CircuitBreakerConfig
-	retry           *config.RetryConfig
+	definitionDirs []string
+	specSources    []specSourceConfig
+	policyFile     string
+	handlerTimeout time.Duration
+	sdkHandlers    map[string]invoker.SDKHandler
+	serviceTimeout time.Duration
+	circuitBreaker *config.CircuitBreakerConfig
+	retry          *config.RetryConfig
 }
 
 type specSourceConfig struct {
@@ -92,13 +88,6 @@ func WithSpec(serviceID, specFile string) HarnessOption {
 func WithPolicyFile(path string) HarnessOption {
 	return func(c *harnessConfig) {
 		c.policyFile = path
-	}
-}
-
-// WithWorkflows enables the workflow engine with an in-memory store.
-func WithWorkflows() HarnessOption {
-	return func(c *harnessConfig) {
-		c.workflowEnabled = true
 	}
 }
 
@@ -229,8 +218,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 	h.CapResolver = capability.NewResolver(evaluator, 0) // no caching in tests
 
 	// Step 6: Build in-memory stores.
-	h.WorkflowStore = workflow.NewMemoryWorkflowStore()
-
 	// Step 7: Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
 	for name, handler := range hc.sdkHandlers {
@@ -266,10 +253,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 
 	// Step 8: Build providers.
 	h.CommandExecutor = command.NewCommandExecutor(h.Registry, h.InvokerRegistry, h.OAIndex)
-
-	if hc.workflowEnabled {
-		h.WorkflowEngine = workflow.NewEngine(h.Registry, h.WorkflowStore, h.InvokerRegistry, h.CapResolver)
-	}
 
 	actionProvider := metadata.NewActionProvider()
 	menuProvider := metadata.NewMenuProvider(h.Registry, h.InvokerRegistry)
@@ -321,7 +304,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 		PageProvider:       pageProvider,
 		FormProvider:       formProvider,
 		CommandExecutor:    h.CommandExecutor,
-		WorkflowEngine:     h.WorkflowEngine,
 		SearchProvider:     searchProvider,
 		LookupProvider:     lookupProvider,
 		HealthHandler: func(w http.ResponseWriter, r *http.Request) {

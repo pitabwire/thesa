@@ -142,7 +142,6 @@ func TestHandleReady_withOptionalChecks_allHealthy(t *testing.T) {
 	checks := ReadinessChecks{
 		DefinitionsLoaded: func() bool { return true },
 		OpenAPILoaded:     func() bool { return true },
-		WorkflowStore:     &mockHealthChecker{},
 		PolicyEngine:      &mockHealthChecker{},
 	}
 
@@ -159,39 +158,14 @@ func TestHandleReady_withOptionalChecks_allHealthy(t *testing.T) {
 	if resp.Status != "ready" {
 		t.Errorf("status = %q, want ready", resp.Status)
 	}
-	// Should have 4 checks total (definitions, openapi, workflow, policy).
-	if len(resp.Checks) != 4 {
-		t.Errorf("checks count = %d, want 4", len(resp.Checks))
+	// Should have 3 checks total (definitions, openapi, policy).
+	if len(resp.Checks) != 3 {
+		t.Errorf("checks count = %d, want 3", len(resp.Checks))
 	}
 	for name, check := range resp.Checks {
 		if check.Status != "ok" {
 			t.Errorf("%s = %q, want ok", name, check.Status)
 		}
-	}
-}
-
-func TestHandleReady_workflowStoreDown(t *testing.T) {
-	checks := ReadinessChecks{
-		DefinitionsLoaded: func() bool { return true },
-		OpenAPILoaded:     func() bool { return true },
-		WorkflowStore:     &mockHealthChecker{err: errors.New("connection refused")},
-	}
-
-	handler := HandleReady(checks)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ui/ready", nil))
-
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, want 503", rec.Code)
-	}
-
-	var resp ReadinessResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
-	if resp.Checks["workflow_store"].Status != "error" {
-		t.Errorf("workflow_store = %q, want error", resp.Checks["workflow_store"].Status)
-	}
-	if resp.Checks["workflow_store"].Error != "connection refused" {
-		t.Errorf("workflow_store error = %q, want 'connection refused'", resp.Checks["workflow_store"].Error)
 	}
 }
 
@@ -277,9 +251,6 @@ func TestHandleReady_withoutOptionalChecks(t *testing.T) {
 	if len(resp.Checks) != 2 {
 		t.Errorf("checks count = %d, want 2 (only required checks)", len(resp.Checks))
 	}
-	if _, ok := resp.Checks["workflow_store"]; ok {
-		t.Error("workflow_store should not be in checks when nil")
-	}
 	if _, ok := resp.Checks["policy_engine"]; ok {
 		t.Error("policy_engine should not be in checks when nil")
 	}
@@ -289,7 +260,6 @@ func TestHandleReady_multipleFailures(t *testing.T) {
 	checks := ReadinessChecks{
 		DefinitionsLoaded: func() bool { return false },
 		OpenAPILoaded:     func() bool { return false },
-		WorkflowStore:     &mockHealthChecker{err: errors.New("pg down")},
 	}
 
 	handler := HandleReady(checks)
@@ -309,7 +279,7 @@ func TestHandleReady_multipleFailures(t *testing.T) {
 			failCount++
 		}
 	}
-	if failCount != 3 {
-		t.Errorf("failed checks = %d, want 3", failCount)
+	if failCount != 2 {
+		t.Errorf("failed checks = %d, want 2", failCount)
 	}
 }

@@ -91,11 +91,6 @@ func TestNewRouter_authenticatedRoutes_areRegistered(t *testing.T) {
 		{"GET", "/ui/forms/orders.create"},
 		{"GET", "/ui/forms/orders.create/data"},
 		{"POST", "/ui/commands/orders.cancel"},
-		{"POST", "/ui/workflows/orders.approval/start"},
-		{"POST", "/ui/workflows/wf-123/advance"},
-		{"GET", "/ui/workflows/wf-123"},
-		{"POST", "/ui/workflows/wf-123/cancel"},
-		{"GET", "/ui/workflows"},
 		{"GET", "/ui/search"},
 		{"GET", "/ui/lookups/currencies"},
 	}

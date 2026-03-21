@@ -10,7 +10,6 @@ import (
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/metadata"
 	"github.com/pitabwire/thesa/internal/search"
-	"github.com/pitabwire/thesa/internal/workflow"
 	"github.com/pitabwire/thesa/model"
 )
 
@@ -26,7 +25,6 @@ type Dependencies struct {
 	SchemaProvider     *metadata.SchemaProvider
 	ResourceProvider   *metadata.ResourceProvider
 	CommandExecutor    *command.CommandExecutor
-	WorkflowEngine     *workflow.Engine
 	SearchProvider     *search.SearchProvider
 	LookupProvider     *search.LookupProvider
 	HealthHandler      http.HandlerFunc
@@ -89,20 +87,12 @@ func NewRouter(deps Dependencies) chi.Router {
 
 		// Commands & Actions
 		r.Post("/ui/commands/{commandId}", handleCommand(deps.CommandExecutor))
-		r.Post("/ui/actions/{actionId}", handleAction(deps.Registry, deps.CommandExecutor, deps.WorkflowEngine))
+		r.Post("/ui/actions/{actionId}", handleAction(deps.Registry, deps.CommandExecutor))
 
 		// Resources
 		r.Get("/ui/resources/{resourceType}/search", handleResourceSearch(deps.SearchProvider))
 		r.Get("/ui/resources/{resourceType}/{id}", handleGetResourceItem(deps.ResourceProvider))
 		r.Get("/ui/resources/{resourceType}", handleGetResource(deps.ResourceProvider))
-
-		// Workflows
-		r.Post("/ui/workflows/{workflowId}/start", handleWorkflowStart(deps.WorkflowEngine))
-		r.Post("/ui/workflows/{workflowId}/steps/{stepId}", handleWorkflowStep(deps.WorkflowEngine))
-		r.Post("/ui/workflows/{instanceId}/advance", handleWorkflowAdvance(deps.WorkflowEngine))
-		r.Get("/ui/workflows/{instanceId}", handleWorkflowGet(deps.WorkflowEngine))
-		r.Post("/ui/workflows/{instanceId}/cancel", handleWorkflowCancel(deps.WorkflowEngine))
-		r.Get("/ui/workflows", handleWorkflowList(deps.WorkflowEngine))
 
 		// Search & Lookups
 		r.Get("/ui/search", handleSearch(deps.SearchProvider))

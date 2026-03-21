@@ -8,16 +8,14 @@ import (
 
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/definition"
-	"github.com/pitabwire/thesa/internal/workflow"
 	"github.com/pitabwire/thesa/model"
 )
 
 // handleAction looks up an action definition by ID and routes execution to
-// the appropriate handler (command or workflow) based on the action type.
+// the appropriate handler based on the action type.
 func handleAction(
 	registry *definition.Registry,
 	cmdExecutor *command.CommandExecutor,
-	wfEngine *workflow.Engine,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
@@ -59,18 +57,6 @@ func handleAction(
 			}
 			WriteJSON(w, http.StatusOK, resp)
 
-		case "workflow":
-			if wfEngine == nil || actionDef.WorkflowID == "" {
-				WriteError(w, model.NewBadRequestError("workflows not configured or action has no workflow_id"))
-				return
-			}
-			inst, err := wfEngine.Start(r.Context(), rctx, actionDef.WorkflowID, body.Input)
-			if err != nil {
-				WriteError(w, err)
-				return
-			}
-			WriteJSON(w, http.StatusCreated, inst)
-
 		default:
 			// For navigate, form, and custom actions, return the action metadata
 			// for the client to handle.
@@ -79,7 +65,6 @@ func handleAction(
 				"type":        actionDef.Type,
 				"navigate_to": actionDef.NavigateTo,
 				"form_id":     actionDef.FormID,
-				"workflow_id": actionDef.WorkflowID,
 				"params":      actionDef.Params,
 			})
 		}

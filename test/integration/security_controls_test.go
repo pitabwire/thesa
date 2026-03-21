@@ -102,34 +102,6 @@ func TestSecurity_MalformedToken_Returns401(t *testing.T) {
 // Cross-Tenant Isolation Tests
 // ==========================================================================
 
-func TestSecurity_TenantIsolation_WorkflowAccessDenied(t *testing.T) {
-	h := NewTestHarness(t, WithWorkflows())
-
-	// Tenant A creates a workflow.
-	tenantA := h.GenerateToken(TestClaims{
-		SubjectID: "user-a",
-		TenantID:  "tenant-alpha",
-		Email:     "a@alpha.com",
-		Roles:     []string{"order_approver"},
-	})
-
-	h.MockBackend("orders-svc").OnOperation("confirmOrder").
-		RespondWith(200, map[string]any{"status": "ok"})
-
-	instanceID := startApprovalWorkflow(t, h, tenantA, "ord-100")
-
-	// Tenant B tries to access tenant A's workflow → 404 (not 403).
-	tenantB := h.GenerateToken(TestClaims{
-		SubjectID: "user-b",
-		TenantID:  "tenant-beta",
-		Email:     "b@beta.com",
-		Roles:     []string{"order_approver"},
-	})
-
-	resp := h.GET("/ui/workflows/"+instanceID, tenantB)
-	h.AssertStatus(t, resp, http.StatusNotFound)
-}
-
 func TestSecurity_TenantIDFromJWT_NotRequestHeader(t *testing.T) {
 	h := NewTestHarness(t)
 

@@ -46,8 +46,7 @@ type ReadinessChecks struct {
 	OpenAPILoaded     func() bool
 
 	// Optional checks — only run if non-nil.
-	WorkflowStore HealthChecker
-	PolicyEngine  HealthChecker
+	PolicyEngine HealthChecker
 }
 
 const checkTimeout = 2 * time.Second
@@ -115,15 +114,6 @@ func HandleReady(checks ReadinessChecks) http.HandlerFunc {
 				})
 			}
 		}()
-
-		// Optional: workflow store.
-		if checks.WorkflowStore != nil {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				record("workflow_store", runCheck(r.Context(), checks.WorkflowStore))
-			}()
-		}
 
 		// Optional: policy engine.
 		if checks.PolicyEngine != nil {
