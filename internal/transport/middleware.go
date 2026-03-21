@@ -223,11 +223,6 @@ func RequestLogging(next http.Handler) http.Handler {
 	})
 }
 
-// MetricsRecording is a placeholder for Prometheus metrics middleware.
-func MetricsRecording(next http.Handler) http.Handler {
-	return next
-}
-
 // --- helpers ---
 
 // statusWriter wraps http.ResponseWriter to capture the written status code.

@@ -62,10 +62,6 @@ func (v *Validator) validateDomain(prefix string, def model.DomainDefinition, in
 	for _, c := range def.Commands {
 		commandIDs[c.ID] = true
 	}
-	workflowIDs := make(map[string]bool)
-	for _, w := range def.Workflows {
-		workflowIDs[w.ID] = true
-	}
 	lookupIDs := make(map[string]bool)
 	for _, l := range def.Lookups {
 		lookupIDs[l.ID] = true
@@ -83,14 +79,10 @@ func (v *Validator) validateDomain(prefix string, def model.DomainDefinition, in
 		cp := fmt.Sprintf("%s.commands[%d]", prefix, i)
 		errs = append(errs, v.validateCommand(cp, c, def.Domain, index)...)
 	}
-	for i, w := range def.Workflows {
-		wp := fmt.Sprintf("%s.workflows[%d]", prefix, i)
-		errs = append(errs, v.validateWorkflow(wp, w)...)
-	}
 	for i, a := range def.Pages {
 		for j, action := range a.Actions {
 			ap := fmt.Sprintf("%s.pages[%d].actions[%d]", prefix, i, j)
-			errs = append(errs, v.validateActionRef(ap, action, formIDs, commandIDs, workflowIDs)...)
+			errs = append(errs, v.validateActionRef(ap, action, formIDs, commandIDs)...)
 		}
 	}
 
@@ -233,68 +225,7 @@ func (v *Validator) validateCommand(prefix string, c model.CommandDefinition, do
 	return errs
 }
 
-var validStepTypes = map[string]bool{
-	"action": true, "approval": true, "system": true,
-	"wait": true, "notification": true, "terminal": true,
-}
-
-func (v *Validator) validateWorkflow(prefix string, w model.WorkflowDefinition) []VError {
-	var errs []VError
-
-	if w.ID == "" {
-		errs = append(errs, VError{Path: prefix + ".id", Code: "REQUIRED", Message: "id is required"})
-	}
-	if w.Name == "" {
-		errs = append(errs, VError{Path: prefix + ".name", Code: "REQUIRED", Message: "name is required"})
-	}
-	if w.InitialStep == "" {
-		errs = append(errs, VError{Path: prefix + ".initial_step", Code: "REQUIRED", Message: "initial_step is required"})
-	}
-	if len(w.Steps) < 2 {
-		errs = append(errs, VError{Path: prefix + ".steps", Code: "REQUIRED", Message: "at least two steps required (initial + terminal)"})
-	}
-
-	stepIDs := make(map[string]bool)
-	for i, s := range w.Steps {
-		sp := fmt.Sprintf("%s.steps[%d]", prefix, i)
-		if s.ID == "" {
-			errs = append(errs, VError{Path: sp + ".id", Code: "REQUIRED", Message: "step id is required"})
-		}
-		stepIDs[s.ID] = true
-		if s.Type == "" {
-			errs = append(errs, VError{Path: sp + ".type", Code: "REQUIRED", Message: "step type is required"})
-		} else if !validStepTypes[s.Type] {
-			errs = append(errs, VError{Path: sp + ".type", Code: "INVALID_ENUM", Message: fmt.Sprintf("invalid step type %q", s.Type)})
-		}
-	}
-
-	// Validate initial_step references a valid step.
-	if w.InitialStep != "" && !stepIDs[w.InitialStep] {
-		errs = append(errs, VError{
-			Path:    prefix + ".initial_step",
-			Code:    "REF_NOT_FOUND",
-			Message: fmt.Sprintf("initial_step %q not found in steps", w.InitialStep),
-		})
-	}
-
-	// Validate transitions reference valid steps.
-	for i, tr := range w.Transitions {
-		tp := fmt.Sprintf("%s.transitions[%d]", prefix, i)
-		if tr.From != "" && !stepIDs[tr.From] {
-			errs = append(errs, VError{Path: tp + ".from", Code: "REF_NOT_FOUND", Message: fmt.Sprintf("step %q not found", tr.From)})
-		}
-		if tr.To != "" && !stepIDs[tr.To] {
-			errs = append(errs, VError{Path: tp + ".to", Code: "REF_NOT_FOUND", Message: fmt.Sprintf("step %q not found", tr.To)})
-		}
-		if tr.Event == "" {
-			errs = append(errs, VError{Path: tp + ".event", Code: "REQUIRED", Message: "transition event is required"})
-		}
-	}
-
-	return errs
-}
-
-func (v *Validator) validateActionRef(prefix string, a model.ActionDefinition, formIDs, commandIDs, workflowIDs map[string]bool) []VError {
+func (v *Validator) validateActionRef(prefix string, a model.ActionDefinition, formIDs, commandIDs map[string]bool) []VError {
 	var errs []VError
 
 	switch a.Type {
@@ -305,10 +236,6 @@ func (v *Validator) validateActionRef(prefix string, a model.ActionDefinition, f
 	case "command", "confirm":
 		if a.CommandID != "" && !commandIDs[a.CommandID] {
 			errs = append(errs, VError{Path: prefix + ".command_id", Code: "REF_NOT_FOUND", Message: fmt.Sprintf("command %q not found", a.CommandID)})
-		}
-	case "workflow":
-		if a.WorkflowID != "" && !workflowIDs[a.WorkflowID] {
-			errs = append(errs, VError{Path: prefix + ".workflow_id", Code: "REF_NOT_FOUND", Message: fmt.Sprintf("workflow %q not found", a.WorkflowID)})
 		}
 	}
 

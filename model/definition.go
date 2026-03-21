@@ -9,7 +9,6 @@ type DomainDefinition struct {
 	Pages      []PageDefinition     `yaml:"pages"      json:"pages,omitempty"`
 	Forms      []FormDefinition     `yaml:"forms"      json:"forms,omitempty"`
 	Commands   []CommandDefinition  `yaml:"commands"    json:"commands,omitempty"`
-	Workflows  []WorkflowDefinition `yaml:"workflows"   json:"workflows,omitempty"`
 	Searches   []SearchDefinition   `yaml:"searches"    json:"searches,omitempty"`
 	Lookups    []LookupDefinition   `yaml:"lookups"     json:"lookups,omitempty"`
 
@@ -210,7 +209,6 @@ type ActionDefinition struct {
 	Type         string                  `yaml:"type"         json:"type"`
 	CommandID    string                  `yaml:"command_id"   json:"command_id,omitempty"`
 	NavigateTo   string                  `yaml:"navigate_to"  json:"navigate_to,omitempty"`
-	WorkflowID   string                  `yaml:"workflow_id"  json:"workflow_id,omitempty"`
 	FormID       string                  `yaml:"form_id"      json:"form_id,omitempty"`
 	Confirmation *ConfirmationDefinition `yaml:"confirmation" json:"confirmation,omitempty"`
 	Conditions   []ConditionDefinition   `yaml:"conditions"   json:"conditions,omitempty"`
@@ -242,7 +240,6 @@ type CommandDefinition struct {
 	Input        InputMapping       `yaml:"input"        json:"input"`
 	Output       OutputMapping      `yaml:"output"       json:"output"`
 	Idempotency  *IdempotencyConfig `yaml:"idempotency"  json:"idempotency,omitempty"`
-	RateLimit    *RateLimitConfig   `yaml:"rate_limit"   json:"rate_limit,omitempty"`
 }
 
 // OperationBinding describes the backend operation to invoke.
@@ -275,55 +272,6 @@ type OutputMapping struct {
 type IdempotencyConfig struct {
 	KeySource string `yaml:"key_source" json:"key_source"`
 	TTL       string `yaml:"ttl"        json:"ttl"`
-}
-
-// RateLimitConfig describes rate limiting for a command.
-type RateLimitConfig struct {
-	MaxRequests int    `yaml:"max_requests" json:"max_requests"`
-	Window      string `yaml:"window"       json:"window"`
-	Scope       string `yaml:"scope"        json:"scope"`
-}
-
-// WorkflowDefinition describes a multi-step process.
-type WorkflowDefinition struct {
-	ID           string                 `yaml:"id"           json:"id"`
-	Name         string                 `yaml:"name"         json:"name"`
-	Capabilities []string               `yaml:"capabilities" json:"capabilities"`
-	InitialStep  string                 `yaml:"initial_step" json:"initial_step"`
-	Timeout      string                 `yaml:"timeout"      json:"timeout,omitempty"`
-	OnTimeout    string                 `yaml:"on_timeout"   json:"on_timeout,omitempty"`
-	Steps        []StepDefinition       `yaml:"steps"        json:"steps"`
-	Transitions  []TransitionDefinition `yaml:"transitions"  json:"transitions"`
-}
-
-// StepDefinition describes a single step in a workflow.
-type StepDefinition struct {
-	ID           string            `yaml:"id"           json:"id"`
-	Name         string            `yaml:"name"         json:"name"`
-	Type         string            `yaml:"type"         json:"type"`
-	Capabilities []string          `yaml:"capabilities" json:"capabilities,omitempty"`
-	FormID       string            `yaml:"form_id"      json:"form_id,omitempty"`
-	Operation    *OperationBinding `yaml:"operation"    json:"operation,omitempty"`
-	Input        *InputMapping     `yaml:"input"        json:"input,omitempty"`
-	Output       *OutputMapping    `yaml:"output"       json:"output,omitempty"`
-	Timeout      string            `yaml:"timeout"      json:"timeout,omitempty"`
-	OnTimeout    string            `yaml:"on_timeout"   json:"on_timeout,omitempty"`
-	Assignee     *AssigneeConfig   `yaml:"assignee"     json:"assignee,omitempty"`
-}
-
-// AssigneeConfig describes who is responsible for a workflow step.
-type AssigneeConfig struct {
-	Type  string `yaml:"type"  json:"type"`
-	Value string `yaml:"value" json:"value"`
-}
-
-// TransitionDefinition describes a transition between workflow steps.
-type TransitionDefinition struct {
-	From      string `yaml:"from"      json:"from"`
-	To        string `yaml:"to"        json:"to"`
-	Event     string `yaml:"event"     json:"event"`
-	Condition string `yaml:"condition" json:"condition,omitempty"`
-	Guard     string `yaml:"guard"     json:"guard,omitempty"`
 }
 
 // SearchDefinition describes a search provider for global search.

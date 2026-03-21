@@ -368,7 +368,7 @@ func TestActionProvider_ResolveActions_allActionTypes(t *testing.T) {
 	actions := []model.ActionDefinition{
 		{ID: "cmd", Label: "Command", Type: "command", CommandID: "do-thing"},
 		{ID: "nav", Label: "Navigate", Type: "navigate", NavigateTo: "/path"},
-		{ID: "wf", Label: "Workflow", Type: "workflow", WorkflowID: "wf-1"},
+		{ID: "wf", Label: "Workflow", Type: "workflow"},
 		{ID: "frm", Label: "Form", Type: "modal", FormID: "form-1"},
 		{ID: "lnk", Label: "Link", Type: "link", NavigateTo: "https://example.com"},
 	}

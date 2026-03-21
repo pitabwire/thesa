@@ -24,9 +24,6 @@ func testDefs() []model.DomainDefinition {
 				{ID: "orders.update"},
 				{ID: "orders.cancel"},
 			},
-			Workflows: []model.WorkflowDefinition{
-				{ID: "orders.approval", Name: "Order Approval"},
-			},
 			Searches: []model.SearchDefinition{
 				{ID: "orders.search", Domain: "orders"},
 			},
@@ -98,17 +95,6 @@ func TestRegistry_GetCommand(t *testing.T) {
 	}
 	if c.ID != "orders.cancel" {
 		t.Errorf("ID = %q", c.ID)
-	}
-}
-
-func TestRegistry_GetWorkflow(t *testing.T) {
-	r := NewRegistry(testDefs())
-	w, ok := r.GetWorkflow("orders.approval")
-	if !ok {
-		t.Fatal("GetWorkflow(orders.approval) not found")
-	}
-	if w.Name != "Order Approval" {
-		t.Errorf("Name = %q", w.Name)
 	}
 }
 

@@ -67,7 +67,6 @@ func NewRouter(deps Dependencies) http.Handler {
 		ResolveCapabilities(deps.CapabilityResolver),
 		HandlerTimeout(deps.Config.Server.HandlerTimeout),
 		RequestLogging,
-		MetricsRecording,
 	)
 
 	// Capabilities

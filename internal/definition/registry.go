@@ -12,14 +12,13 @@ import (
 
 // snapshot is an immutable collection of all definitions indexed by ID.
 type snapshot struct {
-	domains   map[string]model.DomainDefinition
-	pages     map[string]model.PageDefinition
-	forms     map[string]model.FormDefinition
-	commands  map[string]model.CommandDefinition
-	workflows map[string]model.WorkflowDefinition
-	searches  map[string]model.SearchDefinition
-	lookups   map[string]model.LookupDefinition
-	checksum  string
+	domains  map[string]model.DomainDefinition
+	pages    map[string]model.PageDefinition
+	forms    map[string]model.FormDefinition
+	commands map[string]model.CommandDefinition
+	searches map[string]model.SearchDefinition
+	lookups  map[string]model.LookupDefinition
+	checksum string
 }
 
 // Registry is a read-optimized, thread-safe store of all loaded definitions.
@@ -39,13 +38,12 @@ func NewRegistry(defs []model.DomainDefinition) *Registry {
 // from the given definitions.
 func (r *Registry) Replace(defs []model.DomainDefinition) {
 	s := &snapshot{
-		domains:   make(map[string]model.DomainDefinition, len(defs)),
-		pages:     make(map[string]model.PageDefinition),
-		forms:     make(map[string]model.FormDefinition),
-		commands:  make(map[string]model.CommandDefinition),
-		workflows: make(map[string]model.WorkflowDefinition),
-		searches:  make(map[string]model.SearchDefinition),
-		lookups:   make(map[string]model.LookupDefinition),
+		domains:  make(map[string]model.DomainDefinition, len(defs)),
+		pages:    make(map[string]model.PageDefinition),
+		forms:    make(map[string]model.FormDefinition),
+		commands: make(map[string]model.CommandDefinition),
+		searches: make(map[string]model.SearchDefinition),
+		lookups:  make(map[string]model.LookupDefinition),
 	}
 
 	var checksumParts []string
@@ -62,9 +60,6 @@ func (r *Registry) Replace(defs []model.DomainDefinition) {
 		}
 		for _, c := range def.Commands {
 			s.commands[c.ID] = c
-		}
-		for _, w := range def.Workflows {
-			s.workflows[w.ID] = w
 		}
 		for _, sr := range def.Searches {
 			s.searches[sr.ID] = sr
@@ -107,12 +102,6 @@ func (r *Registry) GetForm(formID string) (model.FormDefinition, bool) {
 func (r *Registry) GetCommand(commandID string) (model.CommandDefinition, bool) {
 	c, ok := r.current().commands[commandID]
 	return c, ok
-}
-
-// GetWorkflow returns the workflow definition with the given ID.
-func (r *Registry) GetWorkflow(workflowID string) (model.WorkflowDefinition, bool) {
-	w, ok := r.current().workflows[workflowID]
-	return w, ok
 }
 
 // GetSearch returns the search definition with the given ID.

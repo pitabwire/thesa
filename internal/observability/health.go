@@ -1,7 +1,6 @@
 package observability
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -34,22 +33,12 @@ type CheckResult struct {
 	Error     string `json:"error,omitempty"`
 }
 
-// HealthChecker can verify its own health.
-type HealthChecker interface {
-	HealthCheck(ctx context.Context) error
-}
-
 // ReadinessChecks holds the dependency checkers for the readiness endpoint.
 type ReadinessChecks struct {
 	// Required checks — always run.
 	DefinitionsLoaded func() bool
 	OpenAPILoaded     func() bool
-
-	// Optional checks — only run if non-nil.
-	PolicyEngine HealthChecker
 }
-
-const checkTimeout = 2 * time.Second
 
 // HandleHealth returns an HTTP handler for the liveness endpoint.
 func HandleHealth() http.HandlerFunc {
@@ -115,15 +104,6 @@ func HandleReady(checks ReadinessChecks) http.HandlerFunc {
 			}
 		}()
 
-		// Optional: policy engine.
-		if checks.PolicyEngine != nil {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				record("policy_engine", runCheck(r.Context(), checks.PolicyEngine))
-			}()
-		}
-
 		wg.Wait()
 
 		// Determine overall status.
@@ -143,27 +123,5 @@ func HandleReady(checks ReadinessChecks) http.HandlerFunc {
 			Status: status,
 			Checks: results,
 		})
-	}
-}
-
-// runCheck executes a health check with a per-check timeout.
-func runCheck(parent context.Context, checker HealthChecker) CheckResult {
-	ctx, cancel := context.WithTimeout(parent, checkTimeout)
-	defer cancel()
-
-	start := time.Now()
-	err := checker.HealthCheck(ctx)
-	latency := time.Since(start).Milliseconds()
-
-	if err != nil {
-		return CheckResult{
-			Status:    "error",
-			LatencyMs: latency,
-			Error:     err.Error(),
-		}
-	}
-	return CheckResult{
-		Status:    "ok",
-		LatencyMs: latency,
 	}
 }

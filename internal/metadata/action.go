@@ -41,7 +41,6 @@ func (p *ActionProvider) ResolveActions(
 			Visible:    true,
 			CommandID:  action.CommandID,
 			NavigateTo: action.NavigateTo,
-			WorkflowID: action.WorkflowID,
 			FormID:     action.FormID,
 			Params:     action.Params,
 		}

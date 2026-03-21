@@ -28,9 +28,8 @@ type InvocationResult struct {
 
 // CommandInput is the frontend command request payload.
 type CommandInput struct {
-	Input          map[string]any    `json:"input"`
-	RouteParams    map[string]string `json:"route_params,omitempty"`
-	IdempotencyKey string            `json:"idempotency_key,omitempty"`
+	Input       map[string]any    `json:"input"`
+	RouteParams map[string]string `json:"route_params,omitempty"`
 }
 
 // DataParams describes parameters for data-fetching endpoints.
@@ -48,13 +47,4 @@ type Pagination struct {
 	Page     int    `json:"page"`
 	PageSize int    `json:"page_size"`
 	Domain   string `json:"domain,omitempty"`
-}
-
-// WorkflowFilters describes filters for listing workflow instances.
-type WorkflowFilters struct {
-	Status     string `json:"status,omitempty"`
-	WorkflowID string `json:"workflow_id,omitempty"`
-	SubjectID  string `json:"subject_id,omitempty"`
-	Page       int    `json:"page"`
-	PageSize   int    `json:"page_size"`
 }

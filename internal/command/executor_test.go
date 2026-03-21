@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/pitabwire/thesa/internal/definition"
@@ -52,11 +51,6 @@ func testCommandDefinitions() []model.DomainDefinition {
 					Idempotency: &model.IdempotencyConfig{
 						KeySource: "header",
 						TTL:       "1h",
-					},
-					RateLimit: &model.RateLimitConfig{
-						MaxRequests: 10,
-						Window:      "1m",
-						Scope:       "user",
 					},
 				},
 				{
@@ -105,36 +99,6 @@ func (m *mockOperationInvoker) Invoke(ctx context.Context, rctx *model.RequestCo
 	return model.InvocationResult{StatusCode: 200, Body: map[string]any{}}, nil
 }
 
-// mockRateLimiter is a mock rate limiter for testing.
-type mockRateLimiter struct {
-	allow bool
-}
-
-func (m *mockRateLimiter) Allow(ctx context.Context, commandID string, scope string, rctx *model.RequestContext) bool {
-	return m.allow
-}
-
-// mockObserver records command events.
-type mockObserver struct {
-	mu     sync.Mutex
-	events []CommandEvent
-}
-
-func (m *mockObserver) OnCommandExecuted(ctx context.Context, event CommandEvent) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.events = append(m.events, event)
-}
-
-func (m *mockObserver) lastEvent() CommandEvent {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if len(m.events) == 0 {
-		return CommandEvent{}
-	}
-	return m.events[len(m.events)-1]
-}
-
 func testRctxForExecutor() *model.RequestContext {
 	return &model.RequestContext{
 		SubjectID:   "user-alice",
@@ -144,22 +108,22 @@ func testRctxForExecutor() *model.RequestContext {
 	}
 }
 
-func newTestExecutor(invokeFn func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error), opts ...CommandExecutorOption) *CommandExecutor {
+func newTestExecutor(invokeFn func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error)) *CommandExecutor {
 	reg := definition.NewRegistry(testCommandDefinitions())
 	invReg := invoker.NewRegistry()
 	invReg.Register(&mockOperationInvoker{invokeFn: invokeFn})
 
-	return NewCommandExecutor(reg, invReg, nil, opts...)
+	return NewCommandExecutor(reg, invReg, nil)
 }
 
-func newTestExecutorWithIndex(invokeFn func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error), opts ...CommandExecutorOption) *CommandExecutor {
+func newTestExecutorWithIndex(invokeFn func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error)) *CommandExecutor {
 	reg := definition.NewRegistry(testCommandDefinitions())
 	invReg := invoker.NewRegistry()
 	invReg.Register(&mockOperationInvoker{invokeFn: invokeFn})
 
 	idx := loadTestOAIndex()
 
-	return NewCommandExecutor(reg, invReg, idx, opts...)
+	return NewCommandExecutor(reg, invReg, idx)
 }
 
 // loadTestOAIndex creates a minimal OpenAPI index for testing schema validation.
@@ -271,50 +235,6 @@ func TestExecutor_noCapabilitiesRequired(t *testing.T) {
 
 	// orders.create has no capability requirements.
 	resp, err := e.Execute(context.Background(), testRctxForExecutor(), model.CapabilitySet{}, "orders.create", model.CommandInput{Input: map[string]any{}})
-	if err != nil {
-		t.Fatalf("Execute error: %v", err)
-	}
-	if !resp.Success {
-		t.Error("Success = false")
-	}
-}
-
-// --- Step 3: Rate limiting ---
-
-func TestExecutor_rateLimited(t *testing.T) {
-	e := newTestExecutor(nil, WithRateLimiter(&mockRateLimiter{allow: false}))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:       map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams: map[string]string{"id": "ord-123"},
-	}
-
-	_, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-	if err == nil {
-		t.Fatal("expected rate limit error")
-	}
-	envErr, ok := err.(*model.ErrorEnvelope)
-	if !ok {
-		t.Fatalf("error type = %T", err)
-	}
-	if envErr.Code != model.ErrRateLimited {
-		t.Errorf("code = %s, want %s", envErr.Code, model.ErrRateLimited)
-	}
-}
-
-func TestExecutor_rateLimitAllowed(t *testing.T) {
-	e := newTestExecutor(func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error) {
-		return model.InvocationResult{StatusCode: 200, Body: map[string]any{}}, nil
-	}, WithRateLimiter(&mockRateLimiter{allow: true}))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:       map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams: map[string]string{"id": "ord-123"},
-	}
-
-	resp, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
 	if err != nil {
 		t.Fatalf("Execute error: %v", err)
 	}
@@ -618,71 +538,6 @@ func TestExecutor_serverError(t *testing.T) {
 	}
 }
 
-// --- Steps 9-10: Observers ---
-
-func TestExecutor_observerNotified(t *testing.T) {
-	obs := &mockObserver{}
-
-	e := newTestExecutor(func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error) {
-		return model.InvocationResult{StatusCode: 200, Body: map[string]any{}}, nil
-	}, WithObserver(obs))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:       map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams: map[string]string{"id": "ord-123"},
-	}
-
-	_, err := e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-	if err != nil {
-		t.Fatalf("Execute error: %v", err)
-	}
-
-	event := obs.lastEvent()
-	if event.CommandID != "orders.cancel" {
-		t.Errorf("CommandID = %q", event.CommandID)
-	}
-	if event.SubjectID != "user-alice" {
-		t.Errorf("SubjectID = %q", event.SubjectID)
-	}
-	if event.TenantID != "acme-corp" {
-		t.Errorf("TenantID = %q", event.TenantID)
-	}
-	if !event.Success {
-		t.Error("Success = false")
-	}
-	if event.StatusCode != 200 {
-		t.Errorf("StatusCode = %d", event.StatusCode)
-	}
-	if event.Duration <= 0 {
-		t.Error("Duration <= 0")
-	}
-}
-
-func TestExecutor_observerOnError(t *testing.T) {
-	obs := &mockObserver{}
-
-	e := newTestExecutor(func(ctx context.Context, rctx *model.RequestContext, binding model.OperationBinding, input model.InvocationInput) (model.InvocationResult, error) {
-		return model.InvocationResult{}, fmt.Errorf("backend down")
-	}, WithObserver(obs))
-
-	caps := model.CapabilitySet{"orders:cancel:execute": true}
-	input := model.CommandInput{
-		Input:       map[string]any{"reason": "test", "refund_type": "full"},
-		RouteParams: map[string]string{"id": "ord-123"},
-	}
-
-	_, _ = e.Execute(context.Background(), testRctxForExecutor(), caps, "orders.cancel", input)
-
-	event := obs.lastEvent()
-	if event.Success {
-		t.Error("Success = true, want false")
-	}
-	if event.Error == "" {
-		t.Error("Error is empty, want error message")
-	}
-}
-
 // --- Validate (dry-run) ---
 
 func TestExecutor_Validate_valid(t *testing.T) {
@@ -845,19 +700,5 @@ func TestContainsWord(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("containsWord(%q, %q) = %v, want %v", tt.s, tt.word, got, tt.want)
 		}
-	}
-}
-
-func TestRateLimitScopeKey(t *testing.T) {
-	rctx := &model.RequestContext{SubjectID: "user-1", TenantID: "tenant-1"}
-
-	if key := RateLimitScopeKey("cmd", "user", rctx); key != "rl:cmd:user:user-1" {
-		t.Errorf("user scope = %q", key)
-	}
-	if key := RateLimitScopeKey("cmd", "tenant", rctx); key != "rl:cmd:tenant:tenant-1" {
-		t.Errorf("tenant scope = %q", key)
-	}
-	if key := RateLimitScopeKey("cmd", "global", rctx); key != "rl:cmd:global" {
-		t.Errorf("global scope = %q", key)
 	}
 }

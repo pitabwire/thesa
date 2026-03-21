@@ -155,7 +155,6 @@ type ActionDescriptor struct {
 	Visible      bool                    `json:"visible"`
 	CommandID    string                  `json:"command_id,omitempty"`
 	NavigateTo   string                  `json:"navigate_to,omitempty"`
-	WorkflowID   string                  `json:"workflow_id,omitempty"`
 	FormID       string                  `json:"form_id,omitempty"`
 	Confirmation *ConfirmationDescriptor `json:"confirmation,omitempty"`
 	Conditions   []ConditionDescriptor   `json:"conditions,omitempty"`
@@ -177,44 +176,6 @@ type ConditionDescriptor struct {
 	Operator string `json:"operator"`
 	Value    any    `json:"value,omitempty"`
 	Effect   string `json:"effect"`
-}
-
-// WorkflowDescriptor is the resolved workflow instance sent to the frontend.
-type WorkflowDescriptor struct {
-	ID          string          `json:"id"`
-	WorkflowID  string          `json:"workflow_id"`
-	Name        string          `json:"name"`
-	Status      string          `json:"status"`
-	CurrentStep *StepDescriptor `json:"current_step,omitempty"`
-	Steps       []StepSummary   `json:"steps"`
-	History     []HistoryEntry  `json:"history,omitempty"`
-}
-
-// StepDescriptor describes the current active step.
-type StepDescriptor struct {
-	ID      string             `json:"id"`
-	Name    string             `json:"name"`
-	Type    string             `json:"type"`
-	Status  string             `json:"status"`
-	Form    *FormDescriptor    `json:"form,omitempty"`
-	Actions []ActionDescriptor `json:"actions,omitempty"`
-}
-
-// StepSummary is a summary of a workflow step shown in the progress indicator.
-type StepSummary struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Status string `json:"status"`
-}
-
-// HistoryEntry is an audit trail entry for a workflow.
-type HistoryEntry struct {
-	StepName  string `json:"step_name"`
-	Event     string `json:"event"`
-	Actor     string `json:"actor"`
-	Timestamp string `json:"timestamp"`
-	Comment   string `json:"comment,omitempty"`
 }
 
 // DataResponse is the standardized data response for list pages.

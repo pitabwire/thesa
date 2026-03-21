@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/invoker"
@@ -11,50 +10,12 @@ import (
 	"github.com/pitabwire/thesa/model"
 )
 
-// RateLimiter checks whether a command invocation is within rate limits.
-type RateLimiter interface {
-	// Allow returns true if the request should proceed, false if rate-limited.
-	Allow(ctx context.Context, commandID string, scope string, rctx *model.RequestContext) bool
-}
-
-// CommandObserver receives lifecycle events from command execution.
-// Implementations may record metrics, audit logs, or other telemetry.
-type CommandObserver interface {
-	OnCommandExecuted(ctx context.Context, event CommandEvent)
-}
-
-// CommandEvent describes the outcome of a command execution.
-type CommandEvent struct {
-	CommandID  string        `json:"command_id"`
-	SubjectID  string        `json:"subject_id"`
-	TenantID   string        `json:"tenant_id"`
-	Success    bool          `json:"success"`
-	StatusCode int           `json:"status_code"`
-	Duration   time.Duration `json:"duration"`
-	Error      string        `json:"error,omitempty"`
-}
-
 // CommandExecutor implements the command execution pipeline.
 type CommandExecutor struct {
-	registry    *definition.Registry
-	invokers    *invoker.Registry
-	index       *openapiIndex.Index
-	mapper      *InputMapper
-	rateLimiter RateLimiter
-	observers   []CommandObserver
-}
-
-// CommandExecutorOption configures optional dependencies.
-type CommandExecutorOption func(*CommandExecutor)
-
-// WithRateLimiter sets the rate limiter.
-func WithRateLimiter(limiter RateLimiter) CommandExecutorOption {
-	return func(e *CommandExecutor) { e.rateLimiter = limiter }
-}
-
-// WithObserver adds a command observer.
-func WithObserver(obs CommandObserver) CommandExecutorOption {
-	return func(e *CommandExecutor) { e.observers = append(e.observers, obs) }
+	registry *definition.Registry
+	invokers *invoker.Registry
+	index    *openapiIndex.Index
+	mapper   *InputMapper
 }
 
 // NewCommandExecutor creates a CommandExecutor with its required dependencies.
@@ -62,18 +23,13 @@ func NewCommandExecutor(
 	registry *definition.Registry,
 	invokers *invoker.Registry,
 	index *openapiIndex.Index,
-	opts ...CommandExecutorOption,
 ) *CommandExecutor {
-	e := &CommandExecutor{
+	return &CommandExecutor{
 		registry: registry,
 		invokers: invokers,
 		index:    index,
 		mapper:   NewInputMapper(),
 	}
-	for _, opt := range opts {
-		opt(e)
-	}
-	return e
 }
 
 // Execute runs the full 10-step command pipeline.
@@ -84,8 +40,6 @@ func (e *CommandExecutor) Execute(
 	commandID string,
 	input model.CommandInput,
 ) (model.CommandResponse, error) {
-	start := time.Now()
-
 	// Step 1: Lookup command definition.
 	cmdDef, ok := e.registry.GetCommand(commandID)
 	if !ok {
@@ -99,14 +53,6 @@ func (e *CommandExecutor) Execute(
 		return model.CommandResponse{}, model.NewForbiddenError(
 			fmt.Sprintf("insufficient capabilities for command %q", commandID),
 		)
-	}
-
-	// Step 3: Check rate limit.
-	if cmdDef.RateLimit != nil && e.rateLimiter != nil {
-		scope := cmdDef.RateLimit.Scope
-		if !e.rateLimiter.Allow(ctx, commandID, scope, rctx) {
-			return model.CommandResponse{}, model.NewRateLimitedError()
-		}
 	}
 
 	// Step 5: Apply input mapping.
@@ -135,16 +81,11 @@ func (e *CommandExecutor) Execute(
 	// Step 7: Invoke backend.
 	result, err := e.invokers.Invoke(ctx, rctx, cmdDef.Operation, invInput)
 	if err != nil {
-		e.notifyObservers(ctx, rctx, commandID, false, 0, time.Since(start), err.Error())
 		return model.CommandResponse{}, err
 	}
 
-	// Step 7: Handle response.
+	// Step 8: Handle response.
 	resp := e.handleResponse(result, cmdDef)
-
-	// Step 8: Notify observers (metrics, audit).
-	statusCode := result.StatusCode
-	e.notifyObservers(ctx, rctx, commandID, resp.Success, statusCode, time.Since(start), "")
 
 	if !resp.Success {
 		return resp, model.NewBadRequestError(resp.Message)
@@ -275,42 +216,6 @@ func (e *CommandExecutor) handleClientError(
 	return resp
 }
 
-// notifyObservers sends a CommandEvent to all registered observers.
-func (e *CommandExecutor) notifyObservers(
-	ctx context.Context,
-	rctx *model.RequestContext,
-	commandID string,
-	success bool,
-	statusCode int,
-	duration time.Duration,
-	errMsg string,
-) {
-	if len(e.observers) == 0 {
-		return
-	}
-
-	subjectID := ""
-	tenantID := ""
-	if rctx != nil {
-		subjectID = rctx.SubjectID
-		tenantID = rctx.TenantID
-	}
-
-	event := CommandEvent{
-		CommandID:  commandID,
-		SubjectID:  subjectID,
-		TenantID:   tenantID,
-		Success:    success,
-		StatusCode: statusCode,
-		Duration:   duration,
-		Error:      errMsg,
-	}
-
-	for _, obs := range e.observers {
-		obs.OnCommandExecuted(ctx, event)
-	}
-}
-
 // --- helpers ---
 
 // applyOutputMapping extracts and renames fields from the response body.
@@ -417,19 +322,4 @@ func extractFieldErrors(body map[string]any) []model.FieldError {
 		}
 	}
 	return result
-}
-
-// RateLimitScopeKey returns the rate limit scope key for a command.
-func RateLimitScopeKey(commandID, scope string, rctx *model.RequestContext) string {
-	switch scope {
-	case "user":
-		if rctx != nil {
-			return fmt.Sprintf("rl:%s:user:%s", commandID, rctx.SubjectID)
-		}
-	case "tenant":
-		if rctx != nil {
-			return fmt.Sprintf("rl:%s:tenant:%s", commandID, rctx.TenantID)
-		}
-	}
-	return fmt.Sprintf("rl:%s:global", commandID)
 }

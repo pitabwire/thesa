@@ -1,9 +1,7 @@
 package observability
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -127,67 +125,6 @@ func TestHandleReady_openAPINotLoaded(t *testing.T) {
 	json.NewDecoder(rec.Body).Decode(&resp)
 	if resp.Checks["openapi_index"].Status != "error" {
 		t.Errorf("openapi_index = %q, want error", resp.Checks["openapi_index"].Status)
-	}
-}
-
-type mockHealthChecker struct {
-	err error
-}
-
-func (m *mockHealthChecker) HealthCheck(_ context.Context) error {
-	return m.err
-}
-
-func TestHandleReady_withOptionalChecks_allHealthy(t *testing.T) {
-	checks := ReadinessChecks{
-		DefinitionsLoaded: func() bool { return true },
-		OpenAPILoaded:     func() bool { return true },
-		PolicyEngine:      &mockHealthChecker{},
-	}
-
-	handler := HandleReady(checks)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ui/ready", nil))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", rec.Code)
-	}
-
-	var resp ReadinessResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
-	if resp.Status != "ready" {
-		t.Errorf("status = %q, want ready", resp.Status)
-	}
-	// Should have 3 checks total (definitions, openapi, policy).
-	if len(resp.Checks) != 3 {
-		t.Errorf("checks count = %d, want 3", len(resp.Checks))
-	}
-	for name, check := range resp.Checks {
-		if check.Status != "ok" {
-			t.Errorf("%s = %q, want ok", name, check.Status)
-		}
-	}
-}
-
-func TestHandleReady_policyEngineDown(t *testing.T) {
-	checks := ReadinessChecks{
-		DefinitionsLoaded: func() bool { return true },
-		OpenAPILoaded:     func() bool { return true },
-		PolicyEngine:      &mockHealthChecker{err: errors.New("OPA unreachable")},
-	}
-
-	handler := HandleReady(checks)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ui/ready", nil))
-
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, want 503", rec.Code)
-	}
-
-	var resp ReadinessResponse
-	json.NewDecoder(rec.Body).Decode(&resp)
-	if resp.Checks["policy_engine"].Status != "error" {
-		t.Errorf("policy_engine = %q, want error", resp.Checks["policy_engine"].Status)
 	}
 }
 

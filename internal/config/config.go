@@ -76,28 +76,9 @@ type SpecSource struct {
 
 // ServiceConfig describes a backend service.
 type ServiceConfig struct {
-	BaseURL    string            `yaml:"base_url"`
-	Timeout    time.Duration     `yaml:"timeout"`
-	Auth       ServiceAuthConfig `yaml:"auth"`
-	Pagination PaginationConfig  `yaml:"pagination"`
-	Retry      RetryConfig       `yaml:"retry"`
-}
-
-// ServiceAuthConfig describes authentication for backend calls.
-type ServiceAuthConfig struct {
-	Strategy      string `yaml:"strategy"`
-	ClientID      string `yaml:"client_id"`
-	TokenEndpoint string `yaml:"token_endpoint"`
-}
-
-// PaginationConfig describes how a backend service paginates.
-type PaginationConfig struct {
-	Style        string `yaml:"style"`
-	PageParam    string `yaml:"page_param"`
-	SizeParam    string `yaml:"size_param"`
-	SortParam    string `yaml:"sort_param"`
-	SortDirParam string `yaml:"sort_dir_param"`
-	CursorParam  string `yaml:"cursor_param"`
+	BaseURL string        `yaml:"base_url"`
+	Timeout time.Duration `yaml:"timeout"`
+	Retry   RetryConfig   `yaml:"retry"`
 }
 
 // RetryConfig describes retry settings per service.
@@ -114,14 +95,6 @@ type CapabilityConfig struct {
 	Evaluator        string      `yaml:"evaluator"`
 	StaticPolicyFile string      `yaml:"static_policy_file"`
 	Cache            CacheConfig `yaml:"cache"`
-	OPA              OPAConfig   `yaml:"opa"`
-}
-
-// OPAConfig describes OPA policy engine settings.
-type OPAConfig struct {
-	URL        string        `yaml:"url"`
-	PolicyPath string        `yaml:"policy_path"`
-	Timeout    time.Duration `yaml:"timeout"`
 }
 
 // CacheConfig describes cache settings.
