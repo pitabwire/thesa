@@ -25,7 +25,7 @@ func NewPgWorkflowStore(pool *pgxpool.Pool) *PgWorkflowStore {
 // EnsureSchema creates the workflow tables if they do not already exist.
 func (s *PgWorkflowStore) EnsureSchema(ctx context.Context) error {
 	_, err := s.pool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS workflow_instances (
+		CREATE TABLE IF NOT EXISTS public.workflow_instances (
 			id              TEXT PRIMARY KEY,
 			workflow_id     TEXT NOT NULL,
 			tenant_id       TEXT NOT NULL,
@@ -41,13 +41,13 @@ func (s *PgWorkflowStore) EnsureSchema(ctx context.Context) error {
 			idempotency_key TEXT
 		)`)
 	if err != nil {
-		return fmt.Errorf("create workflow_instances table: %w", err)
+		return fmt.Errorf("create public.workflow_instances table: %w", err)
 	}
 
 	_, err = s.pool.Exec(ctx, `
-		CREATE TABLE IF NOT EXISTS workflow_events (
+		CREATE TABLE IF NOT EXISTS public.workflow_events (
 			id                    TEXT PRIMARY KEY,
-			workflow_instance_id  TEXT NOT NULL REFERENCES workflow_instances(id) ON DELETE CASCADE,
+			workflow_instance_id  TEXT NOT NULL REFERENCES public.workflow_instances(id) ON DELETE CASCADE,
 			step_id               TEXT NOT NULL,
 			event                 TEXT NOT NULL,
 			actor_id              TEXT NOT NULL DEFAULT '',
@@ -56,16 +56,16 @@ func (s *PgWorkflowStore) EnsureSchema(ctx context.Context) error {
 			created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`)
 	if err != nil {
-		return fmt.Errorf("create workflow_events table: %w", err)
+		return fmt.Errorf("create public.workflow_events table: %w", err)
 	}
 
 	// Create indexes for common query patterns.
 	for _, ddl := range []string{
-		`CREATE INDEX IF NOT EXISTS idx_wf_inst_tenant_status ON workflow_instances (tenant_id, status)`,
-		`CREATE INDEX IF NOT EXISTS idx_wf_inst_workflow_id ON workflow_instances (workflow_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_wf_inst_expires ON workflow_instances (expires_at) WHERE status = 'active' AND expires_at IS NOT NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_wf_inst_idempotency ON workflow_instances (idempotency_key) WHERE idempotency_key IS NOT NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_wf_events_instance ON workflow_events (workflow_instance_id, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_tenant_status ON public.workflow_instances (tenant_id, status)`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_workflow_id ON public.workflow_instances (workflow_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_expires ON public.workflow_instances (expires_at) WHERE status = 'active' AND expires_at IS NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_inst_idempotency ON public.workflow_instances (idempotency_key) WHERE idempotency_key IS NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_wf_events_instance ON public.workflow_events (workflow_instance_id, created_at)`,
 	} {
 		if _, err := s.pool.Exec(ctx, ddl); err != nil {
 			return fmt.Errorf("create index: %w", err)
@@ -88,7 +88,7 @@ func (s *PgWorkflowStore) Create(ctx context.Context, inst model.WorkflowInstanc
 	}
 
 	_, err = s.pool.Exec(ctx, `
-		INSERT INTO workflow_instances (
+		INSERT INTO public.workflow_instances (
 			id, workflow_id, tenant_id, partition_id, subject_id,
 			current_step, status, state, version,
 			created_at, updated_at, expires_at, idempotency_key
@@ -116,7 +116,7 @@ func (s *PgWorkflowStore) Get(ctx context.Context, tenantID, instanceID string) 
 		SELECT id, workflow_id, tenant_id, partition_id, subject_id,
 		       current_step, status, state, version,
 		       created_at, updated_at, expires_at, idempotency_key
-		FROM workflow_instances
+		FROM public.workflow_instances
 		WHERE id = $1 AND tenant_id = $2`,
 		instanceID, tenantID,
 	).Scan(
@@ -150,7 +150,7 @@ func (s *PgWorkflowStore) Update(ctx context.Context, inst model.WorkflowInstanc
 	}
 
 	tag, err := s.pool.Exec(ctx, `
-		UPDATE workflow_instances SET
+		UPDATE public.workflow_instances SET
 			current_step = $1,
 			status = $2,
 			state = $3,
@@ -181,7 +181,7 @@ func (s *PgWorkflowStore) AppendEvent(ctx context.Context, event model.WorkflowE
 	}
 
 	_, err = s.pool.Exec(ctx, `
-		INSERT INTO workflow_events (
+		INSERT INTO public.workflow_events (
 			id, workflow_instance_id, step_id, event, actor_id, data, comment, created_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		event.ID, event.WorkflowInstanceID, event.StepID, event.Event,
@@ -203,7 +203,7 @@ func (s *PgWorkflowStore) GetEvents(ctx context.Context, tenantID, instanceID st
 
 	rows, err := s.pool.Query(ctx, `
 		SELECT id, workflow_instance_id, step_id, event, actor_id, data, comment, created_at
-		FROM workflow_events
+		FROM public.workflow_events
 		WHERE workflow_instance_id = $1
 		ORDER BY created_at ASC`,
 		instanceID,
@@ -236,7 +236,7 @@ func (s *PgWorkflowStore) FindActive(ctx context.Context, tenantID string, filte
 	query := `SELECT id, workflow_id, tenant_id, partition_id, subject_id,
 	                 current_step, status, state, version,
 	                 created_at, updated_at, expires_at, idempotency_key
-	          FROM workflow_instances
+	          FROM public.workflow_instances
 	          WHERE tenant_id = $1 AND status = 'active'`
 	args := []any{tenantID}
 	argIdx := 2
@@ -267,7 +267,7 @@ func (s *PgWorkflowStore) FindExpired(ctx context.Context, cutoff time.Time) ([]
 	query := `SELECT id, workflow_id, tenant_id, partition_id, subject_id,
 	                 current_step, status, state, version,
 	                 created_at, updated_at, expires_at, idempotency_key
-	          FROM workflow_instances
+	          FROM public.workflow_instances
 	          WHERE status = 'active' AND expires_at IS NOT NULL AND expires_at < $1
 	          ORDER BY expires_at ASC`
 	return s.queryInstances(ctx, query, cutoff)
@@ -277,9 +277,9 @@ func (s *PgWorkflowStore) FindExpired(ctx context.Context, cutoff time.Time) ([]
 func (s *PgWorkflowStore) Delete(ctx context.Context, tenantID, instanceID string) error {
 	// Delete events first (foreign key).
 	_, err := s.pool.Exec(ctx, `
-		DELETE FROM workflow_events
+		DELETE FROM public.workflow_events
 		WHERE workflow_instance_id = $1
-		AND workflow_instance_id IN (SELECT id FROM workflow_instances WHERE tenant_id = $2)`,
+		AND workflow_instance_id IN (SELECT id FROM public.workflow_instances WHERE tenant_id = $2)`,
 		instanceID, tenantID,
 	)
 	if err != nil {
@@ -287,7 +287,7 @@ func (s *PgWorkflowStore) Delete(ctx context.Context, tenantID, instanceID strin
 	}
 
 	tag, err := s.pool.Exec(ctx, `
-		DELETE FROM workflow_instances
+		DELETE FROM public.workflow_instances
 		WHERE id = $1 AND tenant_id = $2`,
 		instanceID, tenantID,
 	)
