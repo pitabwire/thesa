@@ -3,8 +3,11 @@
 package transport
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/pitabwire/thesa/model"
 )
@@ -17,15 +20,10 @@ var statusForCode = map[string]int{
 	model.ErrNotFound:           http.StatusNotFound,
 	model.ErrConflict:           http.StatusConflict,
 	model.ErrValidationError:    http.StatusUnprocessableEntity,
-	model.ErrInvalidTransition:  http.StatusUnprocessableEntity,
 	model.ErrRateLimited:        http.StatusTooManyRequests,
 	model.ErrInternalError:      http.StatusInternalServerError,
 	model.ErrBackendUnavailable: http.StatusBadGateway,
 	model.ErrBackendTimeout:     http.StatusGatewayTimeout,
-	model.ErrWorkflowNotFound:   http.StatusNotFound,
-	model.ErrWorkflowNotActive:  http.StatusConflict,
-	model.ErrStepUnauthorized:   http.StatusForbidden,
-	model.ErrWorkflowExpired:    http.StatusConflict,
 }
 
 // WriteJSON writes a JSON response with the given status code.
@@ -46,6 +44,13 @@ func WriteError(w http.ResponseWriter, err error) {
 		ee = model.NewInternalError()
 	}
 
+	// Populate trace ID if the ResponseWriter carries context (set by traceWriter middleware).
+	if tw, ok := w.(*traceWriter); ok && ee.TraceID == "" {
+		if span := trace.SpanFromContext(tw.ctx); span.SpanContext().HasTraceID() {
+			ee.TraceID = span.SpanContext().TraceID().String()
+		}
+	}
+
 	status := statusForCode[ee.Code]
 	if status == 0 {
 		status = http.StatusInternalServerError
@@ -55,6 +60,20 @@ func WriteError(w http.ResponseWriter, err error) {
 		Error *model.ErrorEnvelope `json:"error"`
 	}
 	WriteJSON(w, status, errorResponse{Error: ee})
+}
+
+// traceWriter wraps http.ResponseWriter to carry request context for trace ID extraction.
+type traceWriter struct {
+	http.ResponseWriter
+	ctx context.Context
+}
+
+// InjectTraceContext is middleware that wraps the ResponseWriter with request context,
+// enabling WriteError to automatically include trace IDs in error responses.
+func InjectTraceContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(&traceWriter{ResponseWriter: w, ctx: r.Context()}, r)
+	})
 }
 
 // WriteNotFound writes a 404 error response.

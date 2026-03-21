@@ -10,20 +10,10 @@ const (
 	ErrNotFound           = "NOT_FOUND"
 	ErrConflict           = "CONFLICT"
 	ErrValidationError    = "VALIDATION_ERROR"
-	ErrInvalidTransition  = "INVALID_TRANSITION"
 	ErrRateLimited        = "RATE_LIMITED"
 	ErrInternalError      = "INTERNAL_ERROR"
 	ErrBackendUnavailable = "BACKEND_UNAVAILABLE"
 	ErrBackendTimeout     = "BACKEND_TIMEOUT"
-)
-
-// Workflow-specific error codes.
-const (
-	ErrWorkflowNotFound   = "WORKFLOW_NOT_FOUND"
-	ErrWorkflowNotActive  = "WORKFLOW_NOT_ACTIVE"
-	ErrStepUnauthorized   = "STEP_UNAUTHORIZED"
-	ErrWorkflowExpired    = "WORKFLOW_EXPIRED"
-	ErrWorkflowChainLimit = "WORKFLOW_CHAIN_LIMIT"
 )
 
 // ErrorEnvelope is the standard error response envelope returned by the BFF.
@@ -110,23 +100,5 @@ func NewRateLimitedError() *ErrorEnvelope {
 	return &ErrorEnvelope{
 		Code:    ErrRateLimited,
 		Message: "Rate limit exceeded. Please try again later.",
-	}
-}
-
-// NewInvalidTransitionError returns an INVALID_TRANSITION error.
-func NewInvalidTransitionError(msg string) *ErrorEnvelope {
-	return &ErrorEnvelope{Code: ErrInvalidTransition, Message: msg}
-}
-
-// NewWorkflowNotActiveError returns a WORKFLOW_NOT_ACTIVE error.
-func NewWorkflowNotActiveError(msg string) *ErrorEnvelope {
-	return &ErrorEnvelope{Code: ErrWorkflowNotActive, Message: msg}
-}
-
-// NewWorkflowChainLimitError returns a WORKFLOW_CHAIN_LIMIT error.
-func NewWorkflowChainLimitError() *ErrorEnvelope {
-	return &ErrorEnvelope{
-		Code:    ErrWorkflowChainLimit,
-		Message: "Too many consecutive system steps",
 	}
 }

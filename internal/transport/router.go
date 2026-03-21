@@ -103,8 +103,9 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.Handle("POST /ui/upload", authChain(handleUpload(filesSvc)))
 	mux.Handle("GET /ui/download/{fileId}", authChain(handleDownload(filesSvc)))
 
-	// Global middleware (layers 1-4): applied to all routes including health.
+	// Global middleware: applied to all routes including health.
 	var handler http.Handler = mux
+	handler = InjectTraceContext(handler)
 	handler = SecurityHeaders(handler)
 	handler = RequestID(handler)
 	handler = CORS(deps.Config.Server.CORS)(handler)
