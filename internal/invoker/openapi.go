@@ -7,12 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/internal/openapi"
@@ -34,28 +35,18 @@ type OpenAPIOperationInvoker struct {
 	clients map[string]*serviceClient
 }
 
-// NewOpenAPIOperationInvoker creates an invoker with per-service HTTP clients,
-// circuit breakers, and retry policies.
-func NewOpenAPIOperationInvoker(idx *openapi.Index, services map[string]config.ServiceConfig) *OpenAPIOperationInvoker {
+// NewOpenAPIOperationInvoker creates an invoker with a shared HTTP client,
+// per-service circuit breakers, and retry policies.
+func NewOpenAPIOperationInvoker(idx *openapi.Index, services map[string]config.ServiceConfig, httpClient *http.Client) *OpenAPIOperationInvoker {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 10 * time.Second}
+	}
 	clients := make(map[string]*serviceClient, len(services))
 	for id, svcCfg := range services {
-		timeout := svcCfg.Timeout
-		if timeout <= 0 {
-			timeout = 10 * time.Second
-		}
-		transport := &http.Transport{
-			MaxIdleConns:        100,
-			MaxConnsPerHost:     50,
-			IdleConnTimeout:     90 * time.Second,
-			TLSHandshakeTimeout: 10 * time.Second,
-		}
 		cbCfg := svcCfg.CircuitBreaker
 		clients[id] = &serviceClient{
-			cfg: svcCfg,
-			client: &http.Client{
-				Timeout:   timeout,
-				Transport: transport,
-			},
+			cfg:    svcCfg,
+			client: httpClient,
 			breaker: NewCircuitBreaker(
 				cbCfg.FailureThreshold,
 				cbCfg.SuccessThreshold,
@@ -149,7 +140,7 @@ func (inv *OpenAPIOperationInvoker) executeWithRetry(
 			if !canRetry || !isRetryableError(err) {
 				return model.InvocationResult{}, err
 			}
-			slog.Debug("invoker: retrying after error",
+			util.Log(ctx).Debug("invoker: retrying after error",
 				"attempt", attempt+1,
 				"max", maxAttempts,
 				"error", err,
@@ -159,7 +150,7 @@ func (inv *OpenAPIOperationInvoker) executeWithRetry(
 
 		if isRetryableStatus(result.StatusCode) && canRetry && attempt < maxAttempts-1 {
 			lastResult = result
-			slog.Debug("invoker: retrying after status",
+			util.Log(ctx).Debug("invoker: retrying after status",
 				"attempt", attempt+1,
 				"max", maxAttempts,
 				"status", result.StatusCode,

@@ -247,8 +247,14 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 		serviceConfigs[svcID] = svcCfg
 	}
 
+	// Build HTTP client for invoker — use configured service timeout if set.
+	var testHTTPClient *http.Client
+	if hc.serviceTimeout > 0 {
+		testHTTPClient = &http.Client{Timeout: hc.serviceTimeout}
+	}
+
 	h.InvokerRegistry = invoker.NewRegistry()
-	h.InvokerRegistry.Register(invoker.NewOpenAPIOperationInvoker(h.OAIndex, serviceConfigs))
+	h.InvokerRegistry.Register(invoker.NewOpenAPIOperationInvoker(h.OAIndex, serviceConfigs, testHTTPClient))
 	h.InvokerRegistry.Register(invoker.NewSDKOperationInvoker(sdkHandlers))
 
 	// Step 8: Build providers.
@@ -294,7 +300,7 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 	}
 
 	// Step 11: Build router with full middleware chain.
-	jwks := transport.NewJWKSClient(h.issuer.JWKSURL(), 1*time.Hour)
+	jwks := transport.NewJWKSClient(h.issuer.JWKSURL(), 1*time.Hour, nil)
 
 	router := transport.NewRouter(transport.Dependencies{
 		Config:             h.cfg,

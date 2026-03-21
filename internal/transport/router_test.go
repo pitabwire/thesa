@@ -25,9 +25,6 @@ func testDeps() Dependencies {
 		ReadyHandler: func(w http.ResponseWriter, _ *http.Request) {
 			WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 		},
-		MetricsHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}),
 	}
 }
 
@@ -58,13 +55,14 @@ func TestNewRouter_ready(t *testing.T) {
 	}
 }
 
-func TestNewRouter_metrics(t *testing.T) {
+func TestNewRouter_metrics_not_registered(t *testing.T) {
 	r := NewRouter(testDeps())
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
 
-	if w.Code != 200 {
-		t.Errorf("status = %d, want 200", w.Code)
+	// Frame handles metrics — /metrics is no longer registered on the chi router.
+	if w.Code != 404 && w.Code != 405 {
+		t.Errorf("status = %d, want 404 or 405", w.Code)
 	}
 }
 
@@ -118,8 +116,8 @@ func TestNewRouter_publicRoutesbypassAuth(t *testing.T) {
 	deps.Authenticate = rejectAuth
 	r := NewRouter(deps)
 
-	// Health, ready, and metrics should still return 200.
-	for _, path := range []string{"/ui/health", "/ui/ready", "/metrics"} {
+	// Health and ready should still return 200 (bypass auth).
+	for _, path := range []string{"/ui/health", "/ui/ready"} {
 		t.Run(path, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, httptest.NewRequest("GET", path, nil))

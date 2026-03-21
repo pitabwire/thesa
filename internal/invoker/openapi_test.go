@@ -144,7 +144,7 @@ func newTestInvoker(t *testing.T, serverURL string, svcCfg config.ServiceConfig)
 	idx := loadTestIndex(t, serverURL)
 	return NewOpenAPIOperationInvoker(idx, map[string]config.ServiceConfig{
 		"test-svc": svcCfg,
-	})
+	}, nil)
 }
 
 // --- Supports ---

@@ -2,13 +2,12 @@ package transport
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/model"
@@ -58,7 +57,7 @@ func Recovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				slog.Error("panic recovered",
+				util.Log(r.Context()).Error("panic recovered",
 					"error", rec,
 					"method", r.Method,
 					"path", r.URL.Path,
@@ -109,7 +108,7 @@ func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get("X-Correlation-Id")
 		if id == "" {
-			id = generateID()
+			id = util.IDString()
 		}
 		ctx := context.WithValue(r.Context(), correlationIDKey{}, id)
 		w.Header().Set("X-Correlation-Id", id)
@@ -179,7 +178,7 @@ func ResolveCapabilities(resolver model.CapabilityResolver) func(http.Handler) h
 				if rctx != nil {
 					caps, err := resolver.Resolve(rctx)
 					if err != nil {
-						slog.Warn("capability resolution failed",
+						util.Log(r.Context()).Warn("capability resolution failed",
 							"error", err,
 							"subject_id", rctx.SubjectID,
 						)
@@ -214,7 +213,7 @@ func RequestLogging(next http.Handler) http.Handler {
 		start := time.Now()
 		ww := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(ww, r)
-		slog.Info("request",
+		util.Log(r.Context()).Info("request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", ww.status,
@@ -292,10 +291,4 @@ func extractClaimStringSlice(claims map[string]any, path string) []string {
 		}
 	}
 	return result
-}
-
-func generateID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }

@@ -29,7 +29,6 @@ type Dependencies struct {
 	LookupProvider     *search.LookupProvider
 	HealthHandler      http.HandlerFunc
 	ReadyHandler       http.HandlerFunc
-	MetricsHandler     http.Handler
 	AppVersion         string
 }
 
@@ -51,9 +50,6 @@ func NewRouter(deps Dependencies) chi.Router {
 	}
 	if deps.ReadyHandler != nil {
 		r.Get("/ui/ready", deps.ReadyHandler)
-	}
-	if deps.MetricsHandler != nil {
-		r.Method(http.MethodGet, "/metrics", deps.MetricsHandler)
 	}
 
 	// Authenticated routes — full middleware chain (layers 5-10).

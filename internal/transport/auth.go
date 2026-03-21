@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -9,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/model"
@@ -35,13 +36,16 @@ type JWKSClient struct {
 
 // NewJWKSClient creates a new JWKS client that fetches keys from the given
 // URL and caches them for the given TTL.
-func NewJWKSClient(url string, ttl time.Duration) *JWKSClient {
+func NewJWKSClient(url string, ttl time.Duration, httpClient *http.Client) *JWKSClient {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 10 * time.Second}
+	}
 	return &JWKSClient{
 		url:        url,
 		keys:       make(map[string]crypto.PublicKey),
 		ttl:        ttl,
 		minRefresh: 5 * time.Minute,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: httpClient,
 	}
 }
 
@@ -63,7 +67,7 @@ func (c *JWKSClient) GetKey(kid string) (crypto.PublicKey, error) {
 		key, ok = c.keys[kid]
 		c.mu.RUnlock()
 		if ok {
-			slog.Warn("jwks: refresh failed, using cached key", "error", err)
+			util.Log(context.Background()).Warn("jwks: refresh failed, using cached key", "error", err)
 			return key, nil
 		}
 		return nil, fmt.Errorf("jwks: fetch failed: %w", err)
@@ -129,7 +133,7 @@ func (c *JWKSClient) refresh() error {
 			continue
 		}
 		if err != nil {
-			slog.Warn("jwks: failed to parse key", "kid", kid, "error", err)
+			util.Log(context.Background()).Warn("jwks: failed to parse key", "kid", kid, "error", err)
 			continue
 		}
 		keys[kid] = key

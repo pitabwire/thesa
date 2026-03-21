@@ -114,7 +114,7 @@ func TestJWKSClient_GetKey_RSA(t *testing.T) {
 	rsaKey := generateRSAKey(t)
 	jwks := startJWKSServer(t, rsaKeyToJWK("rsa-key-1", &rsaKey.PublicKey))
 
-	client := NewJWKSClient(jwks.URL, 1*time.Hour)
+	client := NewJWKSClient(jwks.URL, 1*time.Hour, nil)
 	key, err := client.GetKey("rsa-key-1")
 	if err != nil {
 		t.Fatalf("GetKey: %v", err)
@@ -132,7 +132,7 @@ func TestJWKSClient_GetKey_EC(t *testing.T) {
 	ecKey := generateECKey(t)
 	jwks := startJWKSServer(t, ecKeyToJWK("ec-key-1", &ecKey.PublicKey))
 
-	client := NewJWKSClient(jwks.URL, 1*time.Hour)
+	client := NewJWKSClient(jwks.URL, 1*time.Hour, nil)
 	key, err := client.GetKey("ec-key-1")
 	if err != nil {
 		t.Fatalf("GetKey: %v", err)
@@ -148,7 +148,7 @@ func TestJWKSClient_GetKey_EC(t *testing.T) {
 
 func TestJWKSClient_GetKey_unknown(t *testing.T) {
 	jwks := startJWKSServer(t) // empty JWKS
-	client := NewJWKSClient(jwks.URL, 1*time.Hour)
+	client := NewJWKSClient(jwks.URL, 1*time.Hour, nil)
 	_, err := client.GetKey("nonexistent")
 	if err == nil {
 		t.Fatal("expected error for unknown key")
@@ -165,7 +165,7 @@ func TestJWKSClient_caching(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := NewJWKSClient(srv.URL, 1*time.Hour)
+	client := NewJWKSClient(srv.URL, 1*time.Hour, nil)
 	client.minRefresh = 0 // allow rapid refresh for test
 
 	client.GetKey("cached-key")
@@ -184,7 +184,7 @@ func TestJWKSClient_multipleKeys(t *testing.T) {
 		rsaKeyToJWK("key-2", &rsaKey2.PublicKey),
 	)
 
-	client := NewJWKSClient(jwks.URL, 1*time.Hour)
+	client := NewJWKSClient(jwks.URL, 1*time.Hour, nil)
 
 	k1, err := client.GetKey("key-1")
 	if err != nil {
@@ -206,7 +206,7 @@ func TestJWTAuthenticator_validToken(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := ClaimsFrom(r.Context())
@@ -237,7 +237,7 @@ func TestJWTAuthenticator_validToken_EC(t *testing.T) {
 	jwksSrv := startJWKSServer(t, ecKeyToJWK("ec-test", &ecKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -257,7 +257,7 @@ func TestJWTAuthenticator_validToken_EC(t *testing.T) {
 
 func TestJWTAuthenticator_missingAuthHeader(t *testing.T) {
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient("http://unused", 1*time.Hour)
+	jwksClient := NewJWKSClient("http://unused", 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called")
 	}))
@@ -272,7 +272,7 @@ func TestJWTAuthenticator_missingAuthHeader(t *testing.T) {
 
 func TestJWTAuthenticator_invalidFormat(t *testing.T) {
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient("http://unused", 1*time.Hour)
+	jwksClient := NewJWKSClient("http://unused", 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called")
 	}))
@@ -293,7 +293,7 @@ func TestJWTAuthenticator_expiredToken(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for expired token")
 	}))
@@ -318,7 +318,7 @@ func TestJWTAuthenticator_wrongIssuer(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for wrong issuer")
 	}))
@@ -343,7 +343,7 @@ func TestJWTAuthenticator_wrongAudience(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for wrong audience")
 	}))
@@ -369,7 +369,7 @@ func TestJWTAuthenticator_disallowedAlgorithm(t *testing.T) {
 
 	cfg := testIdentityCfg()
 	cfg.Algorithms = []string{"ES256"} // only allow ES256, not RS256
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for disallowed algorithm")
 	}))
@@ -391,7 +391,7 @@ func TestJWTAuthenticator_unknownKid(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("known-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	jwksClient.minRefresh = 0 // allow refresh in test
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for unknown kid")
@@ -414,7 +414,7 @@ func TestJWTAuthenticator_missingExpClaim(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for missing exp")
 	}))
@@ -439,7 +439,7 @@ func TestJWTAuthenticator_clockSkewTolerance(t *testing.T) {
 	jwksSrv := startJWKSServer(t, rsaKeyToJWK("test-key", &rsaKey.PublicKey))
 
 	cfg := testIdentityCfg()
-	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour)
+	jwksClient := NewJWKSClient(jwksSrv.URL, 1*time.Hour, nil)
 	handler := JWTAuthenticator(cfg, jwksClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 	}))

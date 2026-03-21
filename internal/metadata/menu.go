@@ -2,8 +2,9 @@ package metadata
 
 import (
 	"context"
-	"log/slog"
 	"sort"
+
+	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/invoker"
@@ -136,7 +137,7 @@ func (p *MenuProvider) resolveBadge(
 
 	result, err := p.invokers.Invoke(ctx, rctx, binding, model.InvocationInput{})
 	if err != nil {
-		slog.Debug("menu: badge resolution failed",
+		util.Log(ctx).Debug("menu: badge resolution failed",
 			"domain", domain.Domain,
 			"operation", badge.OperationID,
 			"error", err,

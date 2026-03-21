@@ -1,20 +1,15 @@
 // Package main is the entry point for the Thesa BFF server.
-// It wires all dependencies together and starts the HTTP server.
+// It wires all dependencies together and starts the HTTP server using Frame.
 package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
-	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
+	"github.com/pitabwire/frame"
+	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/capability"
 	"github.com/pitabwire/thesa/internal/command"
@@ -37,85 +32,63 @@ var (
 )
 
 func main() {
-	os.Exit(run())
-}
-
-func run() int {
-	// Step 1: Parse CLI flags.
 	configPath := flag.String("config", "config.yaml", "path to configuration file")
 	flag.Parse()
 
-	// Step 2: Load configuration.
+	ctx := context.Background()
+	log := util.Log(ctx)
+
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "configuration error: %v\n", err)
-		return 1
+		log.WithError(err).Fatal("configuration error")
 	}
 
-	// Step 3: Initialize telemetry (logger, tracer, metrics).
-	observability.Version = version
-	observability.Commit = commit
-
-	logger, err := observability.NewLogger(cfg.Observability)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "logger error: %v\n", err)
-		return 1
-	}
-	defer logger.Sync()
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
-	defer stop()
-
-	tracingShutdown, err := observability.InitTracing(ctx, cfg.Observability.Tracing, "thesa-bff", version)
-	if err != nil {
-		logger.Fatal("tracing initialization failed", zap.Error(err))
-		return 1
-	}
-
-	metrics := observability.InitMetrics(prometheus.DefaultRegisterer)
-
-	// Step 4: Load OpenAPI specs and build index.
+	// Load OpenAPI specs.
 	oaIndex := openapi.NewIndex()
 	specSources := buildSpecSources(cfg.Specs)
 	if err := oaIndex.Load(specSources); err != nil {
-		logger.Fatal("OpenAPI index load failed", zap.Error(err))
-		return 1
+		log.WithError(err).Fatal("OpenAPI index load failed")
 	}
 
-	// Step 5: Load definitions, validate, build registry.
+	// Load definitions.
 	loader := definition.NewLoader()
 	defs, err := loader.LoadAll(cfg.Definitions.Directories)
 	if err != nil {
-		logger.Fatal("definition loading failed", zap.Error(err))
-		return 1
+		log.WithError(err).Fatal("definition loading failed")
 	}
 
 	validator := definition.NewValidator()
 	verrs := validator.Validate(defs, oaIndex)
 	if len(verrs) > 0 {
 		for _, ve := range verrs {
-			logger.Error("definition validation error", zap.String("error", ve.Error()))
+			log.Error("definition validation error", "error", ve.Error())
 		}
-		logger.Fatal("definition validation failed", zap.Int("errors", len(verrs)))
-		return 1
+		log.Fatal("definition validation failed", "errors", len(verrs))
 	}
 
 	registry := definition.NewRegistry(defs)
 
-	// Step 6: Initialize capability resolver.
+	// Capability resolver.
 	capResolver, err := buildCapabilityResolver(cfg.Capability)
 	if err != nil {
-		logger.Fatal("capability resolver initialization failed", zap.Error(err))
-		return 1
+		log.WithError(err).Fatal("capability resolver initialization failed")
 	}
 
-	// Step 7: Build invoker registry.
+	// Create Frame service first (for its HTTP client).
+	ctx, svc := frame.NewServiceWithContext(ctx,
+		frame.WithConfig(cfg),
+	)
+
+	// Now use Frame's HTTP client for the invoker.
+	httpClient := svc.HTTPClientManager().Client(ctx)
+
+	// Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
 	invokerReg := invoker.NewRegistry()
-	invokerReg.Register(invoker.NewOpenAPIOperationInvoker(oaIndex, cfg.Services))
+	invokerReg.Register(invoker.NewOpenAPIOperationInvoker(oaIndex, cfg.Services, httpClient))
 	invokerReg.Register(invoker.NewSDKOperationInvoker(sdkHandlers))
 
-	// Step 8: Build providers.
+	// Build providers.
 	cmdExecutor := command.NewCommandExecutor(registry, invokerReg, oaIndex)
 
 	actionProvider := metadata.NewActionProvider()
@@ -135,24 +108,16 @@ func run() int {
 		cfg.Lookup.Cache.MaxEntries,
 	)
 
-	// Step 9: Build HTTP router.
-	jwks := transport.NewJWKSClient(cfg.Identity.JWKSURL, cfg.Identity.JWKSCacheTTL)
+	// Build HTTP router.
+	jwks := transport.NewJWKSClient(cfg.Identity.JWKSURL, cfg.Identity.JWKSCacheTTL, httpClient)
 
 	specServiceIDs := make([]string, 0, len(specSources))
 	for _, s := range specSources {
 		specServiceIDs = append(specServiceIDs, s.ServiceID)
 	}
-	readinessChecks := observability.ReadinessChecks{
-		DefinitionsLoaded: func() bool { return len(registry.AllDomains()) > 0 },
-		OpenAPILoaded: func() bool {
-			for _, svcID := range specServiceIDs {
-				if len(oaIndex.AllOperationIDs(svcID)) > 0 {
-					return true
-				}
-			}
-			return len(specServiceIDs) == 0
-		},
-	}
+
+	observability.Version = version
+	observability.Commit = commit
 
 	router := transport.NewRouter(transport.Dependencies{
 		Config:             cfg,
@@ -168,65 +133,45 @@ func run() int {
 		SearchProvider:     searchProvider,
 		LookupProvider:     lookupProvider,
 		HealthHandler:      observability.HandleHealth(),
-		ReadyHandler:       observability.HandleReady(readinessChecks),
-		MetricsHandler:     observability.Handler(),
-		AppVersion:         version,
+		ReadyHandler: observability.HandleReady(observability.ReadinessChecks{
+			DefinitionsLoaded: func() bool { return len(registry.AllDomains()) > 0 },
+			OpenAPILoaded: func() bool {
+				for _, svcID := range specServiceIDs {
+					if len(oaIndex.AllOperationIDs(svcID)) > 0 {
+						return true
+					}
+				}
+				return len(specServiceIDs) == 0
+			},
+		}),
+		AppVersion: version,
 	})
 
-	handler := metrics.MetricsMiddleware(observability.TracingMiddleware(router))
-
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler:      handler,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-	}
-
-	// Step 10: Start HTTP server.
-	logger.Info("server started",
-		zap.Int("port", cfg.Server.Port),
-		zap.String("version", version),
-		zap.String("commit", commit),
-		zap.Int("definitions", len(defs)),
+	// Set the handler on the service.
+	svc.Init(ctx,
+		frame.WithHTTPHandler(router),
+		frame.WithHealthCheckPath("/ui/health"),
 	)
 
-	errCh := make(chan error, 1)
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
+	// Add health checks.
+	svc.AddHealthCheck(frame.CheckerFunc(func() error {
+		if len(registry.AllDomains()) == 0 {
+			return fmt.Errorf("no definitions loaded")
 		}
-		close(errCh)
-	}()
+		return nil
+	}))
 
-	// Wait for shutdown signal or server error.
-	select {
-	case <-ctx.Done():
-		logger.Info("shutdown initiated")
-	case err := <-errCh:
-		logger.Error("server error", zap.Error(err))
-		return 1
+	log = util.Log(ctx)
+	log.Info("server starting",
+		"version", version,
+		"commit", commit,
+		"definitions", len(defs),
+	)
+
+	serverPort := fmt.Sprintf(":%d", cfg.Server.Port)
+	if err := svc.Run(ctx, serverPort); err != nil {
+		log.WithError(err).Fatal("server failed")
 	}
-
-	// Graceful shutdown.
-	shutdownTimeout := cfg.Server.ShutdownTimeout
-	if shutdownTimeout == 0 {
-		shutdownTimeout = 30 * time.Second
-	}
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer shutdownCancel()
-
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Error("HTTP server shutdown error", zap.Error(err))
-	}
-
-	if err := tracingShutdown(shutdownCtx); err != nil {
-		logger.Error("tracing shutdown error", zap.Error(err))
-	}
-
-	_ = metrics
-
-	logger.Info("shutdown complete")
-	return 0
 }
 
 // buildSpecSources converts config spec sources to openapi.SpecSource.

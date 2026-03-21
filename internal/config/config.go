@@ -8,11 +8,14 @@ import (
 	"strings"
 	"time"
 
+	frameconfig "github.com/pitabwire/frame/config"
 	"gopkg.in/yaml.v3"
 )
 
 // Config is the root application configuration.
 type Config struct {
+	frameconfig.ConfigurationDefault `yaml:"-"` // Frame handles infrastructure config via env vars
+
 	Server        ServerConfig             `yaml:"server"`
 	Identity      IdentityConfig           `yaml:"identity"`
 	Definitions   DefinitionsConfig        `yaml:"definitions"`
