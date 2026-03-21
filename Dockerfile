@@ -1,26 +1,27 @@
 # Stage 1: Build Go BFF
-FROM golang:1.26-alpine AS builder
-
-RUN apk add --no-cache git ca-certificates
+FROM golang:1.26 AS builder
 
 WORKDIR /build
 
-# Cache dependencies.
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source and build.
 COPY . .
 
 ARG VERSION=dev
 ARG COMMIT=unknown
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+    -trimpath \
+    -ldflags="-s -w \
+      -X github.com/pitabwire/frame/version.Version=${VERSION} \
+      -X github.com/pitabwire/frame/version.Commit=${COMMIT}" \
     -o /thesa-bff ./cmd/bff
 
 # Stage 2: Runtime
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM cgr.dev/chainguard/static:latest
 
 COPY --from=builder /thesa-bff /thesa-bff
 COPY definitions/ /definitions/
@@ -28,7 +29,7 @@ COPY specs/ /specs/
 COPY config/ /config/
 
 USER 65532:65532
-EXPOSE 8080
+EXPOSE 80
 
 ENTRYPOINT ["/thesa-bff"]
 CMD ["--config", "/config/config.yaml"]

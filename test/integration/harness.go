@@ -301,14 +301,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 		CommandExecutor:    h.CommandExecutor,
 		SearchProvider:     searchProvider,
 		LookupProvider:     lookupProvider,
-		HealthHandler: func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"status":"ok"}`))
-		},
-		ReadyHandler: func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"status":"ready"}`))
-		},
 	})
 
 	// Step 12: Start test server.

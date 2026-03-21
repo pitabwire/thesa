@@ -367,18 +367,17 @@ func TestSecurity_HeadersOnErrorResponse(t *testing.T) {
 	}
 }
 
-func TestSecurity_HeadersOnPublicEndpoint(t *testing.T) {
+func TestSecurity_HeadersOnEndpoint(t *testing.T) {
 	h := NewTestHarness(t)
 
-	// Health endpoint is public but should still have security headers.
-	resp := h.GET("/ui/health", "")
-	h.AssertStatus(t, resp, http.StatusOK)
+	// Security headers should be present on all responses (even 401).
+	resp := h.GET("/ui/navigation", "")
 
 	if resp.Header.Get("Strict-Transport-Security") == "" {
-		t.Error("HSTS header missing on public endpoint")
+		t.Error("HSTS header missing")
 	}
 	if resp.Header.Get("X-Content-Type-Options") == "" {
-		t.Error("X-Content-Type-Options missing on public endpoint")
+		t.Error("X-Content-Type-Options missing")
 	}
 }
 
@@ -476,7 +475,7 @@ func TestSecurity_CORSAllowedOrigin(t *testing.T) {
 	h := NewTestHarness(t)
 
 	// Allowed origin (configured in harness: http://localhost:3000).
-	resp := h.GETWithHeaders("/ui/health", "", map[string]string{
+	resp := h.GETWithHeaders("/ui/navigation", "", map[string]string{
 		"Origin": "http://localhost:3000",
 	})
 
@@ -489,7 +488,7 @@ func TestSecurity_CORSDisallowedOrigin(t *testing.T) {
 	h := NewTestHarness(t)
 
 	// Disallowed origin.
-	resp := h.GETWithHeaders("/ui/health", "", map[string]string{
+	resp := h.GETWithHeaders("/ui/navigation", "", map[string]string{
 		"Origin": "https://evil.example.com",
 	})
 

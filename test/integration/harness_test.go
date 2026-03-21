@@ -11,29 +11,11 @@ import (
 func TestHarness_Startup(t *testing.T) {
 	h := NewTestHarness(t)
 
-	// Verify the server is running.
-	resp := h.GET("/ui/health", "")
-	h.AssertStatus(t, resp, http.StatusOK)
-}
-
-func TestHarness_HealthEndpoints(t *testing.T) {
-	h := NewTestHarness(t)
-
-	t.Run("health", func(t *testing.T) {
-		resp := h.GET("/ui/health", "")
-		h.AssertStatus(t, resp, http.StatusOK)
-
-		var body map[string]string
-		h.ParseJSON(resp, &body)
-		if body["status"] != "ok" {
-			t.Errorf("health status = %q, want ok", body["status"])
-		}
-	})
-
-	t.Run("ready", func(t *testing.T) {
-		resp := h.GET("/ui/ready", "")
-		h.AssertStatus(t, resp, http.StatusOK)
-	})
+	// Verify the server is running by hitting an unauthenticated endpoint.
+	// Health checks are handled by Frame at /healthz (not in the app router).
+	resp := h.GET("/ui/navigation", "")
+	// Should get 401 (auth required) — proves server is up and routing works.
+	h.AssertStatus(t, resp, http.StatusUnauthorized)
 }
 
 func TestHarness_AuthenticationRequired(t *testing.T) {

@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -19,56 +18,12 @@ func testDeps() Dependencies {
 	cfg.Server.HandlerTimeout = 5 * time.Second
 	return Dependencies{
 		Config: cfg,
-		HealthHandler: func(w http.ResponseWriter, _ *http.Request) {
-			WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-		},
-		ReadyHandler: func(w http.ResponseWriter, _ *http.Request) {
-			WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
-		},
 	}
 }
 
 // --- Router tests ---
 
-func TestNewRouter_health(t *testing.T) {
-	r := NewRouter(testDeps())
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/health", nil))
-
-	if w.Code != 200 {
-		t.Errorf("status = %d, want 200", w.Code)
-	}
-	var body map[string]string
-	json.NewDecoder(w.Body).Decode(&body)
-	if body["status"] != "ok" {
-		t.Errorf("status = %q, want ok", body["status"])
-	}
-}
-
-func TestNewRouter_ready(t *testing.T) {
-	r := NewRouter(testDeps())
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/ready", nil))
-
-	if w.Code != 200 {
-		t.Errorf("status = %d, want 200", w.Code)
-	}
-}
-
-func TestNewRouter_metrics_not_registered(t *testing.T) {
-	r := NewRouter(testDeps())
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
-
-	// Frame handles metrics — /metrics is no longer registered on the chi router.
-	if w.Code != 404 && w.Code != 405 {
-		t.Errorf("status = %d, want 404 or 405", w.Code)
-	}
-}
-
 func TestNewRouter_authenticatedRoutes_areRegistered(t *testing.T) {
-	// With auth rejecting all requests, all authenticated routes should
-	// return 401, confirming they are registered and not 404/405.
 	rejectAuth := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			WriteError(w, model.NewUnauthorizedError("rejected"))
@@ -101,37 +56,6 @@ func TestNewRouter_authenticatedRoutes_areRegistered(t *testing.T) {
 				t.Errorf("status = %d, want 401 (auth should reject)", w.Code)
 			}
 		})
-	}
-}
-
-func TestNewRouter_publicRoutesbypassAuth(t *testing.T) {
-	// Create an auth middleware that always rejects.
-	rejectAuth := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			WriteError(w, model.NewUnauthorizedError("rejected"))
-		})
-	}
-
-	deps := testDeps()
-	deps.Authenticate = rejectAuth
-	r := NewRouter(deps)
-
-	// Health and ready should still return 200 (bypass auth).
-	for _, path := range []string{"/ui/health", "/ui/ready"} {
-		t.Run(path, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			r.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
-			if w.Code != 200 {
-				t.Errorf("status = %d, want 200 (should bypass auth)", w.Code)
-			}
-		})
-	}
-
-	// Authenticated route should be rejected.
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/navigation", nil))
-	if w.Code != 401 {
-		t.Errorf("navigation status = %d, want 401 (auth should reject)", w.Code)
 	}
 }
 
@@ -357,7 +281,6 @@ func TestResolveCapabilities(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	// Chain: BuildRequestContextMiddleware → ResolveCapabilities → handler
 	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
 
 	claims := map[string]any{"sub": "user-1", "tenant_id": "t-1"}
@@ -438,19 +361,6 @@ func TestMiddlewareOrder(t *testing.T) {
 		}
 	}
 
-	deps := testDeps()
-	deps.Authenticate = track("authenticate")
-
-	r := NewRouter(deps)
-
-	// Replace authenticated route handlers temporarily is not straightforward
-	// with chi, so instead we verify the middleware order by testing a full
-	// request through the authenticated group and checking the response
-	// includes all global middleware effects.
-	_ = r
-
-	// Instead, test the composed middleware chain manually.
-	order = nil
 	chain := track("recovery")(
 		track("cors")(
 			track("requestID")(
@@ -460,11 +370,9 @@ func TestMiddlewareOrder(t *testing.T) {
 							track("capabilities")(
 								track("timeout")(
 									track("logging")(
-										track("metrics")(
-											http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-												w.WriteHeader(200)
-											}),
-										),
+										http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+											w.WriteHeader(200)
+										}),
 									),
 								),
 							),
@@ -481,7 +389,7 @@ func TestMiddlewareOrder(t *testing.T) {
 	expected := []string{
 		"recovery", "cors", "requestID", "securityHeaders",
 		"authenticate", "buildCtx", "capabilities", "timeout",
-		"logging", "metrics",
+		"logging",
 	}
 
 	if len(order) != len(expected) {
@@ -491,20 +399,6 @@ func TestMiddlewareOrder(t *testing.T) {
 		if order[i] != name {
 			t.Errorf("order[%d] = %q, want %q", i, order[i], name)
 		}
-	}
-}
-
-func TestSecurityHeaders_onHealth(t *testing.T) {
-	r := NewRouter(testDeps())
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/ui/health", nil))
-
-	// Security headers should be present even on health endpoint.
-	if got := w.Header().Get("X-Frame-Options"); got != "DENY" {
-		t.Errorf("X-Frame-Options = %q, want DENY", got)
-	}
-	if got := w.Header().Get("X-Correlation-Id"); got == "" {
-		t.Error("health should still get X-Correlation-Id")
 	}
 }
 

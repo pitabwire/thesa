@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/pitabwire/frame"
+	frameversion "github.com/pitabwire/frame/version"
 	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/capability"
@@ -17,18 +18,9 @@ import (
 	"github.com/pitabwire/thesa/internal/definition"
 	"github.com/pitabwire/thesa/internal/invoker"
 	"github.com/pitabwire/thesa/internal/metadata"
-	"github.com/pitabwire/thesa/internal/observability"
 	"github.com/pitabwire/thesa/internal/openapi"
 	"github.com/pitabwire/thesa/internal/search"
 	"github.com/pitabwire/thesa/internal/transport"
-)
-
-// Build-time variables set via ldflags:
-//
-//	go build -ldflags "-X main.version=1.0.0 -X main.commit=abc1234"
-var (
-	version = "dev"
-	commit  = "unknown"
 )
 
 func main() {
@@ -74,12 +66,11 @@ func main() {
 		log.WithError(err).Fatal("capability resolver initialization failed")
 	}
 
-	// Create Frame service first (for its HTTP client).
+	// Create Frame service (provides HTTP client, telemetry, lifecycle).
 	ctx, svc := frame.NewServiceWithContext(ctx,
 		frame.WithConfig(cfg),
 	)
 
-	// Now use Frame's HTTP client for the invoker.
 	httpClient := svc.HTTPClientManager().Client(ctx)
 
 	// Build invoker registry.
@@ -90,7 +81,6 @@ func main() {
 
 	// Build providers.
 	cmdExecutor := command.NewCommandExecutor(registry, invokerReg, oaIndex)
-
 	actionProvider := metadata.NewActionProvider()
 	menuProvider := metadata.NewMenuProvider(registry, invokerReg)
 	pageProvider := metadata.NewPageProvider(registry, invokerReg, actionProvider)
@@ -111,14 +101,6 @@ func main() {
 	// Build HTTP router.
 	jwks := transport.NewJWKSClient(cfg.Identity.JWKSURL, cfg.Identity.JWKSCacheTTL, httpClient)
 
-	specServiceIDs := make([]string, 0, len(specSources))
-	for _, s := range specSources {
-		specServiceIDs = append(specServiceIDs, s.ServiceID)
-	}
-
-	observability.Version = version
-	observability.Commit = commit
-
 	router := transport.NewRouter(transport.Dependencies{
 		Config:             cfg,
 		Authenticate:       transport.JWTAuthenticator(cfg.Identity, jwks),
@@ -132,28 +114,12 @@ func main() {
 		CommandExecutor:    cmdExecutor,
 		SearchProvider:     searchProvider,
 		LookupProvider:     lookupProvider,
-		HealthHandler:      observability.HandleHealth(),
-		ReadyHandler: observability.HandleReady(observability.ReadinessChecks{
-			DefinitionsLoaded: func() bool { return len(registry.AllDomains()) > 0 },
-			OpenAPILoaded: func() bool {
-				for _, svcID := range specServiceIDs {
-					if len(oaIndex.AllOperationIDs(svcID)) > 0 {
-						return true
-					}
-				}
-				return len(specServiceIDs) == 0
-			},
-		}),
-		AppVersion: version,
+		AppVersion:         frameversion.Version,
 	})
 
-	// Set the handler on the service.
-	svc.Init(ctx,
-		frame.WithHTTPHandler(router),
-		frame.WithHealthCheckPath("/ui/health"),
-	)
+	// Register handler and health checks with Frame.
+	svc.Init(ctx, frame.WithHTTPHandler(router))
 
-	// Add health checks.
 	svc.AddHealthCheck(frame.CheckerFunc(func() error {
 		if len(registry.AllDomains()) == 0 {
 			return fmt.Errorf("no definitions loaded")
@@ -161,10 +127,22 @@ func main() {
 		return nil
 	}))
 
+	svc.AddHealthCheck(frame.CheckerFunc(func() error {
+		for _, svcID := range buildSpecServiceIDs(specSources) {
+			if len(oaIndex.AllOperationIDs(svcID)) > 0 {
+				return nil
+			}
+		}
+		if len(specSources) == 0 {
+			return nil
+		}
+		return fmt.Errorf("no OpenAPI specs loaded")
+	}))
+
 	log = util.Log(ctx)
 	log.Info("server starting",
-		"version", version,
-		"commit", commit,
+		"version", frameversion.Version,
+		"commit", frameversion.Commit,
 		"definitions", len(defs),
 	)
 
@@ -174,7 +152,6 @@ func main() {
 	}
 }
 
-// buildSpecSources converts config spec sources to openapi.SpecSource.
 func buildSpecSources(specsCfg config.SpecsConfig) []openapi.SpecSource {
 	sources := make([]openapi.SpecSource, len(specsCfg.Sources))
 	for i, s := range specsCfg.Sources {
@@ -190,7 +167,14 @@ func buildSpecSources(specsCfg config.SpecsConfig) []openapi.SpecSource {
 	return sources
 }
 
-// buildCapabilityResolver creates the appropriate resolver based on config.
+func buildSpecServiceIDs(sources []openapi.SpecSource) []string {
+	ids := make([]string, len(sources))
+	for i, s := range sources {
+		ids[i] = s.ServiceID
+	}
+	return ids
+}
+
 func buildCapabilityResolver(cfg config.CapabilityConfig) (*capability.Resolver, error) {
 	switch cfg.Evaluator {
 	case "static", "":

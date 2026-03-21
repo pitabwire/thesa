@@ -25,8 +25,6 @@ type Dependencies struct {
 	CommandExecutor    *command.CommandExecutor
 	SearchProvider     *search.SearchProvider
 	LookupProvider     *search.LookupProvider
-	HealthHandler      http.HandlerFunc
-	ReadyHandler       http.HandlerFunc
 	AppVersion         string
 }
 
@@ -42,20 +40,11 @@ func chainMiddleware(middlewares ...func(http.Handler) http.Handler) func(http.H
 }
 
 // NewRouter creates an http.Handler with the full middleware pipeline and all
-// route registrations. Health, readiness, and metrics endpoints bypass the
-// authentication middleware.
+// route registrations. Health checks are handled by Frame at /healthz.
 func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
-	// Public routes — bypass authentication.
-	if deps.HealthHandler != nil {
-		mux.HandleFunc("GET /ui/health", deps.HealthHandler)
-	}
-	if deps.ReadyHandler != nil {
-		mux.HandleFunc("GET /ui/ready", deps.ReadyHandler)
-	}
-
-	// Auth middleware chain for authenticated routes (layers 5-10).
+	// Auth middleware chain for authenticated routes.
 	auth := deps.Authenticate
 	if auth == nil {
 		auth = func(next http.Handler) http.Handler { return next }
@@ -102,7 +91,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.Handle("POST /ui/upload", authChain(handleUpload(filesSvc)))
 	mux.Handle("GET /ui/download/{fileId}", authChain(handleDownload(filesSvc)))
 
-	// Global middleware: applied to all routes including health.
+	// Global middleware: applied to all routes.
 	var handler http.Handler = mux
 	handler = InjectTraceContext(handler)
 	handler = SecurityHeaders(handler)
