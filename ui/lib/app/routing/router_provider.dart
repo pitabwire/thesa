@@ -28,8 +28,13 @@ GoRouter router(Ref ref) {
 
   if (!isLoggedIn) {
     // Not authenticated — show login page
+    // /auth/callback handles the OIDC redirect back from the provider
     routes = [
       GoRoute(path: '/', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) => const LoginPage(),
+      ),
     ];
   } else {
     // Authenticated — build dynamic routes from BFF navigation
@@ -55,6 +60,13 @@ GoRouter router(Ref ref) {
     routes: routes,
     initialLocation: '/',
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final location = state.uri.path;
+      if (isLoggedIn && location == '/auth/callback') {
+        return '/';
+      }
+      return null;
+    },
     errorBuilder: (context, state) => _ErrorPage(error: state.error),
   );
 }

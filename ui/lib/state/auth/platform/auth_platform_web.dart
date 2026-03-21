@@ -20,6 +20,7 @@ class AuthPlatformWeb implements AuthPlatform {
   static const String _stateKey = 'openid_client:state';
   static const String _codeVerifierKey = 'openid_client:code_verifier';
   static const String _timestampKey = 'openid_client:timestamp';
+  static const String _callbackPath = '/auth/callback';
   static const Duration _stateExpiry = Duration(minutes: 10);
   static const Duration _tokenExchangeTimeout = Duration(seconds: 30);
 
@@ -50,13 +51,13 @@ class AuthPlatformWeb implements AuthPlatform {
 
     _cleanupStaleState();
 
-    // Use current page URL (without query/fragment) as redirect
+    // Use a fixed callback path as the redirect URI
     final currentUri = Uri.parse(web.window.location.href);
     final redirectUri = Uri(
       scheme: currentUri.scheme,
       host: currentUri.host,
       port: currentUri.port,
-      path: currentUri.path,
+      path: _callbackPath,
     );
 
     final codeVerifier = _generateCodeVerifier();
@@ -142,7 +143,7 @@ class AuthPlatformWeb implements AuthPlatform {
         scheme: uri.scheme,
         host: uri.host,
         port: uri.port,
-        path: uri.path,
+        path: _callbackPath,
       );
 
       final flow = Flow.authorizationCodeWithPKCE(
