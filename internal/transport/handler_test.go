@@ -254,7 +254,9 @@ func TestHandleGetForm_success(t *testing.T) {
 	}
 
 	var desc model.FormDescriptor
-	json.NewDecoder(w.Body).Decode(&desc)
+	if err := json.NewDecoder(w.Body).Decode(&desc); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
 	if desc.Title != "Create Order" {
 		t.Errorf("title = %q, want Create Order", desc.Title)
 	}
