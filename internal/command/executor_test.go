@@ -181,7 +181,7 @@ paths:
 
 	dir := os.TempDir()
 	specFile := filepath.Join(dir, "test-orders-spec.yaml")
-	os.WriteFile(specFile, []byte(spec), 0644)
+	_ = os.WriteFile(specFile, []byte(spec), 0644)
 
 	idx := openapiIndex.NewIndex()
 	if err := idx.Load([]openapiIndex.SpecSource{

@@ -70,7 +70,7 @@ func startJWKSServer(t *testing.T, keys ...map[string]any) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"keys": keys})
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
 	}))
 	t.Cleanup(srv.Close)
 	return srv
@@ -167,15 +167,15 @@ func TestJWKSClient_caching(t *testing.T) {
 		callCount++
 		rsaKey := generateRSAKey(t)
 		keys := []map[string]any{rsaKeyToJWK("cached-key", &rsaKey.PublicKey)}
-		json.NewEncoder(w).Encode(map[string]any{"keys": keys})
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
 	}))
 	defer srv.Close()
 
 	client := NewJWKSClient(srv.URL, 1*time.Hour, nil)
 	client.minRefresh = 0 // allow rapid refresh for test
 
-	client.GetKey("cached-key")
-	client.GetKey("cached-key")
+	_, _ = client.GetKey("cached-key")
+	_, _ = client.GetKey("cached-key")
 
 	if callCount != 1 {
 		t.Errorf("JWKS fetched %d times, want 1 (should be cached)", callCount)

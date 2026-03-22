@@ -77,7 +77,7 @@ func newMockBackend(t *testing.T, serviceID string, operationPaths map[string]op
 	// Fallback for unregistered paths.
 	mb.defaultHandler = func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"error": fmt.Sprintf("mock: no operation registered for %s %s", r.Method, r.URL.Path),
 		})
 	}
@@ -211,7 +211,7 @@ func (mb *MockBackend) handleOperation(opID string) http.HandlerFunc {
 		resp := mb.getNextResponse(opID)
 		if resp == nil {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 			return
 		}
 
@@ -237,7 +237,7 @@ func (mb *MockBackend) handleOperation(opID string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(resp.status)
 		if resp.body != nil {
-			json.NewEncoder(w).Encode(resp.body)
+			_ = json.NewEncoder(w).Encode(resp.body)
 		}
 	}
 }

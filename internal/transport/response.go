@@ -32,7 +32,7 @@ func WriteJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	if body != nil {
-		json.NewEncoder(w).Encode(body)
+		_ = json.NewEncoder(w).Encode(body)
 	}
 }
 

@@ -55,7 +55,7 @@ func newTokenIssuer(t *testing.T) *tokenIssuer {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"keys": []map[string]any{jwk},
 		})
 	}))

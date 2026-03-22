@@ -409,7 +409,7 @@ func (h *TestHarness) doRequest(method, path string, body any, token string, hea
 // ParseJSON reads the response body and unmarshals it into the target.
 func (h *TestHarness) ParseJSON(resp *http.Response, target any) {
 	h.t.Helper()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -423,7 +423,7 @@ func (h *TestHarness) ParseJSON(resp *http.Response, target any) {
 // ReadBody reads and returns the response body as bytes.
 func (h *TestHarness) ReadBody(resp *http.Response) []byte {
 	h.t.Helper()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		h.t.Fatalf("read response body: %v", err)
@@ -436,7 +436,7 @@ func (h *TestHarness) AssertStatus(t *testing.T, resp *http.Response, expected i
 	t.Helper()
 	if resp.StatusCode != expected {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		t.Errorf("status = %d, want %d\nbody: %s", resp.StatusCode, expected, string(body))
 	}
 }
@@ -446,7 +446,7 @@ func (h *TestHarness) AssertJSON(t *testing.T, resp *http.Response, expected int
 	t.Helper()
 	if resp.StatusCode != expected {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		t.Fatalf("status = %d, want %d\nbody: %s", resp.StatusCode, expected, string(body))
 	}
 	h.ParseJSON(resp, target)

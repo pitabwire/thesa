@@ -49,7 +49,7 @@ func handleUpload(filesSvc config.ServiceConfig) http.HandlerFunc {
 			WriteError(w, model.NewBackendUnavailableError())
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Stream the response back to the client.
 		for _, key := range []string{"Content-Type", "Content-Length"} {
@@ -100,7 +100,7 @@ func handleDownload(filesSvc config.ServiceConfig) http.HandlerFunc {
 			WriteError(w, model.NewBackendUnavailableError())
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Stream the file response back to the client.
 		for _, key := range []string{"Content-Type", "Content-Length", "Content-Disposition"} {

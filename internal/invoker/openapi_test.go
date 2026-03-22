@@ -170,7 +170,7 @@ func TestOpenAPIOperationInvoker_Invoke_GETSuccess(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []any{"alice", "bob"},
 			"total": 2,
 		})
@@ -206,7 +206,7 @@ func TestOpenAPIOperationInvoker_Invoke_pathParams(t *testing.T) {
 			t.Errorf("path = %s, want /users/abc-123", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"id": "abc-123", "name": "Alice"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "abc-123", "name": "Alice"})
 	}))
 	defer server.Close()
 
@@ -237,7 +237,7 @@ func TestOpenAPIOperationInvoker_Invoke_pathParamsEscaped(t *testing.T) {
 			t.Errorf("raw path = %s, want /users/hello%%20world", r.URL.RawPath)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -263,7 +263,7 @@ func TestOpenAPIOperationInvoker_Invoke_queryParams(t *testing.T) {
 			t.Errorf("query size = %s, want 25", r.URL.Query().Get("size"))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"page": 3})
+		_ = json.NewEncoder(w).Encode(map[string]any{"page": 3})
 	}))
 	defer server.Close()
 
@@ -301,7 +301,7 @@ func TestOpenAPIOperationInvoker_Invoke_POSTWithBody(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{"id": "new-1", "name": "Alice"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "new-1", "name": "Alice"})
 	}))
 	defer server.Close()
 
@@ -331,12 +331,12 @@ func TestOpenAPIOperationInvoker_Invoke_PUTWithPathAndBody(t *testing.T) {
 		}
 		bodyBytes, _ := io.ReadAll(r.Body)
 		var body map[string]any
-		json.Unmarshal(bodyBytes, &body)
+		_ = json.Unmarshal(bodyBytes, &body)
 		if body["name"] != "Updated" {
 			t.Errorf("body.name = %v, want Updated", body["name"])
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"id": "u99", "name": "Updated"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "u99", "name": "Updated"})
 	}))
 	defer server.Close()
 
@@ -410,7 +410,7 @@ func TestOpenAPIOperationInvoker_Invoke_forwardsHeaders(t *testing.T) {
 			t.Errorf("Accept = %q, want %q", got, "application/json")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -445,7 +445,7 @@ func TestOpenAPIOperationInvoker_Invoke_customInputHeaders(t *testing.T) {
 			t.Errorf("Accept = %q, want %q (overridden by input)", got, "text/plain")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -472,7 +472,7 @@ func TestOpenAPIOperationInvoker_Invoke_sanitizesHeaders(t *testing.T) {
 			t.Errorf("Authorization = %q, want %q", got, "Bearer injectedvalue")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -501,7 +501,7 @@ func TestOpenAPIOperationInvoker_Invoke_nilRequestContext(t *testing.T) {
 			t.Errorf("Authorization = %q, want empty", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -528,7 +528,7 @@ func TestOpenAPIOperationInvoker_Invoke_extractsResponseHeaders(t *testing.T) {
 		w.Header().Set("Retry-After", "30")
 		// This header should NOT be extracted (not in allowed list).
 		w.Header().Set("X-Internal-Debug", "debug-info")
-		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 	}))
 	defer server.Close()
 
@@ -566,7 +566,7 @@ func TestOpenAPIOperationInvoker_Invoke_nonJSONResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("not json"))
+		_, _ = w.Write([]byte("not json"))
 	}))
 	defer server.Close()
 
@@ -656,7 +656,7 @@ func TestOpenAPIOperationInvoker_Invoke_retriesOnServerError(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"attempt": n})
+		_ = json.NewEncoder(w).Encode(map[string]any{"attempt": n})
 	}))
 	defer server.Close()
 
@@ -734,7 +734,7 @@ func TestOpenAPIOperationInvoker_Invoke_retryPOSTWhenNotIdempotentOnly(t *testin
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]any{"id": "new-1"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "new-1"})
 	}))
 	defer server.Close()
 
