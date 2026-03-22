@@ -56,10 +56,11 @@ func (p *MenuProvider) GetMenu(ctx context.Context, rctx *model.RequestContext, 
 			}
 
 			childNode := model.NavigationNode{
-				ID:    child.PageID,
-				Label: child.Label,
-				Icon:  child.Icon,
-				Route: child.Route,
+				ID:     child.PageID,
+				Label:  child.Label,
+				Icon:   child.Icon,
+				Path:   child.Route,
+				PageID: child.PageID,
 			}
 
 			// Resolve badge if configured.

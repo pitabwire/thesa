@@ -9,9 +9,10 @@ type NavigationTree struct {
 type NavigationNode struct {
 	ID       string           `json:"id"`
 	Label    string           `json:"label"`
-	Icon     string           `json:"icon"`
-	Route    string           `json:"route,omitempty"`
-	Children []NavigationNode `json:"children"`
+	Icon     string           `json:"icon,omitempty"`
+	Path     string           `json:"path,omitempty"`
+	PageID   string           `json:"page_id,omitempty"`
+	Children []NavigationNode `json:"children,omitempty"`
 	Badge    *BadgeDescriptor `json:"badge,omitempty"`
 }
 

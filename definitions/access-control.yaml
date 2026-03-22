@@ -115,6 +115,9 @@ pages:
         route: /tenants
       - label: "{name}"
         route: /tenants/{id}
+    data_source:
+      operation_id: getTenant
+      service_id: partition-svc
     sections:
       - id: info
         title: Tenant Information
@@ -188,6 +191,26 @@ pages:
             ACTIVE: success
             CREATED: info
             INACTIVE: warning
+      filters:
+        - field: tenant_id
+          label: Tenant
+          type: reference
+          lookup:
+            operation_id: listTenants
+            service_id: partition-svc
+            label_field: name
+            value_field: id
+        - field: state
+          label: State
+          type: select
+          options:
+            static:
+              - label: Active
+                value: ACTIVE
+              - label: Created
+                value: CREATED
+              - label: Inactive
+                value: INACTIVE
       default_sort: name
       sort_dir: asc
       page_size: 25
@@ -200,6 +223,62 @@ pages:
         form_id: partitions.create_form
         capabilities:
           - "partitions:create"
+
+  - id: partitions.detail
+    title: "{name}"
+    route: /partitions/{id}
+    layout: detail
+    capabilities:
+      - "partitions:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Partitions
+        route: /partitions
+      - label: "{name}"
+        route: /partitions/{id}
+    data_source:
+      operation_id: getPartition
+      service_id: partition-svc
+    sections:
+      - id: info
+        title: Partition Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: name
+            label: Name
+            type: text
+            read_only: true
+          - field: description
+            label: Description
+            type: text
+            read_only: true
+          - field: tenant_id
+            label: Tenant
+            type: text
+            read_only: true
+          - field: parent_id
+            label: Parent Partition
+            type: text
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+    actions:
+      - id: edit_partition
+        label: Edit
+        icon: edit
+        style: primary
+        type: form
+        form_id: partitions.edit_form
+        capabilities:
+          - "partitions:edit"
 
   # ===== Roles =====
   - id: roles.list
@@ -237,6 +316,15 @@ pages:
             ACTIVE: success
             CREATED: info
             INACTIVE: warning
+      filters:
+        - field: partition_id
+          label: Partition
+          type: reference
+          lookup:
+            operation_id: listPartitions
+            service_id: partition-svc
+            label_field: name
+            value_field: id
       row_actions:
         - id: delete_role
           label: Delete
@@ -287,6 +375,10 @@ pages:
         - field: profile_id
           label: Profile
           type: text
+          link:
+            route: /access/{id}
+            params:
+              id: id
         - field: partition_id
           label: Partition
           type: text
@@ -297,6 +389,15 @@ pages:
             ACTIVE: success
             CREATED: info
             INACTIVE: warning
+      filters:
+        - field: partition_id
+          label: Partition
+          type: reference
+          lookup:
+            operation_id: listPartitions
+            service_id: partition-svc
+            label_field: name
+            value_field: id
       row_actions:
         - id: revoke_access
           label: Revoke
@@ -324,6 +425,128 @@ pages:
         form_id: access.grant_form
         capabilities:
           - "access:create"
+
+  - id: access.detail
+    title: Access Grant
+    route: /access/{id}
+    layout: detail
+    capabilities:
+      - "access:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Access Grants
+        route: /access
+      - label: Access Detail
+        route: /access/{id}
+    data_source:
+      operation_id: getAccess
+      service_id: partition-svc
+    sections:
+      - id: info
+        title: Access Information
+        layout: grid
+        columns: 2
+        fields:
+          - field: id
+            label: ID
+            type: text
+            read_only: true
+          - field: profile_id
+            label: Profile
+            type: text
+            read_only: true
+          - field: partition_id
+            label: Partition
+            type: text
+            read_only: true
+          - field: state
+            label: State
+            type: badge
+            read_only: true
+    actions:
+      - id: assign_role
+        label: Assign Role
+        icon: add
+        style: primary
+        type: form
+        form_id: access.assign_role_form
+        capabilities:
+          - "access:edit"
+      - id: revoke_access
+        label: Revoke Access
+        icon: remove_circle
+        style: danger
+        type: command
+        command_id: access-control.removeAccess
+        capabilities:
+          - "access:delete"
+        confirmation:
+          title: Revoke Access
+          message: "Revoke this entire access grant?"
+          confirm: Revoke
+          cancel: Cancel
+          style: danger
+
+  - id: access.roles
+    title: Access Roles
+    route: /access/{id}/roles
+    layout: table
+    capabilities:
+      - "access:view"
+    breadcrumb:
+      - label: Home
+        route: /
+      - label: Access Grants
+        route: /access
+      - label: Access Detail
+        route: /access/{id}
+      - label: Roles
+        route: /access/{id}/roles
+    table:
+      data_source:
+        operation_id: listAccessRoles
+        service_id: partition-svc
+        mapping:
+          items_path: data
+      columns:
+        - field: partition_role_id
+          label: Role
+          type: text
+        - field: state
+          label: State
+          type: badge
+          status_map:
+            ACTIVE: success
+            CREATED: info
+            INACTIVE: warning
+      row_actions:
+        - id: remove_role
+          label: Remove
+          icon: remove_circle
+          style: danger
+          type: command
+          command_id: access-control.removeAccessRole
+          capabilities:
+            - "access:edit"
+          confirmation:
+            title: Remove Role
+            message: "Remove this role from the access grant?"
+            confirm: Remove
+            cancel: Cancel
+            style: danger
+      default_sort: partition_role_id
+      sort_dir: asc
+      page_size: 25
+    actions:
+      - id: assign_role
+        label: Assign Role
+        icon: add
+        style: primary
+        type: form
+        form_id: access.assign_role_form
+        capabilities:
+          - "access:edit"
 
 forms:
   - id: tenants.create_form
@@ -412,6 +635,47 @@ forms:
               label_field: name
               value_field: id
 
+  - id: partitions.edit_form
+    title: Edit Partition
+    capabilities:
+      - "partitions:edit"
+    submit_command: access-control.updatePartition
+    load_source:
+      operation_id: getPartition
+      service_id: partition-svc
+    success_route: /partitions/{id}
+    success_message: Partition updated successfully.
+    sections:
+      - id: details
+        title: Partition Details
+        layout: grid
+        columns: 1
+        fields:
+          - field: name
+            label: Partition Name
+            type: text
+            required: true
+          - field: description
+            label: Description
+            type: textarea
+          - field: parent_id
+            label: Parent Partition
+            type: reference
+            lookup:
+              operation_id: listPartitions
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+          - field: state
+            label: State
+            type: select
+            lookup:
+              static:
+                - label: Active
+                  value: ACTIVE
+                - label: Inactive
+                  value: INACTIVE
+
   - id: roles.create_form
     title: Create Role
     capabilities:
@@ -486,6 +750,32 @@ forms:
               label_field: name
               value_field: id
 
+  - id: access.assign_role_form
+    title: Assign Role
+    capabilities:
+      - "access:edit"
+    submit_command: access-control.createAccessRole
+    success_route: /access/{access_id}
+    success_message: Role assigned successfully.
+    sections:
+      - id: details
+        title: Role Assignment
+        layout: grid
+        columns: 1
+        fields:
+          - field: access_id
+            label: Access Grant
+            type: hidden
+          - field: partition_role_id
+            label: Role
+            type: reference
+            required: true
+            lookup:
+              operation_id: listPartitionRoles
+              service_id: partition-svc
+              label_field: name
+              value_field: id
+
 commands:
   - id: access-control.createTenant
     capabilities:
@@ -532,6 +822,24 @@ commands:
         data.name: input.name
         data.description: input.description
         data.parent_id: input.parent_id
+    output:
+      type: full
+
+  - id: access-control.updatePartition
+    capabilities:
+      - "partitions:edit"
+    operation:
+      type: openapi
+      operation_id: updatePartition
+      service_id: partition-svc
+    input:
+      body_mapping: projection
+      field_projection:
+        data.id: input.id
+        data.name: input.name
+        data.description: input.description
+        data.parent_id: input.parent_id
+        data.state: input.state
     output:
       type: full
 

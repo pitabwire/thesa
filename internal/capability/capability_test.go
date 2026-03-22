@@ -405,7 +405,7 @@ func (s *CapabilityTestSuite) TestCollectCapabilityChecks_AccessControlDomain() 
 
 	expectedCaps := []string{
 		"tenants:view", "tenants:create", "tenants:edit",
-		"partitions:view", "partitions:create",
+		"partitions:view", "partitions:create", "partitions:edit",
 		"roles:view", "roles:create", "roles:delete",
 		"access:view", "access:create", "access:delete", "access:edit",
 	}

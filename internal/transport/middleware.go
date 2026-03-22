@@ -135,11 +135,12 @@ func SecurityHeaders(next http.Handler) http.Handler {
 // nested claims (e.g. "realm_access.roles" for Keycloak).
 func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handler) http.Handler {
 	paths := map[string]string{
-		"subject_id": "sub",
-		"tenant_id":  "tenant_id",
-		"email":      "email",
-		"roles":      "roles",
-		"session_id": "session_id",
+		"subject_id":   "sub",
+		"tenant_id":    "tenant_id",
+		"partition_id": "partition_id",
+		"email":        "email",
+		"roles":        "roles",
+		"session_id":   "session_id",
 	}
 	for k, v := range claimPaths {
 		paths[k] = v
@@ -152,10 +153,10 @@ func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handl
 				SubjectID:     extractClaimString(claims, paths["subject_id"]),
 				Email:         extractClaimString(claims, paths["email"]),
 				TenantID:      extractClaimString(claims, paths["tenant_id"]),
+				PartitionID:   extractClaimString(claims, paths["partition_id"]),
 				Roles:         extractClaimStringSlice(claims, paths["roles"]),
 				SessionID:     extractClaimString(claims, paths["session_id"]),
 				Claims:        claims,
-				PartitionID:   r.Header.Get("X-Partition-Id"),
 				DeviceID:      r.Header.Get("X-Device-Id"),
 				Timezone:      r.Header.Get("X-Timezone"),
 				Locale:        r.Header.Get("Accept-Language"),
@@ -169,7 +170,9 @@ func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handl
 }
 
 // ResolveCapabilities returns middleware that eagerly resolves capabilities
-// for the current user and stores them in the context.
+// for the current user and stores them in the context. If the authorization
+// service is unavailable the request fails with 502 so the frontend can
+// display a meaningful error instead of rendering an empty navigation tree.
 func ResolveCapabilities(resolver model.CapabilityResolver) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -178,14 +181,15 @@ func ResolveCapabilities(resolver model.CapabilityResolver) func(http.Handler) h
 				if rctx != nil {
 					caps, err := resolver.Resolve(r.Context(), rctx)
 					if err != nil {
-						util.Log(r.Context()).Warn("capability resolution failed",
+						util.Log(r.Context()).Error("capability resolution failed",
 							"error", err,
 							"subject_id", rctx.SubjectID,
 						)
-					} else {
-						ctx := context.WithValue(r.Context(), capabilitiesKey{}, caps)
-						r = r.WithContext(ctx)
+						WriteError(w, model.NewBackendUnavailableError())
+						return
 					}
+					ctx := context.WithValue(r.Context(), capabilitiesKey{}, caps)
+					r = r.WithContext(ctx)
 				}
 			}
 			next.ServeHTTP(w, r)

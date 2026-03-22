@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -201,10 +202,11 @@ func TestSecurityHeaders(t *testing.T) {
 
 func TestBuildRequestContextMiddleware(t *testing.T) {
 	claims := map[string]any{
-		"sub":       "user-42",
-		"email":     "user@example.com",
-		"tenant_id": "tenant-1",
-		"roles":     []any{"admin", "viewer"},
+		"sub":          "user-42",
+		"email":        "user@example.com",
+		"tenant_id":    "tenant-1",
+		"partition_id": "part-1",
+		"roles":        []any{"admin", "viewer"},
 	}
 
 	handler := BuildRequestContextMiddleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +231,6 @@ func TestBuildRequestContextMiddleware(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req = req.WithContext(WithClaims(req.Context(), claims))
-	req.Header.Set("X-Partition-Id", "part-1")
 	req.Header.Set("X-Device-Id", "device-abc")
 	req.Header.Set("Accept-Language", "en-US")
 
@@ -290,6 +291,29 @@ func TestResolveCapabilities(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
+}
+
+func TestResolveCapabilities_errorReturns502(t *testing.T) {
+	resolver := &mockResolver{
+		err: fmt.Errorf("keto unreachable"),
+	}
+
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be called when capability resolution fails")
+	})
+
+	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
+
+	claims := map[string]any{"sub": "user-1", "tenant_id": "t-1"}
+	req := httptest.NewRequest("GET", "/", nil)
+	req = req.WithContext(WithClaims(req.Context(), claims))
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadGateway)
+	}
 }
 
 func TestResolveCapabilities_nilResolver(t *testing.T) {

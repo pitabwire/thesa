@@ -330,8 +330,8 @@ func TestMenuProvider_GetMenu_nodeProperties(t *testing.T) {
 	if child.Label != "Order List" {
 		t.Errorf("child.Label = %q, want Order List", child.Label)
 	}
-	if child.Route != "/orders" {
-		t.Errorf("child.Route = %q, want /orders", child.Route)
+	if child.Path != "/orders" {
+		t.Errorf("child.Path = %q, want /orders", child.Path)
 	}
 	if child.Icon != "list" {
 		t.Errorf("child.Icon = %q, want list", child.Icon)
