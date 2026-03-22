@@ -58,7 +58,7 @@ func handleUpload(filesSvc config.ServiceConfig) http.HandlerFunc {
 			}
 		}
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		_, _ = io.Copy(w, resp.Body)
 	}
 }
 
@@ -109,6 +109,6 @@ func handleDownload(filesSvc config.ServiceConfig) http.HandlerFunc {
 			}
 		}
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		_, _ = io.Copy(w, resp.Body)
 	}
 }
