@@ -53,35 +53,22 @@ Future<void> main() async {
 }
 
 /// Load environment configuration from .env files.
-///
-/// In release builds, `.env.production` is automatically loaded as an
-/// override so the production BFF URL is used without requiring a
-/// `--dart-define=ENV=production` flag at build time.
 Future<void> _loadEnvironment() async {
   try {
     // Load base .env file
     await dotenv.load();
 
-    // Determine environment: explicit dart-define takes precedence,
-    // otherwise release builds default to "production".
+    // Try to load environment-specific overrides
     const envName = String.fromEnvironment('ENV');
-    final effectiveEnv = envName.isNotEmpty
-        ? envName
-        : (kReleaseMode ? 'production' : '');
-
-    if (effectiveEnv.isNotEmpty) {
+    if (envName.isNotEmpty) {
       try {
-        await dotenv.load(
-          fileName: '.env.$effectiveEnv',
-          mergeWith: dotenv.env,
-        );
-        _logger.info('Loaded .env.$effectiveEnv overrides');
+        await dotenv.load(fileName: '.env.$envName', mergeWith: dotenv.env);
       } catch (_) {
-        _logger.info('No .env.$effectiveEnv file found, using defaults');
+        _logger.info('No .env.$envName file found, using defaults');
       }
     }
 
-    _logger.info('Environment loaded (BFF: ${dotenv.get('BFF_BASE_URL', fallback: 'not set')})');
+    _logger.info('Environment loaded');
   } catch (e) {
     _logger.warning('Failed to load .env file, using dart-define values', e);
   }
