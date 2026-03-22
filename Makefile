@@ -13,6 +13,7 @@ OIDC_CLIENT_ID   ?= d6qbqdkpf2t52mcunf3g
 OIDC_ISSUER      ?= https://oauth2.stawi.org
 
 .PHONY: build test lint format clean \
+        flutter-setup \
         ui-deps ui-generate ui-drift-worker ui-build ui-build-prod ui-build-dev \
         ui-clean ui-test ui-analyze \
         docker-build docker-push
@@ -32,9 +33,29 @@ format:
 lint:
 	golangci-lint run ./...
 
+## ── Flutter SDK setup ──
+
+FLUTTER_CHANNEL ?= stable
+FLUTTER_HOME    ?= $(HOME)/flutter
+
+## Install Flutter SDK (stable channel) if not already present.
+## Idempotent — skips download when flutter is already on PATH.
+flutter-setup:
+	@if command -v flutter >/dev/null 2>&1; then \
+		echo "Flutter already installed: $$(flutter --version | head -1)"; \
+	else \
+		echo "Installing Flutter ($(FLUTTER_CHANNEL) channel)..."; \
+		FLUTTER_URL=$$(curl -s https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json \
+			| python3 -c "import json,sys; r=json.load(sys.stdin); print('https://storage.googleapis.com/flutter_infra_release/releases/' + [x for x in r['releases'] if x['hash']==r['current_release']['$(FLUTTER_CHANNEL)']][0]['archive'])"); \
+		curl -sL "$$FLUTTER_URL" | tar xJ -C $(dir $(FLUTTER_HOME)); \
+		export PATH="$(FLUTTER_HOME)/bin:$(FLUTTER_HOME)/bin/cache/dart-sdk/bin:$$PATH"; \
+		flutter precache --web; \
+		echo "Flutter installed to $(FLUTTER_HOME)"; \
+	fi
+
 ## ── Flutter UI targets ──
 
-ui-deps:
+ui-deps: flutter-setup
 	cd $(UI_DIR) && flutter pub get
 
 ui-generate: ui-deps
