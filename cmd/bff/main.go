@@ -62,8 +62,14 @@ func main() {
 
 	// Create Frame service (provides HTTP client, telemetry, lifecycle,
 	// and SecurityManager with authorization service access).
+	// Service name defaults to "service-thesa" but can be overridden
+	// via SERVICE_NAME env var (standard for all antinvestor services).
+	serviceName := cfg.ServiceName
+	if serviceName == "" {
+		serviceName = "service-thesa"
+	}
 	ctx, svc := frame.NewServiceWithContext(ctx,
-		frame.WithName("thesa"),
+		frame.WithName(serviceName),
 		frame.WithConfig(cfg),
 	)
 
