@@ -25,7 +25,7 @@ func TestWriteJSON(t *testing.T) {
 	}
 
 	var body map[string]string
-	json.NewDecoder(w.Body).Decode(&body)
+	_ = json.NewDecoder(w.Body).Decode(&body)
 	if body["hello"] != "world" {
 		t.Errorf("body = %v", body)
 	}
@@ -42,7 +42,7 @@ func TestWriteError_envelope(t *testing.T) {
 	var resp struct {
 		Error model.ErrorEnvelope `json:"error"`
 	}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	if resp.Error.Code != "NOT_FOUND" {
 		t.Errorf("code = %q, want NOT_FOUND", resp.Error.Code)
 	}
