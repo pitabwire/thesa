@@ -65,12 +65,8 @@ func (p *ActionProvider) ResolveActions(
 				applyConditionEffect(&desc, cond.Effect, met)
 			} else {
 				// Pass data-dependent conditions through for client-side evaluation.
-				clientConditions = append(clientConditions, model.ConditionDescriptor{
-					Field:    cond.Field,
-					Operator: cond.Operator,
-					Value:    cond.Value,
-					Effect:   cond.Effect,
-				})
+				clientConditions = append(clientConditions, model.ConditionDescriptor(cond))
+
 			}
 		}
 		if len(clientConditions) > 0 {

@@ -221,7 +221,7 @@ func (mb *MockBackend) handleOperation(opID string) http.HandlerFunc {
 			if ok {
 				conn, _, _ := hj.Hijack()
 				if conn != nil {
-					conn.Close()
+					_ = conn.Close()
 				}
 			}
 			return

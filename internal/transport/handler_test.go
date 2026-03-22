@@ -214,7 +214,9 @@ func TestHandleGetPageData_success(t *testing.T) {
 	}
 
 	var resp model.DataResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
 	if len(resp.Data.Items) != 1 {
 		t.Errorf("items = %d, want 1", len(resp.Data.Items))
 	}

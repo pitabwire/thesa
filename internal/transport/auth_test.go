@@ -50,13 +50,19 @@ func rsaKeyToJWK(kid string, pub *rsa.PublicKey) map[string]any {
 }
 
 func ecKeyToJWK(kid string, pub *ecdsa.PublicKey) map[string]any {
+	raw, err := pub.Bytes()
+	if err != nil {
+		panic("ecKeyToJWK: " + err.Error())
+	}
+	// Uncompressed point format: 0x04 || X || Y, each coordinate is (len-1)/2 bytes.
+	coordLen := (len(raw) - 1) / 2
 	return map[string]any{
 		"kid": kid,
 		"kty": "EC",
 		"crv": "P-256",
 		"use": "sig",
-		"x":   base64.RawURLEncoding.EncodeToString(pub.X.Bytes()),
-		"y":   base64.RawURLEncoding.EncodeToString(pub.Y.Bytes()),
+		"x":   base64.RawURLEncoding.EncodeToString(raw[1 : 1+coordLen]),
+		"y":   base64.RawURLEncoding.EncodeToString(raw[1+coordLen:]),
 	}
 }
 
@@ -123,7 +129,7 @@ func TestJWKSClient_GetKey_RSA(t *testing.T) {
 	if !ok {
 		t.Fatalf("key type = %T, want *rsa.PublicKey", key)
 	}
-	if pubKey.N.Cmp(rsaKey.PublicKey.N) != 0 {
+	if pubKey.N.Cmp(rsaKey.N) != 0 {
 		t.Error("RSA modulus mismatch")
 	}
 }
@@ -141,8 +147,8 @@ func TestJWKSClient_GetKey_EC(t *testing.T) {
 	if !ok {
 		t.Fatalf("key type = %T, want *ecdsa.PublicKey", key)
 	}
-	if pubKey.X.Cmp(ecKey.PublicKey.X) != 0 {
-		t.Error("EC X coordinate mismatch")
+	if !pubKey.Equal(&ecKey.PublicKey) {
+		t.Error("EC public key mismatch")
 	}
 }
 

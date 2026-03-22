@@ -58,10 +58,7 @@ func (p *PageProvider) GetPage(
 
 	// Resolve breadcrumb.
 	for _, b := range pageDef.Breadcrumb {
-		desc.Breadcrumb = append(desc.Breadcrumb, model.BreadcrumbDescriptor{
-			Label: b.Label,
-			Route: b.Route,
-		})
+		desc.Breadcrumb = append(desc.Breadcrumb, model.BreadcrumbDescriptor(b))
 	}
 
 	// Resolve table.
