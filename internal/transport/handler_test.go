@@ -113,7 +113,7 @@ func TestHandleNavigation_success(t *testing.T) {
 	}
 
 	var tree model.NavigationTree
-	json.NewDecoder(w.Body).Decode(&tree)
+	_ = json.NewDecoder(w.Body).Decode(&tree)
 	if len(tree.Items) != 1 {
 		t.Fatalf("items = %d, want 1", len(tree.Items))
 	}
@@ -156,7 +156,7 @@ func TestHandleGetPage_success(t *testing.T) {
 	}
 
 	var desc model.PageDescriptor
-	json.NewDecoder(w.Body).Decode(&desc)
+	_ = json.NewDecoder(w.Body).Decode(&desc)
 	if desc.Title != "Orders" {
 		t.Errorf("title = %q, want Orders", desc.Title)
 	}
@@ -388,7 +388,7 @@ func TestHandleCommand_success(t *testing.T) {
 	}
 
 	var resp model.CommandResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	if !resp.Success {
 		t.Errorf("success = false, want true")
 	}
@@ -476,7 +476,7 @@ func TestHandleSearch_success(t *testing.T) {
 	}
 
 	var resp model.SearchResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	if len(resp.Data.Results) == 0 {
 		t.Error("expected at least one search result")
 	}
@@ -542,7 +542,7 @@ func TestHandleLookup_success(t *testing.T) {
 	}
 
 	var resp model.LookupResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	if len(resp.Data.Options) == 0 {
 		t.Error("expected at least one option")
 	}
