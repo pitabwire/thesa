@@ -55,7 +55,7 @@ flutter-setup:
 
 ## ── Flutter UI targets ──
 
-ui-deps: flutter-setup
+ui-deps:
 	cd $(UI_DIR) && flutter pub get
 
 ui-generate: ui-deps
