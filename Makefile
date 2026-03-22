@@ -13,7 +13,7 @@ OIDC_CLIENT_ID   ?= d6qbqdkpf2t52mcunf3g
 OIDC_ISSUER      ?= https://oauth2.stawi.org
 
 .PHONY: build test lint format clean \
-        ui-deps ui-generate ui-build ui-build-prod ui-build-dev \
+        ui-deps ui-generate ui-drift-worker ui-build ui-build-prod ui-build-dev \
         ui-clean ui-test ui-analyze \
         docker-build docker-push
 
@@ -46,8 +46,20 @@ ui-analyze: ui-deps
 ui-test: ui-generate
 	cd $(UI_DIR) && flutter test
 
+## Compile Drift web worker and fetch sqlite3.wasm for offline-first caching.
+## Both files land in web/ so flutter build copies them into the output.
+SQLITE3_WASM_URL ?= https://github.com/simolus3/sqlite3.dart/releases/latest/download/sqlite3.wasm
+
+ui-drift-worker: ui-deps
+	cd $(UI_DIR) && dart compile js -O2 -o web/drift_worker.js web/drift_worker.dart
+	@if [ ! -f $(UI_DIR)/web/sqlite3.wasm ]; then \
+		echo "Downloading sqlite3.wasm..."; \
+		curl -sL -o $(UI_DIR)/web/sqlite3.wasm $(SQLITE3_WASM_URL); \
+	fi
+	@echo "Drift web worker ready"
+
 ## Development web build (default) — profile mode, source maps, localhost BFF.
-ui-build-dev: ui-generate
+ui-build-dev: ui-generate ui-drift-worker
 	cd $(UI_DIR) && flutter build web \
 		--profile \
 		--base-href="/" \
@@ -59,7 +71,7 @@ ui-build-dev: ui-generate
 
 ## Production web build — release mode, tree-shaken, minified.
 ## Requires BFF_BASE_URL to be set (e.g. via Cloudflare env vars).
-ui-build-prod: ui-generate
+ui-build-prod: ui-generate ui-drift-worker
 	cd $(UI_DIR) && flutter build web \
 		--release \
 		--base-href="/" \

@@ -98,6 +98,18 @@ class AppDatabase extends _$AppDatabase {
 }
 
 /// Create the database instance using drift_flutter (cross-platform: native + web).
+///
+/// On web, sqlite3 runs in a WASM worker. Both `sqlite3.wasm` and
+/// `drift_worker.js` must be present in the web build output.
+/// See `make ui-drift-worker` and `make ui-build-prod`.
 AppDatabase createDatabase() {
-  return AppDatabase(driftDatabase(name: 'thesa_ui'));
+  return AppDatabase(
+    driftDatabase(
+      name: 'thesa_ui',
+      web: DriftWebOptions(
+        sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+        driftWorker: Uri.parse('drift_worker.js'),
+      ),
+    ),
+  );
 }
