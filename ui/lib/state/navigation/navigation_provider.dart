@@ -4,6 +4,8 @@
 /// Always alive - never disposed.
 library;
 
+import 'dart:async';
+
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -21,10 +23,15 @@ class Navigation extends _$Navigation {
   Future<NavigationTree> build() async {
     _logger.info('Loading navigation tree');
 
-    final cacheCoordinator = await ref.read(cacheCoordinatorProvider.future);
     final bffClient = ref.read(bffClientProvider);
 
+    // Try cache-first, but fall back to direct BFF call if the cache
+    // layer is unavailable (e.g. Drift WASM not loaded on web).
     try {
+      final cacheCoordinator = await ref
+          .read(cacheCoordinatorProvider.future)
+          .timeout(const Duration(seconds: 3));
+
       final result = await cacheCoordinator.getNavigation(
         'main',
         fetchFromNetwork: bffClient.getNavigation,
@@ -40,6 +47,17 @@ class Navigation extends _$Navigation {
         '(${data.items.length} items)',
       );
 
+      return data;
+    } on TimeoutException {
+      _logger.warning('Cache coordinator timed out, fetching directly from BFF');
+    } catch (e, stack) {
+      _logger.warning('Cache-first navigation failed, trying direct BFF', e, stack);
+    }
+
+    // Direct BFF fallback — no cache involved.
+    try {
+      final data = await bffClient.getNavigation();
+      _logger.info('Navigation loaded from BFF (${data.items.length} items)');
       return data;
     } catch (e, stack) {
       _logger.severe('Failed to load navigation', e, stack);

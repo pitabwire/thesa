@@ -4,6 +4,8 @@
 /// Auto-dispose when page is no longer displayed.
 library;
 
+import 'dart:async';
+
 import 'package:logging/logging.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -21,10 +23,15 @@ class Page extends _$Page {
   Future<PageDescriptor> build(String pageId) async {
     _logger.info('Loading page: $pageId');
 
-    final cacheCoordinator = await ref.read(cacheCoordinatorProvider.future);
     final bffClient = ref.read(bffClientProvider);
 
+    // Try cache-first, but fall back to direct BFF call if the cache
+    // layer is unavailable (e.g. Drift WASM not loaded on web).
     try {
+      final cacheCoordinator = await ref
+          .read(cacheCoordinatorProvider.future)
+          .timeout(const Duration(seconds: 3));
+
       final result = await cacheCoordinator.getPage(
         pageId,
         fetchFromNetwork: () => bffClient.getPage(pageId),
@@ -40,6 +47,17 @@ class Page extends _$Page {
         '(${data.components.length} components)',
       );
 
+      return data;
+    } on TimeoutException {
+      _logger.warning('Cache coordinator timed out for $pageId, fetching directly');
+    } catch (e, stack) {
+      _logger.warning('Cache-first page load failed for $pageId', e, stack);
+    }
+
+    // Direct BFF fallback — no cache involved.
+    try {
+      final data = await bffClient.getPage(pageId);
+      _logger.info('Page loaded from BFF: $pageId');
       return data;
     } catch (e, stack) {
       _logger.severe('Failed to load page: $pageId', e, stack);
