@@ -89,17 +89,6 @@ func newTestInvokerRegistry(inv model.OperationInvoker) *invoker.Registry {
 	return reg
 }
 
-// --- fake capability resolver (test double returning canned capabilities) ---
-
-type fakeCapResolver struct {
-	caps model.CapabilitySet
-}
-
-func (f *fakeCapResolver) Resolve(_ *model.RequestContext) (model.CapabilitySet, error) {
-	return f.caps, nil
-}
-func (f *fakeCapResolver) Invalidate(_, _ string) {}
-
 // --- Navigation handler tests ---
 
 func TestHandleNavigation_success(t *testing.T) {

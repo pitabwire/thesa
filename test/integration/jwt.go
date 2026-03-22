@@ -49,8 +49,8 @@ func newTokenIssuer(t *testing.T) *tokenIssuer {
 		"kty": "RSA",
 		"alg": "RS256",
 		"use": "sig",
-		"n":   base64.RawURLEncoding.EncodeToString(key.PublicKey.N.Bytes()),
-		"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.PublicKey.E)).Bytes()),
+		"n":   base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+		"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

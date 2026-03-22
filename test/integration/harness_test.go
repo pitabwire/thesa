@@ -1,11 +1,8 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"testing"
-
-	"github.com/pitabwire/thesa/model"
 )
 
 func TestHarness_Startup(t *testing.T) {
@@ -357,16 +354,4 @@ func TestHarness_LookupEndpoint(t *testing.T) {
 	h.AssertStatus(t, resp, http.StatusOK)
 
 	h.MockBackend("orders-svc").AssertCalled(t, "getOrderStatuses", 1)
-}
-
-// noopSDKHandler is a no-op SDK handler for testing.
-type noopSDKHandler struct {
-	name    string
-	invoked bool
-}
-
-func (h *noopSDKHandler) Name() string { return h.name }
-func (h *noopSDKHandler) Invoke(_ context.Context, _ *model.RequestContext, _ model.InvocationInput) (model.InvocationResult, error) {
-	h.invoked = true
-	return model.InvocationResult{StatusCode: 200}, nil
 }
