@@ -6,8 +6,9 @@ REGISTRY ?= ""
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT)
 UI_DIR  := ui
 
-# Production dart-defines (override via environment or make args)
-BFF_BASE_URL     ?= https://api.stawi.org/thesa
+# Dart-defines — development defaults, override for production via env or make args.
+# e.g. make ui-build-prod BFF_BASE_URL=https://api.stawi.org/thesa
+BFF_BASE_URL     ?= http://localhost:8080
 OIDC_CLIENT_ID   ?= d6qbqdkpf2t52mcunf3g
 OIDC_ISSUER      ?= https://oauth2.stawi.org
 
@@ -45,7 +46,19 @@ ui-analyze: ui-deps
 ui-test: ui-generate
 	cd $(UI_DIR) && flutter test
 
-## Production web build — tree-shaken, minified, dart-defines baked in.
+## Development web build (default) — profile mode, source maps, localhost BFF.
+ui-build-dev: ui-generate
+	cd $(UI_DIR) && flutter build web \
+		--profile \
+		--base-href="/" \
+		--dart-define=BFF_BASE_URL=$(BFF_BASE_URL) \
+		--dart-define=OIDC_CLIENT_ID=$(OIDC_CLIENT_ID) \
+		--dart-define=OIDC_ISSUER=$(OIDC_ISSUER) \
+		--source-maps
+	@echo "Dev build complete: $(UI_DIR)/build/web/"
+
+## Production web build — release mode, tree-shaken, minified.
+## Requires BFF_BASE_URL to be set (e.g. via Cloudflare env vars).
 ui-build-prod: ui-generate
 	cd $(UI_DIR) && flutter build web \
 		--release \
@@ -57,19 +70,8 @@ ui-build-prod: ui-generate
 		--dart-define=ENV=production
 	@echo "Production build complete: $(UI_DIR)/build/web/"
 
-## Development web build — fast iteration, debug info, localhost defaults.
-ui-build-dev: ui-generate
-	cd $(UI_DIR) && flutter build web \
-		--profile \
-		--base-href="/" \
-		--dart-define=BFF_BASE_URL=http://localhost:8080 \
-		--dart-define=OIDC_CLIENT_ID=$(OIDC_CLIENT_ID) \
-		--dart-define=OIDC_ISSUER=$(OIDC_ISSUER) \
-		--source-maps
-	@echo "Dev build complete: $(UI_DIR)/build/web/"
-
-## Default build alias (production)
-ui-build: ui-build-prod
+## Default build alias (development)
+ui-build: ui-build-dev
 
 ## ── Docker targets ──
 
