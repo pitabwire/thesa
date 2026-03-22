@@ -92,11 +92,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	mux.Handle("GET /ui/download/{fileId}", authChain(handleDownload(filesSvc)))
 
 	// Global middleware: applied to all routes.
+	// CORS is handled by the API gateway — not duplicated here.
 	var handler http.Handler = mux
 	handler = InjectTraceContext(handler)
 	handler = SecurityHeaders(handler)
 	handler = RequestID(handler)
-	handler = CORS(deps.Config.Server.CORS)(handler)
 	handler = Recovery(handler)
 
 	return handler
