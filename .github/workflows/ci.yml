@@ -13,17 +13,22 @@ jobs:
   go-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version: "stable"
+
+      - name: Set up gotestfmt
+        uses: gotesttools/gotestfmt-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
         run: go build ./...
 
       - name: Test
-        run: go test -race -count=1 ./...
+        run: go test -race -count=1 -json -v ./... 2>&1 | gotestfmt -hide all
 
       - name: Vet
         run: go vet ./...
@@ -34,7 +39,7 @@ jobs:
       run:
         working-directory: ui
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v2
         with:
