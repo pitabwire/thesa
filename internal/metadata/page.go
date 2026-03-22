@@ -250,11 +250,7 @@ func (p *PageProvider) resolveSections(caps model.CapabilitySet, sections []mode
 
 			// Resolve depends_on.
 			for _, dep := range field.DependsOn {
-				fd.DependsOn = append(fd.DependsOn, model.FieldDependencyDescriptor{
-					Field:     dep.Field,
-					Condition: dep.Condition,
-					Value:     dep.Value,
-				})
+				fd.DependsOn = append(fd.DependsOn, model.FieldDependencyDescriptor(dep))
 			}
 
 			sd.Fields = append(sd.Fields, fd)
