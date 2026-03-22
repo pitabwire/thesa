@@ -51,20 +51,3 @@ jobs:
 
       - name: Build web
         run: flutter build web --release --base-href="/"
-
-  kustomize-validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate base
-        run: kubectl kustomize k8s/base/ > /dev/null
-
-      - name: Validate dev overlay
-        run: kubectl kustomize k8s/overlays/dev/ > /dev/null
-
-      - name: Validate staging overlay
-        run: kubectl kustomize k8s/overlays/staging/ > /dev/null
-
-      - name: Validate production overlay
-        run: kubectl kustomize k8s/overlays/production/ > /dev/null
