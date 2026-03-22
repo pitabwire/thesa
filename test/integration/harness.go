@@ -202,12 +202,12 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 	}
 	h.Registry = definition.NewRegistry(defs)
 
-	// Step 5: Build capability resolver.
-	evaluator, err := capability.NewStaticPolicyEvaluator(hc.policyFile)
+	// Step 5: Build capability resolver (static evaluator for test isolation).
+	policyEvaluator, err := capability.NewStaticPolicyEvaluator(hc.policyFile)
 	if err != nil {
 		t.Fatalf("load policy file: %v", err)
 	}
-	h.CapResolver = capability.NewResolver(evaluator, 0) // no caching in tests
+	h.CapResolver = capability.NewResolver(policyEvaluator, 0) // no caching in tests
 
 	// Step 6: Build in-memory stores.
 	// Step 7: Build invoker registry.

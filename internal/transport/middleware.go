@@ -176,7 +176,7 @@ func ResolveCapabilities(resolver model.CapabilityResolver) func(http.Handler) h
 			if resolver != nil {
 				rctx := model.RequestContextFrom(r.Context())
 				if rctx != nil {
-					caps, err := resolver.Resolve(rctx)
+					caps, err := resolver.Resolve(r.Context(), rctx)
 					if err != nil {
 						util.Log(r.Context()).Warn("capability resolution failed",
 							"error", err,

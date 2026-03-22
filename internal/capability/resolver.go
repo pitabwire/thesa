@@ -1,8 +1,9 @@
-// Package capability resolves and caches user capabilities, and evaluates
-// authorization policies using static configuration or OPA.
+// Package capability resolves and caches user capabilities by querying the
+// authorization service (Ory Keto) via Frame's security.Authorizer.
 package capability
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -37,7 +38,7 @@ func cacheKey(rctx *model.RequestContext) string {
 
 // Resolve returns the full capability set for the given context. Results are
 // cached for the configured TTL.
-func (r *Resolver) Resolve(rctx *model.RequestContext) (model.CapabilitySet, error) {
+func (r *Resolver) Resolve(ctx context.Context, rctx *model.RequestContext) (model.CapabilitySet, error) {
 	key := cacheKey(rctx)
 
 	r.mu.RLock()
@@ -47,7 +48,7 @@ func (r *Resolver) Resolve(rctx *model.RequestContext) (model.CapabilitySet, err
 	}
 	r.mu.RUnlock()
 
-	caps, err := r.evaluator.ResolveCapabilities(rctx)
+	caps, err := r.evaluator.ResolveCapabilities(ctx, rctx)
 	if err != nil {
 		return nil, err
 	}

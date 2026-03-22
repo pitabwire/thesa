@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -409,7 +410,7 @@ type mockResolver struct {
 	err  error
 }
 
-func (m *mockResolver) Resolve(_ *model.RequestContext) (model.CapabilitySet, error) {
+func (m *mockResolver) Resolve(_ context.Context, _ *model.RequestContext) (model.CapabilitySet, error) {
 	return m.caps, m.err
 }
 

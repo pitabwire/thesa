@@ -71,8 +71,6 @@ services:
       idempotent_only: true
 
 capability:
-  evaluator: static
-  static_policy_file: policies.yaml
   cache:
     ttl: 5m
     max_entries: 10000

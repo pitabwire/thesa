@@ -60,18 +60,22 @@ func main() {
 
 	registry := definition.NewRegistry(defs)
 
-	// Capability resolver.
-	capResolver, err := buildCapabilityResolver(cfg.Capability)
-	if err != nil {
-		log.WithError(err).Fatal("capability resolver initialization failed")
-	}
-
-	// Create Frame service (provides HTTP client, telemetry, lifecycle).
+	// Create Frame service (provides HTTP client, telemetry, lifecycle,
+	// and SecurityManager with authorization service access).
 	ctx, svc := frame.NewServiceWithContext(ctx,
+		frame.WithName("thesa"),
 		frame.WithConfig(cfg),
 	)
 
 	httpClient := svc.HTTPClientManager().Client(ctx)
+
+	// Capability resolver — checks each known capability against the
+	// authorization service (Keto) using BatchCheck, which evaluates
+	// OPL rules, role hierarchies, and computed permissions.
+	authorizer := svc.SecurityManager().GetAuthorizer(ctx)
+	capChecks := capability.CollectCapabilityChecks(defs, cfg.Services)
+	evaluator := capability.NewKetoPolicyEvaluator(authorizer, capChecks)
+	capResolver := capability.NewResolver(evaluator, cfg.Capability.Cache.TTL)
 
 	// Build invoker registry.
 	sdkHandlers := invoker.NewSDKHandlerRegistry()
@@ -173,17 +177,4 @@ func buildSpecServiceIDs(sources []openapi.SpecSource) []string {
 		ids[i] = s.ServiceID
 	}
 	return ids
-}
-
-func buildCapabilityResolver(cfg config.CapabilityConfig) (*capability.Resolver, error) {
-	switch cfg.Evaluator {
-	case "static", "":
-		evaluator, err := capability.NewStaticPolicyEvaluator(cfg.StaticPolicyFile)
-		if err != nil {
-			return nil, fmt.Errorf("static policy: %w", err)
-		}
-		return capability.NewResolver(evaluator, cfg.Cache.TTL), nil
-	default:
-		return nil, fmt.Errorf("unsupported capability evaluator: %q", cfg.Evaluator)
-	}
 }

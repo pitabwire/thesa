@@ -36,8 +36,8 @@ services:
       backoff_max: 2s
 
 capability:
-  evaluator: "static"
-  static_policy_file: "/config/policies.yaml"
+  cache:
+    ttl: 5m
 
 observability:
   log_level: "debug"

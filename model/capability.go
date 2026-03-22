@@ -1,6 +1,9 @@
 package model
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 // CapabilitySet is a set of capabilities granted to a user. Each key is a
 // capability string (e.g. "orders:list:view") and may include wildcards
@@ -66,25 +69,16 @@ func matchWildcard(pattern, cap string) bool {
 // CapabilityResolver resolves the full capability set for a request context.
 type CapabilityResolver interface {
 	// Resolve returns all capabilities for the given subject/tenant/partition.
-	Resolve(rctx *RequestContext) (CapabilitySet, error)
+	Resolve(ctx context.Context, rctx *RequestContext) (CapabilitySet, error)
 
 	// Invalidate clears cached capabilities for the given user and tenant.
 	Invalidate(subjectID, tenantID string)
 }
 
 // PolicyEvaluator is the backend implementation that resolves capabilities
-// from roles, tenant configuration, and external policy engines.
+// from the authorization service.
 type PolicyEvaluator interface {
-	// ResolveCapabilities returns the full capability set for the given context.
-	ResolveCapabilities(rctx *RequestContext) (CapabilitySet, error)
-
-	// Evaluate checks a single capability with optional resource context for
-	// fine-grained authorization (e.g. "can this user cancel THIS order?").
-	Evaluate(rctx *RequestContext, capability string, resource map[string]any) (bool, error)
-
-	// EvaluateAll checks multiple capabilities at once for batch optimization.
-	EvaluateAll(rctx *RequestContext, capabilities []string, resource map[string]any) (map[string]bool, error)
-
-	// Sync refreshes policy data from the external source.
-	Sync() error
+	// ResolveCapabilities returns the full capability set for the given context
+	// by querying the authorization service.
+	ResolveCapabilities(ctx context.Context, rctx *RequestContext) (CapabilitySet, error)
 }

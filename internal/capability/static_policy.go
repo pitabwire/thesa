@@ -1,6 +1,7 @@
 package capability
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -14,7 +15,8 @@ type policyFile struct {
 }
 
 // StaticPolicyEvaluator resolves capabilities from a static YAML file
-// mapping roles to capability strings.
+// mapping roles to capability strings. Used for testing only; production
+// uses KetoPolicyEvaluator.
 type StaticPolicyEvaluator struct {
 	path   string
 	mu     sync.RWMutex
@@ -32,7 +34,7 @@ func NewStaticPolicyEvaluator(path string) (*StaticPolicyEvaluator, error) {
 
 // ResolveCapabilities returns the union of capabilities for all roles in the
 // request context.
-func (e *StaticPolicyEvaluator) ResolveCapabilities(rctx *model.RequestContext) (model.CapabilitySet, error) {
+func (e *StaticPolicyEvaluator) ResolveCapabilities(_ context.Context, rctx *model.RequestContext) (model.CapabilitySet, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -43,28 +45,6 @@ func (e *StaticPolicyEvaluator) ResolveCapabilities(rctx *model.RequestContext) 
 		}
 	}
 	return caps, nil
-}
-
-// Evaluate checks a single capability against the resolved set.
-func (e *StaticPolicyEvaluator) Evaluate(rctx *model.RequestContext, capability string, _ map[string]any) (bool, error) {
-	caps, err := e.ResolveCapabilities(rctx)
-	if err != nil {
-		return false, err
-	}
-	return caps.Has(capability), nil
-}
-
-// EvaluateAll checks multiple capabilities at once.
-func (e *StaticPolicyEvaluator) EvaluateAll(rctx *model.RequestContext, capabilities []string, _ map[string]any) (map[string]bool, error) {
-	caps, err := e.ResolveCapabilities(rctx)
-	if err != nil {
-		return nil, err
-	}
-	result := make(map[string]bool, len(capabilities))
-	for _, cap := range capabilities {
-		result[cap] = caps.Has(cap)
-	}
-	return result, nil
 }
 
 // Sync reloads the policy file from disk.

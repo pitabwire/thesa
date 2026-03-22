@@ -76,9 +76,10 @@ type SpecSource struct {
 
 // ServiceConfig describes a backend service.
 type ServiceConfig struct {
-	BaseURL string        `yaml:"base_url"`
-	Timeout time.Duration `yaml:"timeout"`
-	Retry   RetryConfig   `yaml:"retry"`
+	BaseURL                string        `yaml:"base_url"`
+	Timeout                time.Duration `yaml:"timeout"`
+	Retry                  RetryConfig   `yaml:"retry"`
+	AuthorizationNamespace string        `yaml:"authorization_namespace"`
 }
 
 // RetryConfig describes retry settings per service.
@@ -90,11 +91,9 @@ type RetryConfig struct {
 	IdempotentOnly    bool          `yaml:"idempotent_only"`
 }
 
-// CapabilityConfig describes authorization settings.
+// CapabilityConfig describes authorization cache settings.
 type CapabilityConfig struct {
-	Evaluator        string      `yaml:"evaluator"`
-	StaticPolicyFile string      `yaml:"static_policy_file"`
-	Cache            CacheConfig `yaml:"cache"`
+	Cache CacheConfig `yaml:"cache"`
 }
 
 // CacheConfig describes cache settings.
@@ -170,7 +169,6 @@ func Defaults() *Config {
 			Directory: "/specs",
 		},
 		Capability: CapabilityConfig{
-			Evaluator: "static",
 			Cache: CacheConfig{
 				TTL:        5 * time.Minute,
 				MaxEntries: 10000,
@@ -266,8 +264,5 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("THESA_OBSERVABILITY_LOG_LEVEL"); v != "" {
 		cfg.Observability.LogLevel = v
-	}
-	if v := os.Getenv("THESA_CAPABILITY_EVALUATOR"); v != "" {
-		cfg.Capability.Evaluator = v
 	}
 }

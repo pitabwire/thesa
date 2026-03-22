@@ -42,7 +42,7 @@ func handleCapabilities(capResolver model.CapabilityResolver, appVersion string)
 			return
 		}
 
-		caps, err := capResolver.Resolve(rctx)
+		caps, err := capResolver.Resolve(r.Context(), rctx)
 		if err != nil {
 			WriteError(w, err)
 			return
