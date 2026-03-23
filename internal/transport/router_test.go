@@ -9,9 +9,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pitabwire/frame/security"
+
 	"github.com/pitabwire/thesa/internal/config"
 	"github.com/pitabwire/thesa/model"
 )
+
+// testAuthContext places Frame-style AuthenticationClaims into the context for unit tests.
+func testAuthContext(ctx context.Context, subjectID, tenantID string, extra map[string]any) context.Context {
+	claims := &security.AuthenticationClaims{
+		TenantID: tenantID,
+		Ext:      extra,
+	}
+	claims.Subject = subjectID
+	return claims.ClaimsToContext(ctx)
+}
 
 // testDeps returns Dependencies with sensible defaults for testing.
 func testDeps() Dependencies {
@@ -201,13 +213,13 @@ func TestSecurityHeaders(t *testing.T) {
 }
 
 func TestBuildRequestContextMiddleware(t *testing.T) {
-	claims := map[string]any{
-		"sub":          "user-42",
-		"email":        "user@example.com",
-		"tenant_id":    "tenant-1",
-		"partition_id": "part-1",
-		"roles":        []any{"admin", "viewer"},
+	authClaims := &security.AuthenticationClaims{
+		TenantID:    "tenant-1",
+		PartitionID: "part-1",
+		Roles:       []string{"admin", "viewer"},
+		Ext:         map[string]any{"email": "user@example.com"},
 	}
+	authClaims.Subject = "user-42"
 
 	handler := BuildRequestContextMiddleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
@@ -230,7 +242,8 @@ func TestBuildRequestContextMiddleware(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req = req.WithContext(WithClaims(req.Context(), claims))
+	ctx := authClaims.ClaimsToContext(req.Context())
+	req = req.WithContext(ctx)
 	req.Header.Set("X-Device-Id", "device-abc")
 	req.Header.Set("Accept-Language", "en-US")
 
@@ -238,25 +251,25 @@ func TestBuildRequestContextMiddleware(t *testing.T) {
 	handler.ServeHTTP(w, req)
 }
 
-func TestBuildRequestContextMiddleware_customPaths(t *testing.T) {
-	claims := map[string]any{
-		"sub":   "user-99",
-		"email": "user@keycloak.com",
-		"realm_access": map[string]any{
-			"roles": []any{"manager"},
-		},
-		"custom_tenant": "tenant-kc",
+func TestBuildRequestContextMiddleware_customEmailPath(t *testing.T) {
+	authClaims := &security.AuthenticationClaims{
+		TenantID: "tenant-1",
+		Roles:    []string{"manager"},
+		Ext:      map[string]any{"custom_email": "user@keycloak.com"},
 	}
+	authClaims.Subject = "user-99"
 
 	paths := map[string]string{
-		"tenant_id": "custom_tenant",
-		"roles":     "realm_access.roles",
+		"email": "custom_email",
 	}
 
 	handler := BuildRequestContextMiddleware(paths)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
-		if rctx.TenantID != "tenant-kc" {
-			t.Errorf("TenantID = %q, want tenant-kc", rctx.TenantID)
+		if rctx.Email != "user@keycloak.com" {
+			t.Errorf("Email = %q, want user@keycloak.com", rctx.Email)
+		}
+		if rctx.TenantID != "tenant-1" {
+			t.Errorf("TenantID = %q, want tenant-1", rctx.TenantID)
 		}
 		if len(rctx.Roles) != 1 || rctx.Roles[0] != "manager" {
 			t.Errorf("Roles = %v, want [manager]", rctx.Roles)
@@ -265,7 +278,8 @@ func TestBuildRequestContextMiddleware_customPaths(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req = req.WithContext(WithClaims(req.Context(), claims))
+	ctx := authClaims.ClaimsToContext(req.Context())
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 }
@@ -285,9 +299,8 @@ func TestResolveCapabilities(t *testing.T) {
 
 	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
 
-	claims := map[string]any{"sub": "user-1", "tenant_id": "t-1"}
 	req := httptest.NewRequest("GET", "/", nil)
-	req = req.WithContext(WithClaims(req.Context(), claims))
+	req = req.WithContext(testAuthContext(req.Context(), "user-1", "t-1", nil))
 
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -304,9 +317,8 @@ func TestResolveCapabilities_errorReturns502(t *testing.T) {
 
 	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
 
-	claims := map[string]any{"sub": "user-1", "tenant_id": "t-1"}
 	req := httptest.NewRequest("GET", "/", nil)
-	req = req.WithContext(WithClaims(req.Context(), claims))
+	req = req.WithContext(testAuthContext(req.Context(), "user-1", "t-1", nil))
 
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)

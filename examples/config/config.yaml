@@ -22,18 +22,13 @@ server:
       - X-Idempotency-Key
     max_age: 86400
 
-identity:
-  issuer: "https://auth.example.com"
-  audience: "thesa-bff"
-  jwks_url: "https://auth.example.com/.well-known/jwks.json"
-  jwks_cache_ttl: 1h
-  algorithms:
-    - RS256
-  claim_paths:
-    subject_id: sub
-    tenant_id: tenant_id
-    email: email
-    roles: roles
+# Authentication is handled by Frame via standard env vars:
+#   OAUTH2_SERVICE_URI          - OAuth2 issuer base URL (e.g. https://auth.example.com)
+#   OAUTH2_JWT_VERIFY_AUDIENCE  - service_thesa
+#   OAUTH2_JWT_VERIFY_ISSUER    - token issuer URL
+
+claim_paths:
+  email: email
 
 definitions:
   directories:

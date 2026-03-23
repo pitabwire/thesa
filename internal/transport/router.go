@@ -52,7 +52,7 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	authChain := chainMiddleware(
 		auth,
-		BuildRequestContextMiddleware(deps.Config.Identity.ClaimPaths),
+		BuildRequestContextMiddleware(deps.Config.ClaimPaths),
 		ResolveCapabilities(deps.CapabilityResolver),
 		HandlerTimeout(deps.Config.Server.HandlerTimeout),
 		RequestLogging,

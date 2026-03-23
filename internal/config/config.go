@@ -17,7 +17,7 @@ type Config struct {
 	frameconfig.ConfigurationDefault `yaml:"-"` // Frame handles infrastructure config via env vars
 
 	Server        ServerConfig             `yaml:"server"`
-	Identity      IdentityConfig           `yaml:"identity"`
+	ClaimPaths    map[string]string        `yaml:"claim_paths"`
 	Definitions   DefinitionsConfig        `yaml:"definitions"`
 	Specs         SpecsConfig              `yaml:"specs"`
 	Services      map[string]ServiceConfig `yaml:"services"`
@@ -43,16 +43,6 @@ type CORSConfig struct {
 	AllowedMethods []string `yaml:"allowed_methods"`
 	AllowedHeaders []string `yaml:"allowed_headers"`
 	MaxAge         int      `yaml:"max_age"`
-}
-
-// IdentityConfig describes JWT and identity provider settings.
-type IdentityConfig struct {
-	Issuer       string            `yaml:"issuer"`
-	Audience     string            `yaml:"audience"`
-	JWKSURL      string            `yaml:"jwks_url"`
-	JWKSCacheTTL time.Duration     `yaml:"jwks_cache_ttl"`
-	Algorithms   []string          `yaml:"algorithms"`
-	ClaimPaths   map[string]string `yaml:"claim_paths"`
 }
 
 // DefinitionsConfig describes where to find definition YAML files.
@@ -151,15 +141,9 @@ func Defaults() *Config {
 				MaxAge: 86400,
 			},
 		},
-		Identity: IdentityConfig{
-			JWKSCacheTTL: 1 * time.Hour,
-			Algorithms:   []string{"RS256"},
-			ClaimPaths: map[string]string{
-				"subject_id": "sub",
-				"tenant_id":  "tenant_id",
-				"email":      "email",
-				"roles":      "roles",
-			},
+		ClaimPaths: map[string]string{
+			"email":      "email",
+			"profile_id": "profile_id",
 		},
 		Definitions: DefinitionsConfig{
 			Directories:     []string{"/definitions"},
@@ -228,16 +212,6 @@ func (c *Config) Validate() error {
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
 		errs = append(errs, "server.port must be between 1 and 65535")
 	}
-	if c.Identity.Issuer == "" {
-		errs = append(errs, "identity.issuer is required")
-	}
-	if c.Identity.JWKSURL == "" {
-		errs = append(errs, "identity.jwks_url is required")
-	}
-	if c.Identity.Audience == "" {
-		errs = append(errs, "identity.audience is required")
-	}
-
 	if len(errs) > 0 {
 		return fmt.Errorf("%s", strings.Join(errs, "; "))
 	}
@@ -252,15 +226,6 @@ func applyEnvOverrides(cfg *Config) {
 		if _, err := fmt.Sscanf(v, "%d", &port); err == nil {
 			cfg.Server.Port = port
 		}
-	}
-	if v := os.Getenv("THESA_IDENTITY_ISSUER"); v != "" {
-		cfg.Identity.Issuer = v
-	}
-	if v := os.Getenv("THESA_IDENTITY_JWKS_URL"); v != "" {
-		cfg.Identity.JWKSURL = v
-	}
-	if v := os.Getenv("THESA_IDENTITY_AUDIENCE"); v != "" {
-		cfg.Identity.Audience = v
 	}
 	if v := os.Getenv("THESA_OBSERVABILITY_LOG_LEVEL"); v != "" {
 		cfg.Observability.LogLevel = v

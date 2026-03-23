@@ -25,20 +25,15 @@ server:
       - X-Idempotency-Key
     max_age: 86400
 
-identity:
-  issuer: "https://stawi.org"
-  audience: "d6qbqdkpf2t52mcunf3g"
-  jwks_url: "https://oauth2.stawi.org/.well-known/jwks.json"
-  jwks_cache_ttl: 1h
-  algorithms:
-    - RS256
-  claim_paths:
-    subject_id: sub
-    tenant_id: tenant_id
-    partition_id: partition_id
-    email: email
-    roles: roles
-    profile_id: profile_id
+# Authentication is handled by Frame via standard env vars:
+#   OAUTH2_SERVICE_URI          - OAuth2 issuer base URL
+#   OAUTH2_JWT_VERIFY_AUDIENCE  - service_thesa
+#   OAUTH2_JWT_VERIFY_ISSUER    - token issuer URL
+#   OAUTH2_WELL_KNOWN_JWK_DATA - (optional) pre-loaded JWK data
+
+claim_paths:
+  email: email
+  profile_id: profile_id
 
 definitions:
   directories:
@@ -147,7 +142,7 @@ services:
 
   files-svc:
     base_url: "https://api.stawi.org/files"
-    authorization_namespace: "service_files"
+    authorization_namespace: "service_file"
     timeout: 30s
     circuit_breaker:
       failure_threshold: 5
@@ -161,7 +156,7 @@ services:
 
   settings-svc:
     base_url: "https://api.stawi.org/settings"
-    authorization_namespace: "service_settings"
+    authorization_namespace: "service_setting"
     timeout: 10s
     circuit_breaker:
       failure_threshold: 5

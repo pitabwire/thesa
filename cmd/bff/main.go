@@ -6,9 +6,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"path/filepath"
 
 	"github.com/pitabwire/frame"
+	"github.com/pitabwire/frame/security/interceptors/httptor"
 	frameversion "github.com/pitabwire/frame/version"
 	"github.com/pitabwire/util"
 
@@ -74,6 +76,7 @@ func main() {
 	)
 
 	httpClient := svc.HTTPClientManager().Client(ctx)
+	authenticator := svc.SecurityManager().GetAuthenticator(ctx)
 
 	// Capability resolver — checks each known capability against the
 	// authorization service (Keto) using BatchCheck, which evaluates
@@ -109,11 +112,13 @@ func main() {
 	)
 
 	// Build HTTP router.
-	jwks := transport.NewJWKSClient(cfg.Identity.JWKSURL, cfg.Identity.JWKSCacheTTL, httpClient)
+	authenticate := func(next http.Handler) http.Handler {
+		return httptor.AuthenticationMiddleware(next, authenticator)
+	}
 
 	router := transport.NewRouter(transport.Dependencies{
 		Config:             cfg,
-		Authenticate:       transport.JWTAuthenticator(cfg.Identity, jwks),
+		Authenticate:       authenticate,
 		CapabilityResolver: capResolver,
 		Registry:           registry,
 		MenuProvider:       menuProvider,

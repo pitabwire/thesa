@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 	"time"
 )
@@ -18,17 +17,8 @@ func TestLoad_valid(t *testing.T) {
 	if cfg.Server.ReadTimeout != 15*time.Second {
 		t.Errorf("Server.ReadTimeout = %v, want 15s", cfg.Server.ReadTimeout)
 	}
-	if cfg.Identity.Issuer != "https://auth.example.com" {
-		t.Errorf("Identity.Issuer = %q", cfg.Identity.Issuer)
-	}
-	if cfg.Identity.JWKSURL != "https://auth.example.com/.well-known/jwks.json" {
-		t.Errorf("Identity.JWKSURL = %q", cfg.Identity.JWKSURL)
-	}
-	if cfg.Identity.Audience != "thesa-bff" {
-		t.Errorf("Identity.Audience = %q", cfg.Identity.Audience)
-	}
-	if len(cfg.Identity.Algorithms) != 2 {
-		t.Errorf("Identity.Algorithms = %v, want 2 entries", cfg.Identity.Algorithms)
+	if cfg.ClaimPaths["email"] != "custom_email" {
+		t.Errorf("ClaimPaths[email] = %q, want custom_email", cfg.ClaimPaths["email"])
 	}
 	if !cfg.Definitions.HotReload {
 		t.Error("Definitions.HotReload = false, want true")
@@ -59,13 +49,6 @@ func TestLoad_missing_file(t *testing.T) {
 	}
 }
 
-func TestLoad_missing_identity(t *testing.T) {
-	_, err := Load("testdata/missing_identity.yaml")
-	if err == nil {
-		t.Fatal("Load() with missing identity should return error")
-	}
-}
-
 func TestDefaults(t *testing.T) {
 	cfg := Defaults()
 	if cfg.Server.Port != 8080 {
@@ -77,13 +60,13 @@ func TestDefaults(t *testing.T) {
 	if cfg.Observability.LogLevel != "info" {
 		t.Errorf("default LogLevel = %q, want info", cfg.Observability.LogLevel)
 	}
+	if cfg.ClaimPaths["email"] != "email" {
+		t.Errorf("default ClaimPaths[email] = %q, want email", cfg.ClaimPaths["email"])
+	}
 }
 
 func TestEnvOverrides(t *testing.T) {
 	t.Setenv("THESA_SERVER_PORT", "3000")
-	t.Setenv("THESA_IDENTITY_ISSUER", "https://env-issuer.com")
-	t.Setenv("THESA_IDENTITY_JWKS_URL", "https://env-issuer.com/.well-known/jwks.json")
-	t.Setenv("THESA_IDENTITY_AUDIENCE", "env-audience")
 	t.Setenv("THESA_OBSERVABILITY_LOG_LEVEL", "error")
 
 	cfg, err := Load("testdata/valid.yaml")
@@ -94,12 +77,6 @@ func TestEnvOverrides(t *testing.T) {
 	if cfg.Server.Port != 3000 {
 		t.Errorf("Server.Port = %d, want 3000 (env override)", cfg.Server.Port)
 	}
-	if cfg.Identity.Issuer != "https://env-issuer.com" {
-		t.Errorf("Identity.Issuer = %q, want env override", cfg.Identity.Issuer)
-	}
-	if cfg.Identity.Audience != "env-audience" {
-		t.Errorf("Identity.Audience = %q, want env override", cfg.Identity.Audience)
-	}
 	if cfg.Observability.LogLevel != "error" {
 		t.Errorf("LogLevel = %q, want error (env override)", cfg.Observability.LogLevel)
 	}
@@ -107,9 +84,6 @@ func TestEnvOverrides(t *testing.T) {
 
 func TestValidate_invalid_port(t *testing.T) {
 	cfg := Defaults()
-	cfg.Identity.Issuer = "https://auth.example.com"
-	cfg.Identity.JWKSURL = "https://auth.example.com/.well-known/jwks.json"
-	cfg.Identity.Audience = "thesa-bff"
 	cfg.Server.Port = 0
 
 	err := cfg.Validate()
@@ -121,10 +95,6 @@ func TestValidate_invalid_port(t *testing.T) {
 func TestLoad_env_priority_over_file(t *testing.T) {
 	// File sets port 9090, env sets 5555 — env wins
 	t.Setenv("THESA_SERVER_PORT", "5555")
-	// Ensure identity fields are set so validation passes
-	_ = os.Setenv("THESA_IDENTITY_ISSUER", "")
-	_ = os.Setenv("THESA_IDENTITY_JWKS_URL", "")
-	_ = os.Setenv("THESA_IDENTITY_AUDIENCE", "")
 
 	cfg, err := Load("testdata/valid.yaml")
 	if err != nil {

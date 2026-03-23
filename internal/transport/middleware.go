@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pitabwire/frame/security"
 	"github.com/pitabwire/util"
 
 	"github.com/pitabwire/thesa/internal/config"
@@ -15,9 +16,7 @@ import (
 
 // Context keys for middleware-injected values.
 type correlationIDKey struct{}
-type claimsKey struct{}
 type capabilitiesKey struct{}
-type rawTokenKey struct{}
 
 // CorrelationIDFrom extracts the correlation ID from the request context.
 func CorrelationIDFrom(ctx context.Context) string {
@@ -25,30 +24,10 @@ func CorrelationIDFrom(ctx context.Context) string {
 	return id
 }
 
-// WithClaims stores JWT claims in the context. Used by the auth middleware.
-func WithClaims(ctx context.Context, claims map[string]any) context.Context {
-	return context.WithValue(ctx, claimsKey{}, claims)
-}
-
-// ClaimsFrom extracts JWT claims from the context.
-func ClaimsFrom(ctx context.Context) map[string]any {
-	claims, _ := ctx.Value(claimsKey{}).(map[string]any)
-	return claims
-}
-
 // CapabilitiesFrom extracts the CapabilitySet from the context.
 func CapabilitiesFrom(ctx context.Context) model.CapabilitySet {
 	caps, _ := ctx.Value(capabilitiesKey{}).(model.CapabilitySet)
 	return caps
-}
-
-func withRawToken(ctx context.Context, token string) context.Context {
-	return context.WithValue(ctx, rawTokenKey{}, token)
-}
-
-func rawTokenFrom(ctx context.Context) string {
-	token, _ := ctx.Value(rawTokenKey{}).(string)
-	return token
 }
 
 // Recovery catches panics in downstream handlers, logs them, and returns
@@ -130,43 +109,50 @@ func SecurityHeaders(next http.Handler) http.Handler {
 }
 
 // BuildRequestContextMiddleware returns middleware that constructs a
-// model.RequestContext from JWT claims (using configurable claim paths)
-// and standard request headers. Claim paths support dot-notation for
-// nested claims (e.g. "realm_access.roles" for Keycloak).
-func BuildRequestContextMiddleware(claimPaths map[string]string) func(http.Handler) http.Handler {
-	paths := map[string]string{
-		"subject_id":   "sub",
-		"tenant_id":    "tenant_id",
-		"partition_id": "partition_id",
-		"email":        "email",
-		"roles":        "roles",
-		"session_id":   "session_id",
-	}
-	for k, v := range claimPaths {
-		paths[k] = v
+// model.RequestContext from Frame's security.AuthenticationClaims (set by
+// Frame's AuthenticationMiddleware) and standard request headers.
+// Extra claim paths (e.g. "email") are looked up in AuthenticationClaims.Ext.
+func BuildRequestContextMiddleware(extraClaimPaths map[string]string) func(http.Handler) http.Handler {
+	emailPath := "email"
+	if p, ok := extraClaimPaths["email"]; ok {
+		emailPath = p
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims := ClaimsFrom(r.Context())
+			authClaims := security.ClaimsFromContext(r.Context())
+
 			rctx := &model.RequestContext{
-				SubjectID:     extractClaimString(claims, paths["subject_id"]),
-				Email:         extractClaimString(claims, paths["email"]),
-				TenantID:      extractClaimString(claims, paths["tenant_id"]),
-				PartitionID:   extractClaimString(claims, paths["partition_id"]),
-				Roles:         extractClaimStringSlice(claims, paths["roles"]),
-				SessionID:     extractClaimString(claims, paths["session_id"]),
-				Claims:        claims,
 				DeviceID:      r.Header.Get("X-Device-Id"),
 				Timezone:      r.Header.Get("X-Timezone"),
 				Locale:        r.Header.Get("Accept-Language"),
 				CorrelationID: CorrelationIDFrom(r.Context()),
-				Token:         rawTokenFrom(r.Context()),
+				Token:         security.JwtFromContext(r.Context()),
 			}
+
+			if authClaims != nil {
+				rctx.SubjectID = authClaims.GetProfileID()
+				rctx.TenantID = authClaims.GetTenantID()
+				rctx.PartitionID = authClaims.GetPartitionID()
+				rctx.Roles = authClaims.GetRoles()
+				rctx.SessionID = authClaims.GetSessionID()
+				rctx.Email = extString(authClaims.Ext, emailPath)
+				rctx.Claims = authClaims.Ext
+			}
+
 			ctx := model.WithRequestContext(r.Context(), rctx)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// extString extracts a string value from the Ext claims map.
+func extString(ext map[string]any, key string) string {
+	if ext == nil {
+		return ""
+	}
+	v, _ := ext[key].(string)
+	return v
 }
 
 // ResolveCapabilities returns middleware that eagerly resolves capabilities
@@ -249,45 +235,4 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 		w.written = true
 	}
 	return w.ResponseWriter.Write(b)
-}
-
-// extractClaim navigates dot-separated paths in a claims map.
-// For example, "realm_access.roles" navigates claims["realm_access"]["roles"].
-func extractClaim(claims map[string]any, path string) any {
-	if claims == nil || path == "" {
-		return nil
-	}
-	parts := strings.Split(path, ".")
-	var current any = claims
-	for _, part := range parts {
-		m, ok := current.(map[string]any)
-		if !ok {
-			return nil
-		}
-		current = m[part]
-	}
-	return current
-}
-
-func extractClaimString(claims map[string]any, path string) string {
-	v, _ := extractClaim(claims, path).(string)
-	return v
-}
-
-func extractClaimStringSlice(claims map[string]any, path string) []string {
-	val := extractClaim(claims, path)
-	if val == nil {
-		return nil
-	}
-	raw, ok := val.([]any)
-	if !ok {
-		return nil
-	}
-	result := make([]string, 0, len(raw))
-	for _, v := range raw {
-		if s, ok := v.(string); ok {
-			result = append(result, s)
-		}
-	}
-	return result
 }

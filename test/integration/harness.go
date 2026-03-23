@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pitabwire/frame/security/interceptors/httptor"
+	"github.com/pitabwire/frame/security/openid"
+
 	"github.com/pitabwire/thesa/internal/capability"
 	"github.com/pitabwire/thesa/internal/command"
 	"github.com/pitabwire/thesa/internal/config"
@@ -274,26 +277,20 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 				MaxAge: 86400,
 			},
 		},
-		Identity: config.IdentityConfig{
-			Issuer:     h.issuer.Issuer(),
-			Audience:   h.issuer.Audience(),
-			JWKSURL:    h.issuer.JWKSURL(),
-			Algorithms: []string{"RS256"},
-			ClaimPaths: map[string]string{
-				"subject_id": "sub",
-				"tenant_id":  "tenant_id",
-				"email":      "email",
-				"roles":      "roles",
-			},
+		ClaimPaths: map[string]string{
+			"email": "email",
 		},
 	}
 
-	// Step 11: Build router with full middleware chain.
-	jwks := transport.NewJWKSClient(h.issuer.JWKSURL(), 1*time.Hour, nil)
+	// Step 11: Build router with full middleware chain using Frame's authenticator.
+	authenticator := openid.NewJwtTokenAuthenticator(h.issuer)
+	authenticate := func(next http.Handler) http.Handler {
+		return httptor.AuthenticationMiddleware(next, authenticator)
+	}
 
 	router := transport.NewRouter(transport.Dependencies{
 		Config:             h.cfg,
-		Authenticate:       transport.JWTAuthenticator(h.cfg.Identity, jwks),
+		Authenticate:       authenticate,
 		CapabilityResolver: h.CapResolver,
 		MenuProvider:       menuProvider,
 		PageProvider:       pageProvider,

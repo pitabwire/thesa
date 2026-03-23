@@ -23,15 +23,15 @@ func TestHarness_AuthenticationRequired(t *testing.T) {
 		h.AssertStatus(t, resp, http.StatusUnauthorized)
 	})
 
-	t.Run("expired token returns 401", func(t *testing.T) {
+	t.Run("expired token returns 403", func(t *testing.T) {
 		token := h.GenerateExpiredToken(ManagerClaims())
 		resp := h.GET("/ui/navigation", token)
-		h.AssertStatus(t, resp, http.StatusUnauthorized)
+		h.AssertStatus(t, resp, http.StatusForbidden)
 	})
 
-	t.Run("invalid token returns 401", func(t *testing.T) {
+	t.Run("invalid token returns 403", func(t *testing.T) {
 		resp := h.GET("/ui/navigation", "invalid-token")
-		h.AssertStatus(t, resp, http.StatusUnauthorized)
+		h.AssertStatus(t, resp, http.StatusForbidden)
 	})
 }
 

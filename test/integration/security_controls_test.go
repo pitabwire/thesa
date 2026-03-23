@@ -34,15 +34,15 @@ func TestSecurity_NoAuthHeader_Returns401(t *testing.T) {
 	}
 }
 
-func TestSecurity_ExpiredJWT_Returns401(t *testing.T) {
+func TestSecurity_ExpiredJWT_ReturnsForbidden(t *testing.T) {
 	h := NewTestHarness(t)
 	token := h.GenerateExpiredToken(ManagerClaims())
 
 	resp := h.GET("/ui/navigation", token)
-	h.AssertStatus(t, resp, http.StatusUnauthorized)
+	h.AssertStatus(t, resp, http.StatusForbidden)
 }
 
-func TestSecurity_InvalidSignature_Returns401(t *testing.T) {
+func TestSecurity_InvalidSignature_ReturnsForbidden(t *testing.T) {
 	h := NewTestHarness(t)
 
 	// Generate a token signed with a different RSA key (not in JWKS).
@@ -53,7 +53,7 @@ func TestSecurity_InvalidSignature_Returns401(t *testing.T) {
 
 	claims := jwt.MapClaims{
 		"iss":       "https://auth.test.thesa.dev",
-		"aud":       "thesa-bff-test",
+		"aud":       "service_thesa",
 		"sub":       "user-1",
 		"tenant_id": "acme-corp",
 		"email":     "user@acme.com",
@@ -67,20 +67,20 @@ func TestSecurity_InvalidSignature_Returns401(t *testing.T) {
 	}
 
 	resp := h.GET("/ui/navigation", signed)
-	h.AssertStatus(t, resp, http.StatusUnauthorized)
+	h.AssertStatus(t, resp, http.StatusForbidden)
 }
 
-func TestSecurity_NoneAlgorithm_Returns401(t *testing.T) {
+func TestSecurity_NoneAlgorithm_ReturnsForbidden(t *testing.T) {
 	h := NewTestHarness(t)
 
 	// Craft a "none" algorithm token manually.
 	// Header: {"alg":"none","typ":"JWT"}
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
-	payload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"admin","tenant_id":"acme-corp","iss":"https://auth.test.thesa.dev","aud":"thesa-bff-test","roles":["order_manager"]}`))
+	payload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"admin","tenant_id":"acme-corp","iss":"https://auth.test.thesa.dev","aud":"service_thesa","roles":["order_manager"]}`))
 	noneToken := header + "." + payload + "."
 
 	resp := h.GET("/ui/navigation", noneToken)
-	h.AssertStatus(t, resp, http.StatusUnauthorized)
+	h.AssertStatus(t, resp, http.StatusForbidden)
 }
 
 func TestSecurity_ValidJWT_Returns200(t *testing.T) {
@@ -91,11 +91,11 @@ func TestSecurity_ValidJWT_Returns200(t *testing.T) {
 	h.AssertStatus(t, resp, http.StatusOK)
 }
 
-func TestSecurity_MalformedToken_Returns401(t *testing.T) {
+func TestSecurity_MalformedToken_ReturnsForbidden(t *testing.T) {
 	h := NewTestHarness(t)
 
 	resp := h.GET("/ui/navigation", "not.a.valid.jwt.token")
-	h.AssertStatus(t, resp, http.StatusUnauthorized)
+	h.AssertStatus(t, resp, http.StatusForbidden)
 }
 
 // ==========================================================================
@@ -471,28 +471,17 @@ func TestSecurity_PathTraversalInPathParams(t *testing.T) {
 // CORS Tests
 // ==========================================================================
 
-func TestSecurity_CORSAllowedOrigin(t *testing.T) {
+// CORS is handled by the API gateway, not by the BFF server.
+// These tests verify that the BFF does not set CORS headers itself.
+
+func TestSecurity_CORSHandledByGateway(t *testing.T) {
 	h := NewTestHarness(t)
 
-	// Allowed origin (configured in harness: http://localhost:3000).
 	resp := h.GETWithHeaders("/ui/navigation", "", map[string]string{
 		"Origin": "http://localhost:3000",
 	})
 
-	if resp.Header.Get("Access-Control-Allow-Origin") != "http://localhost:3000" {
-		t.Error("CORS not set for allowed origin")
-	}
-}
-
-func TestSecurity_CORSDisallowedOrigin(t *testing.T) {
-	h := NewTestHarness(t)
-
-	// Disallowed origin.
-	resp := h.GETWithHeaders("/ui/navigation", "", map[string]string{
-		"Origin": "https://evil.example.com",
-	})
-
 	if resp.Header.Get("Access-Control-Allow-Origin") != "" {
-		t.Error("CORS headers should not be set for disallowed origin")
+		t.Error("BFF should not set CORS headers — gateway handles CORS")
 	}
 }
