@@ -3,9 +3,6 @@ server:
   read_timeout: 15s
   write_timeout: 15s
 
-claim_paths:
-  email: "custom_email"
-
 definitions:
   directories:
     - "/definitions"

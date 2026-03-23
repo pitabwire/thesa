@@ -221,7 +221,7 @@ func TestBuildRequestContextMiddleware(t *testing.T) {
 	}
 	authClaims.Subject = "user-42"
 
-	handler := BuildRequestContextMiddleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := BuildRequestContextMiddleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
 		if rctx == nil {
 			t.Fatal("RequestContext should be in context")
@@ -251,35 +251,24 @@ func TestBuildRequestContextMiddleware(t *testing.T) {
 	handler.ServeHTTP(w, req)
 }
 
-func TestBuildRequestContextMiddleware_customEmailPath(t *testing.T) {
+func TestBuildRequestContextMiddleware_emailFromExt(t *testing.T) {
 	authClaims := &security.AuthenticationClaims{
 		TenantID: "tenant-1",
 		Roles:    []string{"manager"},
-		Ext:      map[string]any{"custom_email": "user@keycloak.com"},
+		Ext:      map[string]any{"email": "user@example.com"},
 	}
 	authClaims.Subject = "user-99"
 
-	paths := map[string]string{
-		"email": "custom_email",
-	}
-
-	handler := BuildRequestContextMiddleware(paths)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := BuildRequestContextMiddleware()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rctx := model.RequestContextFrom(r.Context())
-		if rctx.Email != "user@keycloak.com" {
-			t.Errorf("Email = %q, want user@keycloak.com", rctx.Email)
-		}
-		if rctx.TenantID != "tenant-1" {
-			t.Errorf("TenantID = %q, want tenant-1", rctx.TenantID)
-		}
-		if len(rctx.Roles) != 1 || rctx.Roles[0] != "manager" {
-			t.Errorf("Roles = %v, want [manager]", rctx.Roles)
+		if rctx.Email != "user@example.com" {
+			t.Errorf("Email = %q, want user@example.com", rctx.Email)
 		}
 		w.WriteHeader(200)
 	}))
 
 	req := httptest.NewRequest("GET", "/", nil)
-	ctx := authClaims.ClaimsToContext(req.Context())
-	req = req.WithContext(ctx)
+	req = req.WithContext(authClaims.ClaimsToContext(req.Context()))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 }
@@ -297,7 +286,7 @@ func TestResolveCapabilities(t *testing.T) {
 		w.WriteHeader(200)
 	})
 
-	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
+	handler := BuildRequestContextMiddleware()(ResolveCapabilities(resolver)(inner))
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req = req.WithContext(testAuthContext(req.Context(), "user-1", "t-1", nil))
@@ -315,7 +304,7 @@ func TestResolveCapabilities_errorReturns502(t *testing.T) {
 		t.Fatal("handler should not be called when capability resolution fails")
 	})
 
-	handler := BuildRequestContextMiddleware(nil)(ResolveCapabilities(resolver)(inner))
+	handler := BuildRequestContextMiddleware()(ResolveCapabilities(resolver)(inner))
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req = req.WithContext(testAuthContext(req.Context(), "user-1", "t-1", nil))

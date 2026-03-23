@@ -277,9 +277,6 @@ func NewTestHarness(t *testing.T, opts ...HarnessOption) *TestHarness {
 				MaxAge: 86400,
 			},
 		},
-		ClaimPaths: map[string]string{
-			"email": "email",
-		},
 	}
 
 	// Step 11: Build router with full middleware chain using Frame's authenticator.

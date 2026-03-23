@@ -111,13 +111,7 @@ func SecurityHeaders(next http.Handler) http.Handler {
 // BuildRequestContextMiddleware returns middleware that constructs a
 // model.RequestContext from Frame's security.AuthenticationClaims (set by
 // Frame's AuthenticationMiddleware) and standard request headers.
-// Extra claim paths (e.g. "email") are looked up in AuthenticationClaims.Ext.
-func BuildRequestContextMiddleware(extraClaimPaths map[string]string) func(http.Handler) http.Handler {
-	emailPath := "email"
-	if p, ok := extraClaimPaths["email"]; ok {
-		emailPath = p
-	}
-
+func BuildRequestContextMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authClaims := security.ClaimsFromContext(r.Context())
@@ -136,7 +130,7 @@ func BuildRequestContextMiddleware(extraClaimPaths map[string]string) func(http.
 				rctx.PartitionID = authClaims.GetPartitionID()
 				rctx.Roles = authClaims.GetRoles()
 				rctx.SessionID = authClaims.GetSessionID()
-				rctx.Email = extString(authClaims.Ext, emailPath)
+				rctx.Email, _ = authClaims.Ext["email"].(string)
 				rctx.Claims = authClaims.Ext
 			}
 
@@ -144,15 +138,6 @@ func BuildRequestContextMiddleware(extraClaimPaths map[string]string) func(http.
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// extString extracts a string value from the Ext claims map.
-func extString(ext map[string]any, key string) string {
-	if ext == nil {
-		return ""
-	}
-	v, _ := ext[key].(string)
-	return v
 }
 
 // ResolveCapabilities returns middleware that eagerly resolves capabilities

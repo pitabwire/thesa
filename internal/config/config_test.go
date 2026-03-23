@@ -17,9 +17,6 @@ func TestLoad_valid(t *testing.T) {
 	if cfg.Server.ReadTimeout != 15*time.Second {
 		t.Errorf("Server.ReadTimeout = %v, want 15s", cfg.Server.ReadTimeout)
 	}
-	if cfg.ClaimPaths["email"] != "custom_email" {
-		t.Errorf("ClaimPaths[email] = %q, want custom_email", cfg.ClaimPaths["email"])
-	}
 	if !cfg.Definitions.HotReload {
 		t.Error("Definitions.HotReload = false, want true")
 	}
@@ -59,9 +56,6 @@ func TestDefaults(t *testing.T) {
 	}
 	if cfg.Observability.LogLevel != "info" {
 		t.Errorf("default LogLevel = %q, want info", cfg.Observability.LogLevel)
-	}
-	if cfg.ClaimPaths["email"] != "email" {
-		t.Errorf("default ClaimPaths[email] = %q, want email", cfg.ClaimPaths["email"])
 	}
 }
 

@@ -27,9 +27,6 @@ server:
 #   OAUTH2_JWT_VERIFY_AUDIENCE  - service_thesa
 #   OAUTH2_JWT_VERIFY_ISSUER    - token issuer URL
 
-claim_paths:
-  email: email
-
 definitions:
   directories:
     - ../definitions

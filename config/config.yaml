@@ -31,10 +31,6 @@ server:
 #   OAUTH2_JWT_VERIFY_ISSUER    - token issuer URL
 #   OAUTH2_WELL_KNOWN_JWK_DATA - (optional) pre-loaded JWK data
 
-claim_paths:
-  email: email
-  profile_id: profile_id
-
 definitions:
   directories:
     - definitions

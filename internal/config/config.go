@@ -17,7 +17,6 @@ type Config struct {
 	frameconfig.ConfigurationDefault `yaml:"-"` // Frame handles infrastructure config via env vars
 
 	Server        ServerConfig             `yaml:"server"`
-	ClaimPaths    map[string]string        `yaml:"claim_paths"`
 	Definitions   DefinitionsConfig        `yaml:"definitions"`
 	Specs         SpecsConfig              `yaml:"specs"`
 	Services      map[string]ServiceConfig `yaml:"services"`
@@ -140,10 +139,6 @@ func Defaults() *Config {
 					"X-Correlation-Id", "X-Idempotency-Key"},
 				MaxAge: 86400,
 			},
-		},
-		ClaimPaths: map[string]string{
-			"email":      "email",
-			"profile_id": "profile_id",
 		},
 		Definitions: DefinitionsConfig{
 			Directories:     []string{"/definitions"},
