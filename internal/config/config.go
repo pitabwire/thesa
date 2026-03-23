@@ -3,6 +3,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -177,7 +178,8 @@ func Defaults() *Config {
 	}
 }
 
-// Load reads a YAML config file, applies environment variable overrides,
+// Load reads a YAML config file, populates Frame's embedded config from
+// environment variables (OAUTH2_*, LOG_*, etc.), loads OIDC discovery,
 // and validates required fields.
 func Load(path string) (*Config, error) {
 	cfg := Defaults()
@@ -189,6 +191,18 @@ func Load(path string) (*Config, error) {
 
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("config: parsing %s: %w", path, err)
+	}
+
+	// Populate Frame's embedded ConfigurationDefault from OAUTH2_*, LOG_*, etc. env vars.
+	if err := frameconfig.FillEnv(&cfg.ConfigurationDefault); err != nil {
+		return nil, fmt.Errorf("config: frame env: %w", err)
+	}
+
+	// Load OIDC discovery (fetches JWKS data from the OAuth2 provider).
+	if cfg.GetOauth2ServiceURI() != "" {
+		if err := cfg.LoadOauth2Config(context.Background()); err != nil {
+			return nil, fmt.Errorf("config: oidc discovery: %w", err)
+		}
 	}
 
 	applyEnvOverrides(cfg)
