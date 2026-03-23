@@ -63,12 +63,15 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // Only handle 401 Unauthorized errors
-    if (err.response?.statusCode != 401) {
+    // Handle 401 (missing token) and 403 auth failures (invalid/expired token).
+    // Frame's AuthenticationMiddleware returns 403 for token verification
+    // failures (expired, invalid signature, wrong audience, stale keys).
+    if (!_isAuthFailure(err)) {
       return handler.next(err);
     }
 
-    _logger.info('Received 401, attempting OIDC token refresh');
+    _logger.info('Received auth failure (${err.response?.statusCode}), '
+        'attempting OIDC token refresh');
 
     try {
       final newAccessToken = await _refreshToken();
@@ -133,6 +136,22 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
+  /// Returns true if the error is an authentication failure that should
+  /// trigger token refresh. Frame returns 401 for missing tokens and 403
+  /// for invalid/expired/stale tokens.
+  bool _isAuthFailure(DioException err) {
+    final statusCode = err.response?.statusCode;
+    if (statusCode == 401) {
+      return true;
+    }
+    if (statusCode == 403) {
+      final body = err.response?.data;
+      final message = body is String ? body : '';
+      return message.contains('Authorization header is invalid');
+    }
+    return false;
+  }
+
   void _recordRefreshTelemetry({
     required DateTime startTime,
     required bool success,
@@ -147,7 +166,7 @@ class AuthInterceptor extends Interceptor {
       TelemetryEvent.authRefresh(
         success: success,
         durationMs: durationMs,
-        triggeredBy: '401_response',
+        triggeredBy: 'auth_failure_response',
         errorMessage: errorMessage,
         timestamp: DateTime.now(),
       ),
